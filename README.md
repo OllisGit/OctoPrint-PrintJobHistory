@@ -10,7 +10,8 @@ The OctoPrint Plugin stores all print-job informations of a print in a database
 
 ## Screenshots
 ![plugin-settings](screenshots/plugin-settings.png "Plugin-Settings")
-![printjobhistory-tab](screenshots/plugin-tab.png "Plugin-Tab")
+![plugin-tab](screenshots/plugin-tab.png "Plugin-Tab")
+![missingplugins-dialog](screenshots/missingplugins-dialog.png "MissingPlugins-Dialog")
 
 
 ## Setup
@@ -20,11 +21,12 @@ or manually using this URL:
 
     https://github.com/OllisGit/OctoPrint-PrintJobHistory/releases/latest/download/master.zip
 
+## Roadmap
+
+see [Planning-Board](https://github.com/OllisGit/OctoPrint-PrintJobHistory/projects/1)
 
 ## Versions
 
 see [Release-Overview](https://github.com/OllisGit/OctoPrint-PrintJobHistory/releases/)
 
-## Roadmap
 
-see [Planning-Board](https://github.com/OllisGit/OctoPrint-PrintJobHistory/projects/1)
