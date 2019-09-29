@@ -51,10 +51,10 @@ class PrintJobHistoryPlugin(octoprint.plugin.SettingsPlugin,
 			missingMessage = "<li>PreHeat</li>"
 
 		if self._filamentManagerPluginImplementation == None:
-			missingMessage = missingMessage + "<li>Filamentmanager</li>"
+			missingMessage = missingMessage + "<li>FilamentManager</li>"
 
 		if self._displayLayerProgressPluginImplementation == None:
-			missingMessage = missingMessage + "<li>DisplayLayeerProgress</li>"
+			missingMessage = missingMessage + "<li>DisplayLayerProgress</li>"
 
 		if missingMessage != "":
 			missingMessage = "<ul>" + missingMessage + "</ul>"
