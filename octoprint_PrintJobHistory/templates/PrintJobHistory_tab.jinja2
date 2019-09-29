@@ -1,0 +1,97 @@
+<div id="printJobHistory_tab">
+   <div class="pull-right">
+        <small>
+            Sort by:
+            <a href="#" data-bind="click: changeSortOrder.bind($data, 'param1')">Name<span data-bind="text: sortOrderLabel('fileName')"></span></a> |
+            <a href="#" data-bind="click: changeSortOrder.bind($data, 'param2')">Date<span data-bind="text: sortOrderLabel('timestamp')"></span></a> |
+            <a href="#" data-bind="click: changeSortOrder.bind($data, 'param3')">Print time<span data-bind="text: sortOrderLabel('printTime')"></span></a>
+        </small>
+    </div>
+
+    <div class="pull-right" style="clear: both;">
+    <small>
+        Show prints:
+        <a href="#" data-bind="click: function() { printJobHistorylistHelper.toggleFilter('all'); }"><i class="icon-ok" data-bind="style: {visibility: _.contains(printJobHistorylistHelper.currentFilters(), 'all') ? 'visible' : 'hidden'}"></i> all</a>
+        <a href="#" data-bind="click: function() { printJobHistorylistHelper.toggleFilter('successful'); }"><i class="icon-ok" data-bind="style: {visibility: _.contains(printJobHistorylistHelper.currentFilters(), 'successful') ? 'visible' : 'hidden'}"></i> only successful</a>
+        <a href="#" data-bind="click: function() { printJobHistorylistHelper.toggleFilter('failed'); }"><i class="icon-ok" data-bind="style: {visibility: _.contains(printJobHistorylistHelper.currentFilters(), 'failed') ? 'visible' : 'hidden'}"></i> only failed</a>
+    </small>
+</div>
+
+    <table id="printjobhistory_main_table" class="table table-striped table-hover table-condensed table-hover" style="clear: both;">
+        <thead>
+            <tr>
+                <th style="width: 4%; text-align: center;">S</th>
+                <th style="width: 15%">Date</th>
+                <th style="width: 27%">File</th>
+                <th style="width: 13%;">Usage</th>
+                <th style="width: 16%;t">Note</th>
+                <th style="width: 16%;t">Image</th>
+                <th style="width: 9%"></th>
+            </tr>
+        </thead>
+        <tbody data-bind="foreach: printJobHistorylistHelper.paginatedItems">
+            <tr>
+                <td style="text-align: center;"><span data-bind="css: {'icon-ok-sign' : success() == 1, 'icon-exclamation-sign' : success() == 0}, style: { color: success() == 1 ? 'green' : 'red' }"></span></td>
+                <td>
+                    <span data-bind="visible: note"><span data-bind="text: formatedStartDate, attr: { title: formatedStartDate }"></span></span>
+                    <div class="additionalInfo">
+                        <div data-bind="visible: note"><span data-bind="text: formatedEndDate, attr: { title: formatedEndDate }"></span></div>
+                        <div data-bind="visible: note"><span data-bind="text: formatedDuration, attr: { title: formatedDuration }"></span></div>
+                    </div>
+                </td>
+                <td>
+                    <span data-bind="visible: note"><span data-bind="text: fileName, attr: { title: fileName }"></span></span>
+                    <div class="additionalInfo">
+                        <div data-bind="visible: note"><span data-bind="text: fileSize, attr: { title: fileSize }"></span></div>
+                        <div data-bind="visible: note"><span data-bind="text: temperature, attr: { title: temperature }"></span></div>
+                        <div data-bind="visible: note"><span data-bind="text: heightInfo, attr: { title: heightInfo }"></span></div>
+                        <div data-bind="visible: note"><span data-bind="text: layerInfo, attr: { title: layerInfo }"></span></div>
+                    </div>
+                </td>
+                <td>
+                    <span data-bind="visible: note"><span data-bind="text: material, attr: { title: material }"></span></span>
+                    <span data-bind="visible: note"><span data-bind="text: spool, attr: { title: spool }"></span></span>
+                    <div class="additionalInfo">
+                        <div data-bind="visible: note"><span data-bind="text: filamentLength, attr: { title: filamentLength }"></span></div>
+                        <div data-bind="visible: note"><span data-bind="text: filamentWeight, attr: { title: filamentWeight }"></span></div>
+                        <div data-bind="visible: note"><span data-bind="text: filamentCost, attr: { title: filamentCost }"></span></div>
+                    </div>
+                </td>
+                <td>
+                    <span data-bind="visible: note"><span>Figure</span></span>
+                    <div class="additionalInfo">
+                        <div data-bind="visible: note"><span data-bind="text: note, attr: { title: note }"></span></div>
+                    </div>
+                </td>
+                <td>
+                    <img src="http://localhost:5000/plugin/PrintJobHistory/static/images/no-image-icon.png" >
+                </td>
+                <td>
+                    <div class="btn-group action-buttons" data-bind="visible: $root.loginState.isUser() && !$root.isPrinting()">
+                        <div class="btn btn-mini" data-bind="click: function() { $root.showDetailsDialog($data); }" title="{{ _('Additional data') }}"><i class="icon-wrench"></i></div>
+                        <div class="btn btn-mini" data-bind="click: function() { $root.removeFile($data.id); }" title="{{ _('Remove') }}"><i class="icon-trash"></i></div>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="pagination pagination-mini pagination-centered">
+        <ul>
+            <li data-bind="css: {disabled: printJobHistorylistHelper.currentPage() === 0}">
+                <a href="#" data-bind="click: printJobHistorylistHelper.prevPage">«</a>
+            </li>
+        </ul>
+        <ul data-bind="foreach: printJobHistorylistHelper.pages">
+            <li data-bind="css: { active: $data.number === $root.printJobHistorylistHelper.currentPage(), disabled: $data.number === -1 }">
+                <a href="#" data-bind="text: $data.text, click: $root.printJobHistorylistHelper.changePage.bind($data, $data.number)"></a>
+            </li>
+        </ul>
+        <ul>
+            <li data-bind="css: {disabled: printJobHistorylistHelper.currentPage() === printJobHistorylistHelper.lastPage()}">
+                <a href="#" data-bind="click: printJobHistorylistHelper.nextPage">»</a>
+            </li>
+        </ul>
+    </div>
+
+</div>
