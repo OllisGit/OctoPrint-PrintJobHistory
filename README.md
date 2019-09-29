@@ -11,7 +11,7 @@ The OctoPrint Plugin stores all print-job informations of a print in a database
 ## Screenshots
 ![plugin-settings](screenshots/plugin-settings.png "Plugin-Settings")
 ![plugin-tab](screenshots/plugin-tab.png "Plugin-Tab")
-![missingplugins-dialog](screenshots/missingplugins-dialog.png "MissingPlugins-Dialog")
+![missingplugins-dialog](screenshots/missingPlugins-dialog.png "MissingPlugins-Dialog")
 
 
 ## Setup
