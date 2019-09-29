@@ -1,5 +1,8 @@
 # OctoPrint-PrintJobHistory
 
+
+#WORK IN PROGRESS!!!! Not released, yet!!
+
 [![Version](https://img.shields.io/badge/dynamic/json.svg?color=brightgreen&label=version&url=https://api.github.com/repos/OllisGit/OctoPrint-PrintJobHistory/releases&query=$[0].name)]()
 [![Released](https://img.shields.io/badge/dynamic/json.svg?color=brightgreen&label=released&url=https://api.github.com/repos/OllisGit/OctoPrint-PrintJobHistory/releases&query=$[0].published_at)]()
 ![GitHub Releases (by Release)](https://img.shields.io/github/downloads/OllisGit/OctoPrint-PrintJobHistory/latest/total.svg)
@@ -25,4 +28,4 @@ see [Release-Overview](https://github.com/OllisGit/OctoPrint-PrintJobHistory/rel
 
 ## Roadmap
 
-see [Project](https://github.com/OllisGit/OctoPrint-PrintJobHistory/releases/)
+see [Planning-Board](https://github.com/OllisGit/OctoPrint-PrintJobHistory/projects/1)

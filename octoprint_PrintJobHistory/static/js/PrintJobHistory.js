@@ -128,7 +128,7 @@ $(function() {
                 "material" : "PLA",
                 "filamentLength" : "1m22mm",
                 "filamentWeight" : "12,5g",
-                "filamentCost" : "3,5Euro",
+                "filamentCost" : "3,5€",
                 "imageLink" : "../images/no-photo-icon.jpg",
                 "note" : "Good output of Legolas",
 
@@ -150,7 +150,7 @@ $(function() {
                 "material" : "ABS",
                 "filamentLength" : "2m22mm",
                 "filamentWeight" : "312,6g",
-                "filamentCost" : "6,5Euro",
+                "filamentCost" : "6,5€",
                 "imageLink" : "../images/no-photo-icon.jpg",
                 "note" : "Bad quality",
 
