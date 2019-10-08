@@ -7,43 +7,225 @@
 $(function() {
 
     var PLUGIN_ID = "PrintJobHistory"; // from setup.py plugin_identifier
-    var missingPluginsDialog = null;
 
 
-    function showDialog(dialogId, dialogMessage, confirmFunction){
-        if (missingPluginsDialog != null && missingPluginsDialog.is(":visible")){
-            return;
-        }
 
-        $("#missingPluginMessage").html(dialogMessage);
+    ////////////////////////////////////////////////////////////
+//    function formatFilamentLength(length){
+//        var pattern = "%.02fm"
+//        var result = _.sprintf(pattern, length)
+//        return result
+//    }
 
-        missingPluginsDialog = $(dialogId);
-        var confirmButton = $("button.btn-confirm", missingPluginsDialog);
 
-        confirmButton.unbind("click");
-        confirmButton.bind("click", function() {
-            confirmFunction(missingPluginsDialog);
-        });
+    ////////////////////////////////////////////////////////////
+    var PrintJobItem = function(data) {
 
-        missingPluginsDialog.modal({
-            //minHeight: function() { return Math.max($.fn.modal.defaults.maxHeight() - 80, 250); }
-            keyboard: false,
-            clickClose: false,
-            showClose: false
-        }).css({
-            width: 'auto',
-            'margin-left': function() { return -($(this).width() /2); }
-        });
+        // Init Item
+		this.databaseId = ko.observable();
+		this.userName = ko.observable();
+		this.fileName = ko.observable();
+		this.filePathName = ko.observable();
+		this.fileSize = ko.observable();
+		this.printStartDateTime = ko.observable();
+		this.printEndDateTime = ko.observable();
+		this.printStartDateTimeFormatted = ko.observable();
+		this.printEndDateTimeFormatted = ko.observable();
+		this.printStatusResult = ko.observable();
+		this.durationFormatted = ko.observable();
+		this.noteText = ko.observable();
+		this.noteDelta = ko.observable();
+		this.noteHtml = ko.observable();
+		this.printedLayers = ko.observable();
+		this.printedHeight = ko.observable();
+		this.temperatureBed = ko.observable();
+		this.temperatureNozzel = ko.observable();
+
+		this.profileVendor = ko.observable();
+		this.diameter = ko.observable();
+		this.density = ko.observable();
+		this.material = ko.observable();
+		this.spoolName = ko.observable();
+		this.spoolCost = ko.observable();
+		this.spoolCostUnit = ko.observable();
+		this.spoolWeight = ko.observable();
+		this.usedLength = ko.observable();
+		this.calculatedLength = ko.observable();
+
+		this.snapshotFilename = ko.observable();
+/*
+        this.successful = ko.computed(function() {
+            return this.success() == 1;
+        }, this);
+        this.filamentUsage = ko.computed(self.formatFilament, this);
+        this.formattedDate = ko.computed(function () {
+            return formatDate(this.timestamp());
+        }, this);
+
+*/
+        // Fill Item with data
+        this.update(data);
     }
 
+    PrintJobItem.prototype.update = function (data) {
+        var updateData = data || {}
+
+        this.databaseId(updateData.databaseId);
+        this.userName(updateData.userName);
+        this.fileName(updateData.fileName);
+        this.filePathName(updateData.filePathName);
+        this.fileSize(formatSize(updateData.fileSize));
+        this.printStartDateTime(updateData.printStartDateTime);
+        this.printEndDateTime(updateData.printEndDateTime);
+        this.printStartDateTimeFormatted(updateData.printStartDateTimeFormatted);
+        this.printEndDateTimeFormatted(updateData.printEndDateTimeFormatted);
+        this.printStatusResult(updateData.printStatusResult);
+        this.durationFormatted(updateData.durationFormatted);
+        this.noteText(updateData.noteText);
+        this.noteDelta(updateData.noteDelta);
+        this.noteHtml(updateData.noteHtml);
+        this.printedLayers(updateData.printedLayers);
+        this.printedHeight(updateData.printedHeight);
+        //Tool
+        tempDataArray = data["temperatureEntities"];
+/* TODO
+        sensorName = tempDataArray[0]["sensorName"]
+        sensorValue = tempDataArray[0]["sensorValue"]
+        this.temperatureNozzel(sensorValue);
+        if (tempDataArray.length == 2){
+            sensorName = tempDataArray[1]["sensorName"]
+            sensorValue = tempDataArray[1]["sensorValue"]
+
+            this.temperatureBed(sensorValue);
+        }
+*/
+        //Filament
+        if (updateData.filamentEntity != null){
+            this.profileVendor(updateData.filamentEntity.profileVendor);
+            this.diameter(updateData.filamentEntity.diameter);
+            this.density(updateData.filamentEntity.density);
+            this.material(updateData.filamentEntity.material);
+            this.spoolName(updateData.filamentEntity.spoolName);
+            this.spoolCost(updateData.filamentEntity.spoolCost);
+            this.spoolCostUnit(updateData.filamentEntity.spoolCostUnit);
+            this.spoolWeight(updateData.filamentEntity.spoolWeight);
+//            this.usedLength( formatFilamentLength(updateData.filamentEntity.usedLength) );
+//            this.calculatedLength( formatFilamentLength(updateData.filamentEntity.calculatedLength) );
+            this.usedLength( updateData.filamentEntity.usedLength );
+
+            this.calculatedLength( updateData.filamentEntity.calculatedLength );
+        } else {
+            this.profileVendor(updateData.profileVendor);
+            this.diameter(updateData.diameter);
+            this.density(updateData.density);
+            this.material(updateData.material);
+            this.spoolName(updateData.spoolName);
+            this.spoolCost(updateData.spoolCost);
+            this.spoolCostUnit(updateData.spoolCostUnit);
+            this.spoolWeight(updateData.spoolWeight);
+//            this.usedLength( formatFilamentLength(updateData.filamentEntity.usedLength) );
+//            this.calculatedLength( formatFilamentLength(updateData.filamentEntity.calculatedLength) );
+            this.usedLength( updateData.usedLength );
+            this.calculatedLength( updateData.calculatedLength );
+        }
+
+		this.snapshotFilename(updateData.snapshotFilename);
+    };
+
+
+    ////////////////////////////////////////////////////////////////////////////// VIEW MODEL
     function PrintjobhistoryViewModel(parameters) {
 
         var self = this;
+
+/// START MOCK MODEL
+        var printHistoryJobItems = [
+             {
+                "databaseId" : ko.observable(1),
+                "success" : ko.observable("1"),
+                "printStartDateTimeFormatted" : "19.09.2019 16:25",
+                "printEndDateTimeFormatted" : "19.09.2019 17:25",
+                "printStatusResult" : ko.observable("success"),
+                "durationFormatted" : "1h12min",
+                "fileName" : "Legolas.gcode",
+                "fileSize" : "134KB",
+                "temperatureBed" : "50C",
+                "temperatureNozzel" : "200C",
+                "printedHeight" : "23mm / 23mm",
+                "printedLayers" : "149 / 149",
+                "spoolName" : "myspool",
+                "spoolCost" : "2,23",
+                "spoolCostUnit" : "Euro",
+                "material" : "PLA",
+                "usedLength" : "1m22mm",
+                "calculatedLength" : "12,5g",
+                "noteText" : "Good output of Legolas",
+                "noteDelta" : "Good output of Legolas",
+                "noteHtml" : "<h1>Good output of Legolas</h1>",
+                "snapshotFilename" : ko.observable("20191003-123322")
+
+            },{
+                "databaseId" : ko.observable(2),
+                "success" : ko.observable("0"),
+                "printStartDateTimeFormatted" : "20.09.2019 15:25",
+                "printEndDateTimeFormatted" : "20.09.2019 17:25",
+                "printStatusResult" : ko.observable("fail"),
+                "durationFormatted" : "2h34min",
+                "fileName" : "Benchy3D.gcode",
+                "fileSize" : "324KB",
+                "temperatureBed" : "60C",
+                "temperatureNozzel" : "220C",
+
+                "printedHeight" : "13mm / 143mm",
+                "printedLayers" : "3 / 68",
+                "spoolName" : "Master",
+                "spoolCost" : "2,23",
+                "spoolCostUnit" : "Euro",
+                "material" : "ABS",
+                "usedLength" : "2m22mm",
+                "calculatedLength" : "312,6g",
+
+                "noteText" : "Bad quality",
+                "noteDelta" : "Bad quality",
+                "noteHtml" : "<h2>Bad quality,/h2>",
+                "snapshotFilename" : ko.observable("20191003-153312")
+
+            }
+        ];
+//        self.printJobHistorylistHelper.updateItems(printHistoryJobItems);
+
+/// END MOCK MODEL
 
         // assign the injected parameters, e.g.:
         self.loginStateViewModel = parameters[0];
         self.loginState = parameters[0];
         self.settingsViewModel = parameters[1];
+        self.pluginSettings = null;
+
+        self.apiClient = new PrintJobHistoryAPIClient(PLUGIN_ID, BASEURL);
+        self.printJobEditDialog = new PrintJobHistoryEditDialog(null, null);
+        self.pluginCheckDialog = new PrintJobHistoryPluginCheckDialog();
+
+        self.printJobForEditing = ko.observable()
+        self.printJobForEditing(new PrintJobItem(printHistoryJobItems[0]));
+
+
+        ////////////////////////////////////////////////////// Knockout model-binding/observer
+        self.isPrinting = ko.observable(undefined); // TODO assign printing state
+
+
+
+        ///////////////////////////////////////////////////// START: OctoPrint Hooks
+        self.onBeforeBinding = function() {
+            // assign current pluginSettings
+            self.pluginSettings = self.settingsViewModel.settings.plugins[PLUGIN_ID];
+
+            self.printJobEditDialog.init(self.apiClient, self.settingsViewModel.settings.webcam.streamUrl());
+            self.pluginCheckDialog.init(self.apiClient, self.pluginSettings);
+
+//            webcam_snapshotTimeout
+
+        }
 
         // receive data from server
         self.onDataUpdaterPluginMessage = function (plugin, data) {
@@ -51,33 +233,42 @@ $(function() {
             if (plugin != PLUGIN_ID) {
                 return;
             }
+
             if ("missingPlugin" == data.action){
+                self.pluginCheckDialog.showMissingPluginsDialog(data.message);
+                return;
+            }
 
-                showDialog("#navbar_missingPluginsDialog", data.message, function(dialog){
-
-
-                    missingPluginsDialog.modal('hide');
-                    /*
-                    $.ajax({
-                        url: API_BASEURL + "plugin/"+PLUGIN_ID+"?action=stopCountdown",
-                        type: "GET"
-                    }).done(function( data ){
-                        new PNotify({
-                            title: "Stopped autostart print!",
-                            text: "The autostart print was canceled!",
-                            type: "info",
-                            hide: true
-                        });
-                        //shoud be done by the server to make sure the server is informed countdownDialog.modal('hide');
-                        countdownDialog.modal('hide');
-                        countdownCircle = null;
-                    });
-                    */
-                });
+            if ("printFinished" == data.action){
+                self.reloadTableData();
             }
         }
 
-        self.isPrinting = ko.observable(undefined);
+        self.onTabChange = function(next, current){
+            //alert("Next:"+next +" Current:"+current);
+            if ("#tab_plugin_PrintJobHistory" == next){
+                //self.reloadTableData();
+            }
+        }
+
+        self.reloadTableData = function(){
+            self.apiClient.callLoadPrintHistoryJobs( self.handleAllPrintJobDataResponse );
+        }
+
+        ///////////////////////////////////////////////////// END: OctoPrint Hooks
+
+        self.handleAllPrintJobDataResponse = function (allPrintJobs){
+            // Print Jobs from Backend
+            var dataRows = ko.utils.arrayMap(allPrintJobs, function (data) {
+                return new PrintJobItem(data);
+            });
+
+            //self.pureData = data.history;
+
+            //self.dataIsStale = false;
+            self.printJobHistorylistHelper.updateItems(dataRows);
+        }
+
 
         // helper.js
         // listType, supportedSorting, supportedFilters, defaultSorting, defaultFilters, exclusiveFilters, defaultPageSize)
@@ -112,60 +303,44 @@ $(function() {
             10
         );
 
+        ///////////////////////////////////////////////////// START: DAILOG Stuff
 
-        var printHistoryJobItems = [
-             {
-                "success" : ko.observable("1"),
-                "formatedStartDate" : "19.09.2019 16:25",
-                "formatedEndDate" : "19.09.2019 17:25",
-                "formatedDuration" : "1h12min",
-                "fileName" : "Legolas.gcode",
-                "fileSize" : "134KB",
-                "temperature" : "50C / 200C",
-                "heightInfo" : "23mm / 23mm",
-                "layerInfo" : "149 / 149",
-                "spool" : "myspool",
-                "material" : "PLA",
-                "filamentLength" : "1m22mm",
-                "filamentWeight" : "12,5g",
-                "filamentCost" : "3,5€",
-                "imageLink" : "../images/no-photo-icon.jpg",
-                "note" : "Good output of Legolas",
 
-                "user" : "ich",
-                "formatedDate" : "10/10/2010",
-                "formatedTimeAgo" : "12/10/2010",
-                "filamentUsage" : "22mm",
-            },{
-                "success" : ko.observable("0"),
-                "formatedStartDate" : "20.09.2019 15:25",
-                "formatedEndDate" : "20.09.2019 17:25",
-                "formatedDuration" : "2h34min",
-                "fileName" : "Benchy3D.gcode",
-                "fileSize" : "324KB",
-                "temperature" : "60C / 220C",
-                "heightInfo" : "13mm / 143mm",
-                "layerInfo" : "3 / 68",
-                "spool" : "Master",
-                "material" : "ABS",
-                "filamentLength" : "2m22mm",
-                "filamentWeight" : "312,6g",
-                "filamentCost" : "6,5€",
-                "imageLink" : "../images/no-photo-icon.jpg",
-                "note" : "Bad quality",
+        self.showPrintJobDetailsDialogAction = function(selectedPrintJobItem) {
 
-                "user" : "ich",
-                "formatedDate" : "10/10/2010",
-                "formatedTimeAgo" : "12/10/2010",
-                "filamentUsage" : "22mm",
+            self.printJobForEditing(new PrintJobItem(ko.mapping.toJS(selectedPrintJobItem)));
+            self.printJobEditDialog.showDialog(self.printJobForEditing(), function(allPrintJobs){
+                debugger
+                self.handleAllPrintJobDataResponse(allPrintJobs);
+
+            });
+        };
+
+        ///////////////////////////////////////////////////// END: DAILOG Stuff
+
+
+
+        self.exportUrl = function(exportType) {
+            if (self.printJobHistorylistHelper.items().length > 0) {
+                return self.apiClient.getExportUrl(exportType)
+            } else {
+                return false;
             }
-        ];
-        //printHistoryJobItems.push(item);
-
-        self.printJobHistorylistHelper.updateItems(printHistoryJobItems);
+        };
 
 
         //////////// TABLE BEHAVIOR
+
+
+        self.snapshotUrl = function(printJobItem){
+            return self.apiClient.getSnapshotUrl(printJobItem.snapshotFilename());
+        }
+
+        self.removePrintJobAction = function(rowIndex) {
+            self.apiClient.callRemovePrintJob(id, self.handleAllPrintJobDataResponse)
+        };
+
+
         self.sortOrderLabel = function(orderType) {
             var order = "";
 
@@ -182,68 +357,13 @@ $(function() {
 
 
         self.changeSortOrder = function(columnToSort) {
-            debugger
             if (self.printJobHistorylistHelper.currentSorting() == "fileNameAsc") {
                 self.printJobHistorylistHelper.changeSorting("fileNameDesc");
             } else {
                 self.printJobHistorylistHelper.changeSorting("fileNameAsc");
             }
         };
-/*
-        self.listHelper = new ItemListHelper(
-            "historyItems",
-            {
-                "fileNameAsc": function (a, b) {
-                    // sorts ascending
-                    if (a.fileName().toLocaleLowerCase() < b.fileName().toLocaleLowerCase()) return -1;
-                    if (a.fileName().toLocaleLowerCase() > b.fileName().toLocaleLowerCase()) return 1;
-                    return 0;
-                },
-                "fileNameDesc": function (a, b) {
-                    // sorts ascending
-                    if (a.fileName().toLocaleLowerCase() < b.fileName().toLocaleLowerCase()) return 1;
-                    if (a.fileName().toLocaleLowerCase() > b.fileName().toLocaleLowerCase()) return -1;
-                    return 0;
-                },
-                "timestampAsc": function (a, b) {
-                    // sorts descending
-                    if (a.timestamp() > b.timestamp()) return 1;
-                    if (a.timestamp() < b.timestamp()) return -1;
-                    return 0;
-                },
-                "timestampDesc": function (a, b) {
-                    // sorts descending
-                    if (a.timestamp() > b.timestamp()) return -1;
-                    if (a.timestamp() < b.timestamp()) return 1;
-                    return 0;
-                },
-                "printTimeAsc": function (a, b) {
-                    // sorts descending
-                    if (a.printTime() > b.printTime()) return 1;
-                    if (a.printTime() < b.printTime()) return -1;
-                    return 0;
-                },
-                "printTimeDesc": function (a, b) {
-                    // sorts descending
-                    if (a.printTime() > b.printTime()) return -1;
-                    if (a.printTime() < b.printTime()) return 1;
-                    return 0;
-                }
-            },
-            {
-                "all": function (item) {
-                    return true;
-                },
-                "successful": function (item) {
-                    return (item.success() == 1);
-                },
-                "failed": function (item) {
-                    return (item.success() == 0);
-                }
-            },
-            "timestamp", ["all"], [["all", "successful", "failed"]], 10
-        );
-*/
+
 
     }
 
@@ -260,7 +380,9 @@ $(function() {
         ],
         // Elements to bind to, e.g. #settings_plugin_PrintJobHistory, #tab_plugin_PrintJobHistory, ...
         elements: [
-            document.getElementById("printJobHistory_tab")
+            document.getElementById("tab_printJobHistory"),
+            document.getElementById("settings_printJobHistory"),
+            document.getElementById("modal-dialogs-printJobHistory")
         ]
     });
 });

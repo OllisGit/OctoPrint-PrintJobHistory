@@ -8,6 +8,13 @@
 
 The OctoPrint Plugin stores all print-job informations of a print in a database
 
+#### Support my Efforts
+
+This plugin, as well as my [other plugins](https://github.com/OllisGit/) were developed in my spare time.
+If you like it, I would be thankful about a cup of coffee :) 
+
+[![More coffee, more code](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2BJP2XFEKNG9J&source=url)
+
 ## Screenshots
 ![plugin-settings](screenshots/plugin-settings.png "Plugin-Settings")
 ![plugin-tab](screenshots/plugin-tab.png "Plugin-Tab")

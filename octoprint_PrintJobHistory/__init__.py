@@ -15,21 +15,25 @@ from octoprint.events import Events
 import os
 import datetime
 
+from .common.SettingsKeys import SettingsKeys
+from .api.PrintJobHistoryAPI import PrintJobHistoryAPI
 
 from .entities.PrintJobEntity import PrintJobEntity
 from .entities.FilamentEntity import FilamentEntity
+from .entities.TemperatureEntity import TemperatureEntity
 from .DatabaseManager import DatabaseManager
+from .CameraManager import CameraManager
 
-################## SETTINGS - KEYS
-SETTINGS_KEY_ACTIVATED = "activated"
 
-class PrintJobHistoryPlugin(octoprint.plugin.SettingsPlugin,
+class PrintJobHistoryPlugin(
+							PrintJobHistoryAPI,
+							octoprint.plugin.SettingsPlugin,
                             octoprint.plugin.AssetPlugin,
                             octoprint.plugin.TemplatePlugin,
 							octoprint.plugin.StartupPlugin,
 							octoprint.plugin.EventHandlerPlugin,
-							octoprint.plugin.SimpleApiPlugin):
-
+							#octoprint.plugin.SimpleApiPlugin
+							):
 
 
 	def initialize(self):
@@ -37,14 +41,33 @@ class PrintJobHistoryPlugin(octoprint.plugin.SettingsPlugin,
 		self._filamentManagerPluginImplementation = None
 		self._displayLayerProgressPluginImplementation = None
 
+		pluginDataBaseFolder = self.get_plugin_data_folder()
+
 		self._databaseManager = DatabaseManager()
-		databasePath = os.path.join(self.get_plugin_data_folder(), "printJobHistory.db")
+		databasePath = os.path.join(pluginDataBaseFolder, "printJobHistory.db")
 		self._databaseManager.initDatabase(databasePath)
+
+		pluginBaseFolder = self._basefolder
+		self._cameraManager = CameraManager()
+		streamUrl = self._settings.global_get(["webcam", "stream"])
+		snapshotUrl =  self._settings.global_get(["webcam", "snapshot"])
+
+		snapshotStorage = pluginDataBaseFolder + "/snapshots"
+		if not os.path.exists(snapshotStorage):
+			os.makedirs(snapshotStorage)
+
+		self._cameraManager.initCamera(streamUrl, snapshotUrl, snapshotStorage, pluginBaseFolder)
 
 		self._currentPrintJobEntity = None
 
 
 	################################################################################################## private functions
+	def _sendDataToClient(self, payloadDict):
+
+		self._plugin_manager.send_plugin_message(self._identifier,
+												 payloadDict)
+
+
 	def _checkForMissingPluginInfos(self):
 		missingMessage = ""
 		if self._preHeatPluginImplementation == None:
@@ -58,10 +81,9 @@ class PrintJobHistoryPlugin(octoprint.plugin.SettingsPlugin,
 
 		if missingMessage != "":
 			missingMessage = "<ul>" + missingMessage + "</ul>"
+			self._sendDataToClient(dict(action="missingPlugin",
+									    message=missingMessage))
 
-			self._plugin_manager.send_plugin_message(self._identifier,
-													 dict(action = "missingPlugin",
-														  message = missingMessage))
 
 	def _createAndAssignFilamentEntity(self, printJob, payload):
 		filemanentEntity  = FilamentEntity()
@@ -73,14 +95,17 @@ class PrintJobHistoryPlugin(octoprint.plugin.SettingsPlugin,
 				if "tool0" in fileData["analysis"]["filament"]:
 					filamentLength = fileData["analysis"]["filament"]["tool0"]['length']
 
-		filemanentEntity.usedLength = filamentLength
+		filemanentEntity.calculatedLength = filamentLength
 
 		if self._filamentManagerPluginImplementation != None:
+
+			filemanentEntity.usedLength = self._filamentManagerPluginImplementation.filamentOdometer.totalExtrusion[0]
 			selectedSpool = self._filamentManagerPluginImplementation.filamentManager.get_all_selections(self._filamentManagerPluginImplementation.client_id)
 			if  selectedSpool != None:
 				spoolData = selectedSpool[0]["spool"]
 				spoolName = spoolData["name"]
 				spoolCost = spoolData["cost"]
+				spoolCostUnit = self._filamentManagerPluginImplementation._settings.get(["currencySymbol"])
 				spoolWeight = spoolData["weight"]
 
 				profileData = selectedSpool[0]["spool"]["profile"]
@@ -91,6 +116,7 @@ class PrintJobHistoryPlugin(octoprint.plugin.SettingsPlugin,
 
 				filemanentEntity.spoolName = spoolName
 				filemanentEntity.spoolCost = spoolCost
+				filemanentEntity.spoolCostUnit = spoolCostUnit
 				filemanentEntity.spoolWeight = spoolWeight
 
 				filemanentEntity.profileVendor = vendor
@@ -101,10 +127,14 @@ class PrintJobHistoryPlugin(octoprint.plugin.SettingsPlugin,
 		printJob.filamentEntity = filemanentEntity
 		pass
 
-	def _updatePrintJobEntityWithLayerInfos(self, payload):
+	def _updatePrintJobEntityWithLayerHeightInfos(self, payload):
 		totalLayers = payload["totalLayer"]
 		currentLayer = payload["currentLayer"]
 		self._currentPrintJobEntity.printedLayers = currentLayer + "/" + totalLayers
+
+		totalHeightWithExtrusion = payload["totalHeightWithExtrusion"]
+		currentHeight = payload["currentHeight"]
+		self._currentPrintJobEntity.printedHeight = currentHeight + "/" + totalHeightWithExtrusion
 
 	def _createPrintJobEntity(self, payload):
 		self._currentPrintJobEntity = PrintJobEntity()
@@ -121,12 +151,26 @@ class PrintJobHistoryPlugin(octoprint.plugin.SettingsPlugin,
 
 			preHeatTemperature = self._preHeatPluginImplementation.read_temperatures_from_file(path_on_disk)
 			nozzel = preHeatTemperature["tool0"]
-			bed = preHeatTemperature["bed"]
-			self._currentPrintJobEntity.temperatureNozzel = nozzel
-			self._currentPrintJobEntity.temperatureBed = bed
+			tempEntity = TemperatureEntity()
+			tempEntity.sensorName = "tool0"
+			tempEntity.sensorValue = nozzel
+			self._currentPrintJobEntity.temperatureEntities.append(tempEntity)
+
+			if "bed" in preHeatTemperature:
+				bed = preHeatTemperature["bed"]
+				tempEntity = TemperatureEntity()
+				tempEntity.sensorName = "bed"
+				tempEntity.sensorValue = bed
+				self._currentPrintJobEntity.temperatureEntities.append(tempEntity)
+
+			#self._currentPrintJobEntity.temperatureNozzel = nozzel
+			#self._currentPrintJobEntity.temperatureBed = bed
 			pass
 
 	def _printJobFinished(self, printStatus, payload):
+		# HACK after canceled a failed event is send, so if currentJob is already stored -> do nothing
+		if self._currentPrintJobEntity.databaseId != None:
+			return
 
 		self._currentPrintJobEntity.printEndDateTime = datetime.datetime.now()
 		self._currentPrintJobEntity.printStatusResult = printStatus
@@ -138,10 +182,16 @@ class PrintJobHistoryPlugin(octoprint.plugin.SettingsPlugin,
 		# store everything in the database
 		self._databaseManager.insertNewPrintJob(self._currentPrintJobEntity)
 
+		# inform client for a reload
+		self._sendDataToClient(dict(action="printFinished"
+									))
+
+
+
 	######################################################################################### Hooks and public functions
 
 	def on_after_startup(self):
-		value = self._settings.global_get(["webcam", "snapshot"])
+
 		plugin = self._plugin_manager.plugins["preheat"]
 		if plugin != None and plugin.enabled == True:
 			self._preHeatPluginImplementation = plugin.implementation
@@ -153,16 +203,16 @@ class PrintJobHistoryPlugin(octoprint.plugin.SettingsPlugin,
 			self._displayLayerProgressPluginImplementation = plugin.implementation
 
 	def on_event(self, event, payload):
-
 		if Events.CLIENT_OPENED == event:
 			# Check if all needed Plugins are available, if not modale dilog to User
-			self._checkForMissingPluginInfos()
+			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_PLUGIN_DEPENDENCY_CHECK]):
+				self._checkForMissingPluginInfos()
 
 		elif Events.PRINT_STARTED == event:
 			self._createPrintJobEntity(payload)
 
 		elif "DisplayLayerProgress_layerChanged" == event:
-			self._updatePrintJobEntityWithLayerInfos(payload)
+			self._updatePrintJobEntityWithLayerHeightInfos(payload)
 
 
 		elif Events.PRINT_DONE == event:
@@ -187,9 +237,16 @@ class PrintJobHistoryPlugin(octoprint.plugin.SettingsPlugin,
 
 	##~~ SettingsPlugin mixin
 	def get_settings_defaults(self):
-		return dict(
-			# put your plugin's default settings here
-		)
+
+		settings = dict()
+		settings[SettingsKeys.SETTINGS_KEY_PLUGIN_DEPENDENCY_CHECK] = False
+		return settings
+#		return dict(
+#			# put your plugin's default settings here
+#			pluginCheckActivated = True
+#		)
+
+
 	##~~ TemplatePlugin mixin
 	def get_template_configs(self):
 		return [
@@ -201,8 +258,13 @@ class PrintJobHistoryPlugin(octoprint.plugin.SettingsPlugin,
 		# Define your plugin's asset files to automatically include in the
 		# core UI here.
 		return dict(
-			js=["js/PrintJobHistory.js"],
-			css=["css/PrintJobHistory.css"],
+			js=["js/PrintJobHistory.js",
+				"js/PrintJobHistory-APIClient.js",
+				"js/PrintJobHistory-PluginCheckDialog.js",
+				"js/PrintJobHistory-EditJobDialog.js",
+				"js/quill.min.js"],
+			css=["css/PrintJobHistory.css",
+				 "css/quill.snow.css"],
 			less=["less/PrintJobHistory.less"]
 		)
 

@@ -1,5 +1,10 @@
-/* TODO: Have your plugin's CSS files generated to here. */
-#printJobHistory_tab .additionalInfo {
+
+
+#tab_printJobHistory .additionalInfo {
     font-size: 85%;
     color: #999;
+}
+
+.quill-viewer > p {
+    margin-bottom: 0px;
 }

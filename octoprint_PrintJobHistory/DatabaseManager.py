@@ -5,6 +5,7 @@ import sqlite3
 
 from .entities.PrintJobEntity import PrintJobEntity
 from .entities.FilamentEntity import FilamentEntity
+from .entities.TemperatureEntity import TemperatureEntity
 from .entities.PluginMetaDataEntity import PluginMetaDataEntity
 
 from datetime import datetime
@@ -20,11 +21,12 @@ class DatabaseManager(object):
 	################################################################################################## private functions
 
 	def _createCurrentTables(self, cursor, dropTables):
-
 		if dropTables == True:
 			sql = PluginMetaDataEntity.dropTableSQL()
 			cursor.executescript(sql)
 			sql = FilamentEntity.dropTableSQL()
+			cursor.executescript(sql)
+			sql = TemperatureEntity.dropTableSQL()
 			cursor.executescript(sql)
 			sql = PrintJobEntity.dropTableSQL()
 			cursor.executescript(sql)
@@ -39,7 +41,10 @@ class DatabaseManager(object):
 		sql = FilamentEntity.createTableSQLScript()
 		cursor.executescript(sql)
 
-	# TODO ...all other tables as well
+		sql = TemperatureEntity.createTableSQLScript()
+		cursor.executescript(sql)
+
+		# TODO ...all other tables as well
 
 	def _createOrUpgradeSchemeIfNecessary(self, cursor):
 		databaseSchemeVersion = PluginMetaDataEntity.getDatabaseSchemeVersion(cursor)
@@ -50,6 +55,11 @@ class DatabaseManager(object):
 			#	sql
 			pass
 
+	def _createConnection(self):
+		return sqlite3.connect(self._databasePath,
+								detect_types = sqlite3.PARSE_DECLTYPES |
+					   			sqlite3.PARSE_COLNAMES)
+
 	################################################################################################### public functions
 
 	# datapasePath '/Users/o0632/Library/Application Support/OctoPrint/data/PrintJobHistory/prinJobHistory.db'
@@ -57,47 +67,76 @@ class DatabaseManager(object):
 		self._databasePath = databasePath
 
 		# TODO ExceptionHandling
-		connnection = sqlite3.connect(databasePath)
-		cursor = connnection.cursor()
+		connection = self._createConnection()
+		cursor = connection.cursor()
 
 		# check, if we need an scheme upgrade
 		self._createOrUpgradeSchemeIfNecessary(cursor)
 
-		datetime_str = '09/19/18 13:55:26'
-		datetime_object = datetime.strptime(datetime_str, '%m/%d/%y %H:%M:%S')
-
-		p = PrintJobEntity()
-		p.userName = "Olaf"
-		p.fileName = "3DBenchy.gcode"
-		p.filePathName = "/path/3DBenchy.gcode"
-		p.fileSize = 123
-		p.printStartDateTime = datetime_object
-		p.printEndDateTime = datetime_object
-		p.printStatusResult = "fail"
-		p.printedLayers = "13/1234"
-
-		# p.insertOrUpdate(cursor)
-		# newP = p.load(cursor, 2)
-		allP = p.loadAll(cursor)
-
 		cursor.close()
-		connnection.commit()
-		connnection.close()
+		connection.commit()
+		connection.close()
 
 	def insertNewPrintJob(self, printJobEntity):
-		connnection = sqlite3.connect(self._databasePath)
-		cursor = connnection.cursor()
+		connection = self._createConnection()
+		cursor = connection.cursor()
 
 		printJobEntity.insertOrUpdate(cursor)
 
 		# store assoziations
-		printJobEntity.filamentEntity.printjob_id = printJobEntity.databaseId
-		printJobEntity.filamentEntity.insertOrUpdate(cursor)
+		if printJobEntity.filamentEntity != None:
+			printJobEntity.filamentEntity.printjob_id = printJobEntity.databaseId
+			# simple, delete old one and insert new filament entity
+			FilamentEntity.deleteByPrintJob(cursor, printJobEntity.databaseId)
+			printJobEntity.filamentEntity.insertOrUpdate(cursor)
+
+		if printJobEntity.temperatureEntities != None and len(printJobEntity.temperatureEntities) != 0:
+			for temp in printJobEntity.temperatureEntities:
+				temp.printjob_id = printJobEntity.databaseId
+				temp.insertOrUpdate(cursor)
 
 		cursor.close()
-		connnection.commit()
-		connnection.close()
+		connection.commit()
+		connection.close()
 
+
+
+	def loadAllPrintJobs(self):
+		connection = self._createConnection()
+		cursor = connection.cursor()
+
+		allPrintJobs = PrintJobEntity.loadAll(cursor)
+
+		cursor.close()
+		connection.commit()
+		connection.close()
+
+		return allPrintJobs
+
+	def loadPrintJob(self, databaseId):
+		connection = self._createConnection()
+		cursor = connection.cursor()
+
+		printJobEntity = PrintJobEntity.load(cursor, databaseId)
+
+		cursor.close()
+		connection.commit()
+		connection.close()
+
+		return printJobEntity
+
+	def deletePrintJob(self, databaseId):
+		connection = self._createConnection()
+		cursor = connection.cursor()
+
+		PrintJobEntity.delete(cursor, databaseId)
+		allPrintJobs = PrintJobEntity.loadAll(cursor)
+
+		cursor.close()
+		connection.commit()
+		connection.close()
+
+		return allPrintJobs
 
 #data = DatabaseManager()
 #data.initDatabase("/Users/o0632/Library/Application Support/OctoPrint/data/PrintJobHistory/printJobHistory.db")

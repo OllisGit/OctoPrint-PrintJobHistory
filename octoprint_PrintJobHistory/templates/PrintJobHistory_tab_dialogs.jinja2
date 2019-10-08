@@ -1,0 +1,180 @@
+<!-- Modal-Dialogs -->
+<span id="modal-dialogs-printJobHistory" style="display:none" >
+    <!-- PluginDependencyCehck-Dialog -->
+    <div id="dialog_printJobHistory_missingPlugins" class="modal hide fade">
+        <div class="modal-header">
+            <h3 class="modal-title">Missing plugins</h3>
+        </div>
+        <div class="modal-body">
+            To get the real power of the <b>PrintJobHistory-Plugin</b> you need the following plugins installed/enabled:
+
+            <div><br></div>
+            <div id="missingPluginMessage">&nbsp;</div>
+
+        </div>
+        <div class="modal-footer">
+
+        <div class="control-group">
+            <div class="controls">
+                <span class="" style="text-align:left">
+                    <input data-bind="checked: pluginCheckDialog.deactivatePluginCheck" type="checkbox" style="margin-bottom: 10px;"> Disable Plugin-Dependency check
+                </span>
+                <button class="btn btn-confirm" style="text-align:right">Close</button></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PluginDependencyCehck-Dialog -->
+    <div id="dialog_printJobHistory_editPrintJobItem" class="modal hide fade large" >
+        <div class="modal-header">
+            <h4 class="modal-title" data-bind="text: printJobForEditing().fileName"></h4>
+            <div class="row">
+                <div class="span1"><i class="fa fa-exclamation-circle" style="font-size:18px;color:red"></i></div>
+                <div class="span3"><b>Start</b> <span data-bind="text: printJobForEditing().printStartDateTimeFormatted" /></div>
+                <div class="span3"><b>Height</b> <span data-bind="text: printJobForEditing().printedHeight" /></div>
+                <div class="span2"></div>
+                <div class="span3"></div>
+            </div>
+            <div class="row">
+                <div class="span1"></div>
+                <div class="span3"><b>End</b> <span data-bind="text: printJobForEditing().printEndDateTimeFormatted" /></div>
+                <div class="span3"><b>Layer</b> <span data-bind="text: printJobForEditing().printedLayers" /></div>
+                <div class="span2"></div>
+                <div class="span3"></div>
+            </div>
+            <div class="row">
+                <div class="span1"></div>
+                <div class="span3"><b>Duration</b> <span data-bind="text: printJobForEditing().durationFormatted" /></div>
+                <div class="span3"></div>
+                <div class="span2"></div>
+                <div class="span3"></div>
+            </div>
+        </div>
+        <div class="modal-body" >
+            <form id="form_printJobHistory_editPrintJobItem" class="form-horizontal" >
+                <div class="row">
+                    <div class="row">
+                        <div class="span6" style="">
+                                <div class="control-group">
+                                    <label class="control-label">Spool</label>
+                                    <div class="controls">
+                                        <input type="text" class="input-large" data-bind="value: printJobForEditing().spoolName" />
+                                    </div>
+                                </div>
+                                <div class="control-group">
+                                    <label class="control-label">Material</label>
+                                    <div class="controls">
+                                        <input type="text" class="input-large" data-bind="value: printJobForEditing().material" />
+                                    </div>
+                                </div>
+                                <div class="control-group">
+                                    <label class="control-label">Used length</label>
+                                    <div class="controls">
+                                        <div class="input-append">
+                                            <input type="text" class="input-small text-right" data-bind="value: printJobForEditing().usedLength"/>
+                                            <span class="add-on">m</span>
+                                        </div>
+                                    </div>
+                                    <label class="control-label">Calculated length</label>
+                                    <div class="controls">
+                                        <div class="input-append">
+                                            <input type="text" class="input-small text-right" data-bind="value: printJobForEditing().calculatedLength"/>
+                                            <span class="add-on">m</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="control-group">
+                                    <label class="control-label">Weight</label>
+                                    <div class="controls">
+                                        <div class="input-append">
+                                            <input type="text" class="input-small text-right" data-bind="value: printJobForEditing().spoolWeight" />
+                                            <span class="add-on">g</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="control-group">
+                                    <label class="control-label">Consumed Cost</label>
+                                    <div class="controls">
+                                        <div class="input-append">
+                                            <input type="text" class="input-small text-right" data-bind="value: printJobForEditing().spoolCost"/>
+                                            <span class="add-on" data-bind="text: printJobForEditing().spoolCostUnit"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="" style="margin-left:40px">
+<!--                                    <label class="control-label">Notes:</label>-->
+                                    <div class="">
+                                        <div class="note-quill-editor-container">
+                                            <div id="note-quill-editor"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                        </div>
+
+                        <div class="span5">
+                            <div class="">
+
+                                <div class="row">
+                                    <div class="span6 text-right">
+                                        <button type="button" class="btn btn-danger"><i class="fa fa-trash"></i>Delete</button>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="span6 text-center">
+<!--                                        <img  id="printJobHistory-snapshotImage" class="img-polaroid" src="https://picsum.photos/id/20/400/400" alt=""/>-->
+                                        <!-- <img   src="http://localhost:5000/plugin/PrintJobHistory/static/images/no-image-icon.png" alt=""/> -->
+                                        <!-- <img src="http://192.168.178.44:8080/video" alt=""/> -->
+<!--                                        <img data-bind="attr: {src: $root.snapshotUrl( snapshotFilename )}" >-->
+
+<!--                                        <img id="printJobHistory-snapshotImage" class="img-polaroid" data-bind="attr: {src: printJobEditDialog.printJobImageFilenameUrl}" >-->
+                                        <img id="printJobHistory-snapshotImage" class="img-polaroid" src="#" />
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="span6 text-center">
+                                        <button id="printJobHistory-captureButton" data-bind="click: printJobEditDialog.captureImage" class="btn btn-success">
+                                            <i class="fa fa-spinner fa-spin" id="printJobHistory-captureInProgress" style="display: none;"></i>
+                                            <i class="fa fa-camera"></i>
+                                            <span id="printJobHistory-captureButtonText">Re-Capture</span></button>
+                                        <button id="printJobHistory-cancelCaptureButton" style="display:none" data-bind="click: printJobEditDialog.cancelCaptureImage" class="btn">Cancel</button>
+                                    </div>
+                                </div>
+
+
+                                <div class="row ">
+                                    <div class="span6 text-center">
+                                                <span class="input-prepend">
+                                                    <span class="btn fileinput-button">
+                                                        <span>Browse Image:</span>
+                                                        <input id="printJobHistory-snapshotUploadButton" type="file" name="file" accept=".jpg">
+<!--                                                        <input id="printJobHistory-snapshotUploadButton" type="file" name="file" data-url="selectedUploaadSnapshotlUrl" accept=".zip">-->
+                                                    </span>
+                                                    <span class="add-on" data-bind="text: printJobEditDialog.snapshotUploadName"></span><button data-bind="enable: !printJobEditDialog.snapshotUploadInProgress(), click: printJobEditDialog.performSnapshotUpload" class="btn btn-primary"><i class="fa fa-spinner fa-spin" data-bind="visible: printJobEditDialog.snapshotUploadInProgress" style="display: none;"></i>Upload</button>
+                                                </span>
+                                    </div>
+                                </div>
+                                <div class="row ">
+                                    <div class="span6 text-center">
+                                        <span id="printJobHistory-editdialog-success-message" class="hide text-success" >Image is saved</span>
+                                        <span id="printJobHistory-editdialog-error-message" class="hide text-error">Image is saved</span>
+                                    </div>
+                                </div>
+
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+
+            <div class="control-group">
+                <div class="controls">
+                    <button class="btn " data-dismiss="modal" style="text-align:right">Abort</button>
+                    <button class="btn btn-primary" data-bind="click: printJobEditDialog.savePrintJobItem" style="text-align:right">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</span>

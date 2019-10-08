@@ -12,9 +12,11 @@ COLUMN_MATERIAL = "material"
 
 COLUMN_SPOOL_NAME = "spoolName"
 COLUMN_SPOOL_COST = "spoolCost"
+COLUMN_SPOOL_COST_UNIT = "spoolCostUnit"
 COLUMN_SPOOL_WEIGHT = "spoolWeight"
 
 COLUMN_USED_LENGTH = "usedLength"
+COLUMN_CALCULATED_LENGTH = "calculatedLength"
 
 class FilamentEntity(object):
 
@@ -28,9 +30,31 @@ class FilamentEntity(object):
 
 		self.spoolName = None
 		self.spoolCost = None
+		self.spoolCostUnit = None
 		self.spoolWeight = None
 
 		self.usedLength = None
+		self.calculatedLength = None
+	########################################################################################### private static functions
+
+	@staticmethod
+	def _createItemFromRow(row):
+		result = None
+		if row != None:
+			result = FilamentEntity()
+			result.databaseId = row[0]
+			result.printjob_id = row[1]
+			result.profileVendor = row[2]
+			result.diameter = row[3]
+			result.density = row[4]
+			result.material = row[5]
+			result.spoolName = row[6]
+			result.spoolCost = row[7]
+			result.spoolCostUnit = row[8]
+			result.spoolWeight = row[9]
+			result.usedLength = row[10]
+			result.calculatedLength = row[11]
+		return result
 
 	################################################################################################### static functions
 
@@ -50,10 +74,26 @@ class FilamentEntity(object):
 			   + COLUMN_MATERIAL + " TEXT, " \
 			   + COLUMN_SPOOL_NAME + " TEXT, " \
 			   + COLUMN_SPOOL_COST + " TEXT, " \
+			   + COLUMN_SPOOL_COST_UNIT + " TEXT, " \
 			   + COLUMN_SPOOL_WEIGHT + " TEXT, " \
 			   + COLUMN_USED_LENGTH + " REAL, " \
+			   + COLUMN_CALCULATED_LENGTH + " REAL, " \
 			   + "FOREIGN KEY(" + COLUMN_PRINTJOB_ID + ") REFERENCES printJobEntity(" + COLUMN_DATABASE_ID + ") " \
 			   + "); "
+
+	@staticmethod
+	def loadByPrintJob(cursor, databaseId):
+		cursor.execute("SELECT * FROM " + TABLE_NAME + " where " + COLUMN_PRINTJOB_ID + " = ?", (str(databaseId)))
+		row = cursor.fetchone()
+		result = FilamentEntity._createItemFromRow(row)
+
+		return result	\
+
+	@staticmethod
+	def deleteByPrintJob(cursor, databaseId):
+		cursor.execute("DELETE FROM " + TABLE_NAME + " where " + COLUMN_PRINTJOB_ID + " = ?", (str(databaseId)))
+		row = cursor.fetchone()
+		pass
 
 	################################################################################################## private functions
 	def _createInsertSQL(self):
@@ -65,10 +105,12 @@ class FilamentEntity(object):
 			  + COLUMN_MATERIAL + ", " \
 			  + COLUMN_SPOOL_NAME + ", " \
 			  + COLUMN_SPOOL_COST + ", " \
+			  + COLUMN_SPOOL_COST_UNIT + ", " \
 			  + COLUMN_SPOOL_WEIGHT + ", " \
-			  + COLUMN_USED_LENGTH + " " \
+			  + COLUMN_USED_LENGTH + ", " \
+			  + COLUMN_CALCULATED_LENGTH + " " \
 			 ") " \
-			  "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+			  "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 		return sql
 
 	# TODO
@@ -94,8 +136,10 @@ class FilamentEntity(object):
 							 self.material,
 							 self.spoolName,
 							 self.spoolCost,
+							 self.spoolCostUnit,
 							 self.spoolWeight,
 							 self.usedLength,
+							 self.calculatedLength
 							 ))
 
 		if self.databaseId == None:
