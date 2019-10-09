@@ -29,7 +29,9 @@
         <div class="modal-header">
             <h4 class="modal-title" data-bind="text: printJobForEditing().fileName"></h4>
             <div class="row">
-                <div class="span1"><i class="fa fa-exclamation-circle" style="font-size:18px;color:red"></i></div>
+<!--                <div class="span1"><i class="fa fa-exclamation-circle" style="font-size:18px;color:red"></i></div>-->
+                <div class="span1"><span data-bind="css: {'icon-ok-sign' : printJobForEditing().printStatusResult() == 'success', 'icon-exclamation-sign' : printJobForEditing().printStatusResult() != 'success'}, style: { color: printJobForEditing().printStatusResult() == 'success' ? 'green' : 'red' }"></span></div>
+
                 <div class="span3"><b>Start</b> <span data-bind="text: printJobForEditing().printStartDateTimeFormatted" /></div>
                 <div class="span3"><b>Height</b> <span data-bind="text: printJobForEditing().printedHeight" /></div>
                 <div class="span2"></div>
@@ -60,8 +62,6 @@
                                     <div class="controls">
                                         <input type="text" class="input-large" data-bind="value: printJobForEditing().spoolName" />
                                     </div>
-                                </div>
-                                <div class="control-group">
                                     <label class="control-label">Material</label>
                                     <div class="controls">
                                         <input type="text" class="input-large" data-bind="value: printJobForEditing().material" />
@@ -83,15 +83,16 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="control-group">
-                                    <label class="control-label">Weight</label>
-                                    <div class="controls">
-                                        <div class="input-append">
-                                            <input type="text" class="input-small text-right" data-bind="value: printJobForEditing().spoolWeight" />
-                                            <span class="add-on">g</span>
-                                        </div>
-                                    </div>
-                                </div>
+<!--                            TODO welches gewicht..verbrauchtes, spoole ?-->
+<!--                                <div class="control-group">-->
+<!--                                    <label class="control-label">Weight</label>-->
+<!--                                    <div class="controls">-->
+<!--                                        <div class="input-append">-->
+<!--                                            <input type="text" class="input-small text-right" data-bind="value: printJobForEditing().spoolWeight" />-->
+<!--                                            <span class="add-on">g</span>-->
+<!--                                        </div>-->
+<!--                                    </div>-->
+<!--                                </div>-->
                                 <div class="control-group">
                                     <label class="control-label">Consumed Cost</label>
                                     <div class="controls">

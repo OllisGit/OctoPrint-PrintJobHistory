@@ -211,8 +211,6 @@ $(function() {
 
 
         ////////////////////////////////////////////////////// Knockout model-binding/observer
-        self.isPrinting = ko.observable(undefined); // TODO assign printing state
-
 
 
         ///////////////////////////////////////////////////// START: OctoPrint Hooks
@@ -336,8 +334,8 @@ $(function() {
             return self.apiClient.getSnapshotUrl(printJobItem.snapshotFilename());
         }
 
-        self.removePrintJobAction = function(rowIndex) {
-            self.apiClient.callRemovePrintJob(id, self.handleAllPrintJobDataResponse)
+        self.removePrintJobAction = function(printJobItem) {
+            self.apiClient.callRemovePrintJob(printJobItem.databaseId(), self.handleAllPrintJobDataResponse)
         };
 
 

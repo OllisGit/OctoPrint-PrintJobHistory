@@ -211,9 +211,8 @@ class PrintJobHistoryPlugin(
 		elif Events.PRINT_STARTED == event:
 			self._createPrintJobEntity(payload)
 
-		elif "DisplayLayerProgress_layerChanged" == event:
+		elif "DisplayLayerProgress_layerChanged" == event or event == "DisplayLayerProgress_heightChanged":
 			self._updatePrintJobEntityWithLayerHeightInfos(payload)
-
 
 		elif Events.PRINT_DONE == event:
 			self._printJobFinished("success", payload)

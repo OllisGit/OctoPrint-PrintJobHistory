@@ -54,7 +54,7 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
     this.callRemovePrintJob = function (databaseId, responseHandler){
         $.ajax({
             //url: API_BASEURL + "plugin/"+PLUGIN_ID+"/loadPrintJobHistory",
-            url: this.baseUrl + "plugin/" + this.pluginId + "/removePrintJob/" + databaseId(),
+            url: this.baseUrl + "plugin/" + this.pluginId + "/removePrintJob/" + databaseId,
             type: "DELETE"
         }).done(function( data ){
             responseHandler(data)

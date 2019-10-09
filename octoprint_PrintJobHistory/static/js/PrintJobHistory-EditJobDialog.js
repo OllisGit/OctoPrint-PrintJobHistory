@@ -1,7 +1,7 @@
 
 function PrintJobHistoryEditDialog(){
 
-    self = this;
+    var self = this;
 
     this.apiClient = null;
     this.streamUrl = null;
@@ -101,6 +101,7 @@ function PrintJobHistoryEditDialog(){
 
     /////////////////////////////////////////////////////////////////////////////////////////////////// SHOW DIALOG
     this.showDialog = function(printJobItemForEdit, saveDoneHandler){
+
         self.printJobItemForEdit = printJobItemForEdit;
         self.saveDoneHandler = saveDoneHandler;
 

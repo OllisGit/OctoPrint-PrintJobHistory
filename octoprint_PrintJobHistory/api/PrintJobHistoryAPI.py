@@ -37,6 +37,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 			if job.filamentEntity != None:
 				filamentDict = job.filamentEntity.__dict__
 				del jobAsDict['filamentEntity']
+				filamentDict["usedLength"] = "{:.02f}".format(filamentDict["usedLength"])
 				filamentDict["calculatedLength"] = "{:.02f}".format(filamentDict["calculatedLength"])
 				jobAsDict['filamentEntity'] = filamentDict
 

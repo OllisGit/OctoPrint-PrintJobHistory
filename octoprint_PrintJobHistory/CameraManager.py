@@ -35,7 +35,8 @@ class CameraManager(object):
 		if os.path.isfile(imageLocation):
 			return imageLocation
 
-		defaultImageSnapshotName = self._pluginBaseFolder + "/static/images/no-image-icon.png"
+		defaultImageSnapshotName = self._pluginBaseFolder + "/static/images/no-photo-icon.jpg"
+		# defaultImageSnapshotName = self._pluginBaseFolder + "/static/images/no-image-icon.png"
 		return defaultImageSnapshotName
 
 	def deleteSnapshot(self, snapshotFilename):
