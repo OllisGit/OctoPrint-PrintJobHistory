@@ -51,6 +51,7 @@ $(function() {
 		this.spoolWeight = ko.observable();
 		this.usedLength = ko.observable();
 		this.calculatedLength = ko.observable();
+		this.usedWeight = ko.observable();
 
 		this.snapshotFilename = ko.observable();
 /*
@@ -112,8 +113,8 @@ $(function() {
 //            this.usedLength( formatFilamentLength(updateData.filamentEntity.usedLength) );
 //            this.calculatedLength( formatFilamentLength(updateData.filamentEntity.calculatedLength) );
             this.usedLength( updateData.filamentEntity.usedLength );
-
             this.calculatedLength( updateData.filamentEntity.calculatedLength );
+            this.usedWeight( updateData.filamentEntity.usedWeight );
         } else {
             this.profileVendor(updateData.profileVendor);
             this.diameter(updateData.diameter);
@@ -127,6 +128,7 @@ $(function() {
 //            this.calculatedLength( formatFilamentLength(updateData.filamentEntity.calculatedLength) );
             this.usedLength( updateData.usedLength );
             this.calculatedLength( updateData.calculatedLength );
+            this.usedWeight( updateData.usedWeight );
         }
 
 		this.snapshotFilename(updateData.snapshotFilename);
@@ -159,6 +161,7 @@ $(function() {
                 "material" : "PLA",
                 "usedLength" : "1m22mm",
                 "calculatedLength" : "12,5g",
+                "usedWeight" : "12,5g",
                 "noteText" : "Good output of Legolas",
                 "noteDelta" : "Good output of Legolas",
                 "noteHtml" : "<h1>Good output of Legolas</h1>",
@@ -184,6 +187,7 @@ $(function() {
                 "material" : "ABS",
                 "usedLength" : "2m22mm",
                 "calculatedLength" : "312,6g",
+                "usedWeight" : "312,6g",
 
                 "noteText" : "Bad quality",
                 "noteDelta" : "Bad quality",
@@ -220,8 +224,6 @@ $(function() {
 
             self.printJobEditDialog.init(self.apiClient, self.settingsViewModel.settings.webcam.streamUrl());
             self.pluginCheckDialog.init(self.apiClient, self.pluginSettings);
-
-//            webcam_snapshotTimeout
 
         }
 

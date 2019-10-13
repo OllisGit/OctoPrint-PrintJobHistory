@@ -18,6 +18,9 @@ COLUMN_SPOOL_WEIGHT = "spoolWeight"
 COLUMN_USED_LENGTH = "usedLength"
 COLUMN_CALCULATED_LENGTH = "calculatedLength"
 
+COLUMN_USED_WEIGHT = "usedWeight"
+
+
 class FilamentEntity(object):
 
 	def __init__(self):
@@ -35,6 +38,8 @@ class FilamentEntity(object):
 
 		self.usedLength = None
 		self.calculatedLength = None
+
+		self.usedWeight = None
 	########################################################################################### private static functions
 
 	@staticmethod
@@ -54,6 +59,7 @@ class FilamentEntity(object):
 			result.spoolWeight = row[9]
 			result.usedLength = row[10]
 			result.calculatedLength = row[11]
+			result.usedWeight = row[12]
 		return result
 
 	################################################################################################### static functions
@@ -78,6 +84,7 @@ class FilamentEntity(object):
 			   + COLUMN_SPOOL_WEIGHT + " TEXT, " \
 			   + COLUMN_USED_LENGTH + " REAL, " \
 			   + COLUMN_CALCULATED_LENGTH + " REAL, " \
+			   + COLUMN_USED_WEIGHT + " REAL, " \
 			   + "FOREIGN KEY(" + COLUMN_PRINTJOB_ID + ") REFERENCES printJobEntity(" + COLUMN_DATABASE_ID + ") " \
 			   + "); "
 
@@ -108,9 +115,10 @@ class FilamentEntity(object):
 			  + COLUMN_SPOOL_COST_UNIT + ", " \
 			  + COLUMN_SPOOL_WEIGHT + ", " \
 			  + COLUMN_USED_LENGTH + ", " \
-			  + COLUMN_CALCULATED_LENGTH + " " \
+			  + COLUMN_CALCULATED_LENGTH + ", " \
+			  + COLUMN_USED_WEIGHT + " " \
 			 ") " \
-			  "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
+			  "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)"
 		return sql
 
 	# TODO
@@ -139,7 +147,8 @@ class FilamentEntity(object):
 							 self.spoolCostUnit,
 							 self.spoolWeight,
 							 self.usedLength,
-							 self.calculatedLength
+							 self.calculatedLength,
+							 self.usedWeight
 							 ))
 
 		if self.databaseId == None:

@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 
 import octoprint.plugin
+import tornado
 from flask import jsonify, request, make_response, Response, send_file
 import flask
 
@@ -9,6 +10,8 @@ import json
 import csv
 import StringIO
 import os
+
+import cv2
 
 from datetime import datetime
 
@@ -20,8 +23,70 @@ from octoprint_PrintJobHistory.entities.TemperatureEntity import TemperatureEnti
 from octoprint_PrintJobHistory.entities.PrintJobEntity import PrintJobEntity
 
 
+class HtmlPageHandler(tornado.web.RequestHandler):
+	@tornado.web.asynchronous
+	def get(self, file_name="index.html"):
+		pass
+
+import time
+
+class StreamHandler(tornado.web.RequestHandler):
+    @tornado.web.asynchronous
+    @tornado.gen.coroutine
+    def get(self):
+        ioloop = tornado.ioloop.IOLoop.current()
+
+        self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, pre-check=0, post-check=0, max-age=0')
+        self.set_header( 'Pragma', 'no-cache')
+        self.set_header( 'Content-Type', 'multipart/x-mixed-replace;boundary=--jpgboundary')
+        self.set_header('Connection', 'close')
+
+        self.served_image_timestamp = time.time()
+        my_boundary = "--jpgboundary"
+        while True:
+            # Generating images for mjpeg stream and wraps them into http resp
+            # if self.get_argument('fd') == "true":
+            #     img = cam.get_frame(True)
+            # else:
+            #     img = cam.get_frame(False)
+
+            self.cap = cv2.VideoCapture("http://192.168.178.44:8080/video")
+            # self.cap = cv2.VideoCapture("http://192.168.178.44:8080/shot.jpg")
+            ret, frame = self.cap.read()
+            img = frame
+
+            ret, jpeg = cv2.imencode('.jpg', frame)
+            data = jpeg.tobytes()
+            # Record video
+            # if self.is_record:
+            #     if self.out == None:
+            #         fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+            #         self.out = cv2.VideoWriter('./static/video.avi',fourcc, 20.0, (640,480))
+
+            #     ret, frame = self.cap.read()
+            #     if ret:
+            #         self.out.write(frame)
+            # else:
+            #     if self.out != None:
+            #         self.out.release()
+            #         self.out = None
+
+            interval = 0.1
+            if self.served_image_timestamp + interval < time.time():
+                self.write(my_boundary)
+                self.write("Content-type: image/jpeg\r\n")
+                self.write("Content-length: %s\r\n\r\n" % len(data))
+                self.write(data)
+                self.served_image_timestamp = time.time()
+                yield tornado.gen.Task(self.flush)
+            else:
+                yield tornado.gen.Task(ioloop.add_timeout, ioloop.time() + interval)
+
 class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
+	# def get(self):
+	# 	self.write("Hello, world")
+	#
 	def _convertPrintJobHistoryEntitiesToDict(self, allJobsEntities):
 		result = []
 		for job in allJobsEntities:
@@ -38,6 +103,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 				filamentDict = job.filamentEntity.__dict__
 				del jobAsDict['filamentEntity']
 				filamentDict["usedLength"] = "{:.02f}".format(filamentDict["usedLength"])
+				filamentDict["usedWeight"] = "{:.02f}".format(filamentDict["usedWeight"])
 				filamentDict["calculatedLength"] = "{:.02f}".format(filamentDict["calculatedLength"])
 				jobAsDict['filamentEntity'] = filamentDict
 
@@ -72,7 +138,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		result.append(tempValue)
 
 		filamentAsDict = jobAsDict["filamentEntity"]
-		fields = ['spoolName', 'material', 'diameter', 'usedLength', 'calculatedLength']
+		fields = ['spoolName', 'material', 'diameter', 'usedLength', 'calculatedLength', 'usedWeight']
 		for field in fields:
 			value = filamentAsDict[field]
 			result.append(value if value is not None else '-')
@@ -83,7 +149,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		result = None
 		si = StringIO.StringIO()
 
-		headers = ['User', 'Result', 'Start Date', 'End Date', 'Duration', 'File Name', 'File Path','File Size', 'Layers', 'Note', 'Temperatures', 'Spool Name', 'Material', 'Diameter', 'Used Length', 'Calculated Length']
+		headers = ['User', 'Result', 'Start Date', 'End Date', 'Duration', 'File Name', 'File Path','File Size', 'Layers', 'Note', 'Temperatures', 'Spool Name', 'Material', 'Diameter', 'Used Length', 'Calculated Length', 'Used Weight']
 
 		writer = csv.writer(si, quoting=csv.QUOTE_ALL)
 		writer.writerow(headers)
@@ -136,6 +202,97 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		return None
 
 ################################################### APIs
+
+
+
+	def get_frame(self):
+
+		self.cap = cv2.VideoCapture("http://192.168.178.44:8080/video")
+		# self.cap = cv2.VideoCapture("http://192.168.178.44:8080/shot.jpg")
+		ret, frame = self.cap.read()
+
+		if ret:
+			ret, jpeg = cv2.imencode('.jpg', frame)
+
+			# Record video
+			# if self.is_record:
+			#     if self.out == None:
+			#         fourcc = cv2.VideoWriter_fourcc(*'MJPG')
+			#         self.out = cv2.VideoWriter('./static/video.avi',fourcc, 20.0, (640,480))
+
+			#     ret, frame = self.cap.read()
+			#     if ret:
+			#         self.out.write(frame)
+			# else:
+			#     if self.out != None:
+			#         self.out.release()
+			#         self.out = None
+
+			return jpeg.tobytes()
+
+		else:
+			return None
+
+	global_frame = None
+
+
+	def video_stream(self):
+		from time import sleep
+		global video_camera
+		global global_frame
+
+		# while True:
+		yield "1"
+		sleep(4)
+		yield "2"
+		sleep(4)
+		yield "3"
+		# if video_camera == None:
+		# 	video_camera = VideoCamera()
+
+		# while True:
+		# frame = self.get_frame()
+		#
+		# if frame != None:
+		# 	global_frame = frame
+		# 	yield (b'--frame\r\n'
+		# 		   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
+		# else:
+		# 	yield (b'--frame\r\n'
+		# 		   b'Content-Type: image/jpeg\r\n\r\n' + global_frame + b'\r\n\r\n')
+
+	from flask import stream_with_context, request, Response
+
+
+
+	@octoprint.plugin.BlueprintPlugin.route('/stream')
+	def streamed_response(self):
+
+
+		# app = tornado.web.Application([
+		# 	(r'/', HtmlPageHandler),
+		# 	(r'/videofeed', StreamHandler)
+		# ])
+		# app.listen(9090)
+		# pass
+
+		def generate():
+			from time import sleep
+			yield "1"
+			sleep(4)
+			yield "2"
+			sleep(4)
+			yield "3"
+		return Response(generate(),mimetype='text/event-stream')
+
+	@octoprint.plugin.BlueprintPlugin.route("/myvideo")
+	def video_feed(self):
+		# return the response generated along with the specific media
+		# type (mime type)
+		return Response(self.video_stream(),
+						mimetype="text/plain")
+						# mimetype='multipart/x-mixed-replace; boundary=frame')
+
 
 	@octoprint.plugin.BlueprintPlugin.route("/printJobSnapshot/<string:snapshotFilename>", methods=["GET"])
 	def get_snapshot(self, snapshotFilename):

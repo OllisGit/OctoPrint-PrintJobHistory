@@ -1,6 +1,6 @@
 <!-- Modal-Dialogs -->
 <span id="modal-dialogs-printJobHistory" style="display:none" >
-    <!-- PluginDependencyCehck-Dialog -->
+    <!-- PluginDependencyCheck-Dialog -->
     <div id="dialog_printJobHistory_missingPlugins" class="modal hide fade">
         <div class="modal-header">
             <h3 class="modal-title">Missing plugins</h3>
@@ -83,16 +83,15 @@
                                         </div>
                                     </div>
                                 </div>
-<!--                            TODO welches gewicht..verbrauchtes, spoole ?-->
-<!--                                <div class="control-group">-->
-<!--                                    <label class="control-label">Weight</label>-->
-<!--                                    <div class="controls">-->
-<!--                                        <div class="input-append">-->
-<!--                                            <input type="text" class="input-small text-right" data-bind="value: printJobForEditing().spoolWeight" />-->
-<!--                                            <span class="add-on">g</span>-->
-<!--                                        </div>-->
-<!--                                    </div>-->
-<!--                                </div>-->
+                                <div class="control-group">
+                                    <label class="control-label">Used Weight</label>
+                                    <div class="controls">
+                                        <div class="input-append">
+                                            <input type="text" class="input-small text-right" data-bind="value: printJobForEditing().usedWeight" />
+                                            <span class="add-on">g</span>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="control-group">
                                     <label class="control-label">Consumed Cost</label>
                                     <div class="controls">
@@ -178,4 +177,6 @@
             </div>
         </div>
     </div>
+
+
 </span>
