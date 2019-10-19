@@ -24,32 +24,40 @@
         </div>
     </div>
 
-    <!-- PluginDependencyCehck-Dialog -->
+    <!-- PrintJobItem-Dialog -->
     <div id="dialog_printJobHistory_editPrintJobItem" class="modal hide fade large" >
         <div class="modal-header">
             <h4 class="modal-title" data-bind="text: printJobForEditing().fileName"></h4>
-            <div class="row">
-<!--                <div class="span1"><i class="fa fa-exclamation-circle" style="font-size:18px;color:red"></i></div>-->
-                <div class="span1"><span data-bind="css: {'icon-ok-sign' : printJobForEditing().printStatusResult() == 'success', 'icon-exclamation-sign' : printJobForEditing().printStatusResult() != 'success'}, style: { color: printJobForEditing().printStatusResult() == 'success' ? 'green' : 'red' }"></span></div>
 
-                <div class="span3"><b>Start</b> <span data-bind="text: printJobForEditing().printStartDateTimeFormatted" /></div>
-                <div class="span3"><b>Height</b> <span data-bind="text: printJobForEditing().printedHeight" /></div>
-                <div class="span2"></div>
-                <div class="span3"></div>
-            </div>
             <div class="row">
-                <div class="span1"></div>
-                <div class="span3"><b>End</b> <span data-bind="text: printJobForEditing().printEndDateTimeFormatted" /></div>
-                <div class="span3"><b>Layer</b> <span data-bind="text: printJobForEditing().printedLayers" /></div>
-                <div class="span2"></div>
-                <div class="span3"></div>
-            </div>
-            <div class="row">
-                <div class="span1"></div>
-                <div class="span3"><b>Duration</b> <span data-bind="text: printJobForEditing().durationFormatted" /></div>
-                <div class="span3"></div>
-                <div class="span2"></div>
-                <div class="span3"></div>
+                <div class="span1" >
+                    <div class="span1"><span class="icon-4x" data-bind="css: {'icon-ok-sign' : printJobForEditing().printStatusResult() == 'success', 'icon-exclamation-sign' : printJobForEditing().printStatusResult() != 'success'}, style: { color: printJobForEditing().printStatusResult() == 'success' ? 'green' : 'red' }"></span></div>
+                </div>
+                <div class="span6" >
+                    <div class="row">
+                        <div class="span12">
+                            <div class="row">
+                                <div class="span4"><b>Start</b> <span data-bind="text: printJobForEditing().printStartDateTimeFormatted" /></div>
+                                <div class="span3"><b>Height</b> <span data-bind="text: printJobForEditing().printedHeight" /></div>
+                                <div class="span2"></div>
+                                <div class="span3"></div>
+                            </div>
+                            <div class="row">
+
+                                <div class="span4"><b>End</b> <span data-bind="text: printJobForEditing().printEndDateTimeFormatted" /></div>
+                                <div class="span3"><b>Layer</b> <span data-bind="text: printJobForEditing().printedLayers" /></div>
+                                <div class="span2"></div>
+                                <div class="span3"></div>
+                            </div>
+                            <div class="row">
+                                <div class="span4"><b>Duration</b> <span data-bind="text: printJobForEditing().durationFormatted" /></div>
+                                <div class="span3"></div>
+                                <div class="span2"></div>
+                                <div class="span3"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
         <div class="modal-body" >
@@ -62,12 +70,14 @@
                                     <div class="controls">
                                         <input type="text" class="input-large" data-bind="value: printJobForEditing().spoolName" />
                                     </div>
+                                </div>
+                                <div class="control-group">
                                     <label class="control-label">Material</label>
                                     <div class="controls">
                                         <input type="text" class="input-large" data-bind="value: printJobForEditing().material" />
                                     </div>
                                 </div>
-                                <div class="control-group">
+                                <div class="control-group  no-bottom-gap">
                                     <label class="control-label">Used length</label>
                                     <div class="controls">
                                         <div class="input-append">
@@ -75,6 +85,8 @@
                                             <span class="add-on">m</span>
                                         </div>
                                     </div>
+                                </div>
+                                <div class="control-group ">
                                     <label class="control-label">Calculated length</label>
                                     <div class="controls">
                                         <div class="input-append">
@@ -93,10 +105,10 @@
                                     </div>
                                 </div>
                                 <div class="control-group">
-                                    <label class="control-label">Consumed Cost</label>
+                                    <label class="control-label">Filament Cost</label>
                                     <div class="controls">
                                         <div class="input-append">
-                                            <input type="text" class="input-small text-right" data-bind="value: printJobForEditing().spoolCost"/>
+                                            <input type="text" class="input-small text-right" data-bind="value: printJobForEditing().usedCost"/>
                                             <span class="add-on" data-bind="text: printJobForEditing().spoolCostUnit"></span>
                                         </div>
                                     </div>
@@ -111,13 +123,28 @@
                                 </div>
                         </div>
 
-                        <div class="span5">
+                        <div class="span6">
                             <div class="">
 
-                                <div class="row">
-                                    <div class="span6 text-right">
-                                        <button type="button" class="btn btn-danger"><i class="fa fa-trash"></i>Delete</button>
-                                    </div>
+                                <div class="row-fluid text-center">
+
+                                    <span class="span5 text-left">
+
+                                        <button id="printJobHistory-captureButton" data-bind="click: printJobEditDialog.captureImage" class="btn btn-success">
+                                            <i class="fa fa-spinner fa-spin" id="printJobHistory-captureInProgress" style="display: none;"></i>
+                                            <i class="fa fa-camera"></i>
+                                            <span id="printJobHistory-captureButtonText">Re-Capture</span></button>
+                                        <button id="printJobHistory-cancelCaptureButton" style="display:none" data-bind="click: printJobEditDialog.cancelCaptureImage" class="btn">Cancel</button>
+
+                                    </span>
+
+                                    <span class="span6 text-right">
+                                        <button type="button" class="btn btn-danger" data-bind="click: printJobEditDialog.deleteImage" ><i class="fa fa-trash"></i>Delete Image</button>
+                                    </span>
+
+
+
+
                                 </div>
                                 <div class="row">
                                     <div class="span6 text-center">
@@ -130,15 +157,15 @@
                                         <img id="printJobHistory-snapshotImage" class="img-polaroid" src="#" />
                                     </div>
                                 </div>
-                                <div class="row">
-                                    <div class="span6 text-center">
-                                        <button id="printJobHistory-captureButton" data-bind="click: printJobEditDialog.captureImage" class="btn btn-success">
-                                            <i class="fa fa-spinner fa-spin" id="printJobHistory-captureInProgress" style="display: none;"></i>
-                                            <i class="fa fa-camera"></i>
-                                            <span id="printJobHistory-captureButtonText">Re-Capture</span></button>
-                                        <button id="printJobHistory-cancelCaptureButton" style="display:none" data-bind="click: printJobEditDialog.cancelCaptureImage" class="btn">Cancel</button>
-                                    </div>
-                                </div>
+<!--                                <div class="row">-->
+<!--                                    <div class="span6 text-center">-->
+<!--                                        <button id="printJobHistory-captureButton" data-bind="click: printJobEditDialog.captureImage" class="btn btn-success">-->
+<!--                                            <i class="fa fa-spinner fa-spin" id="printJobHistory-captureInProgress" style="display: none;"></i>-->
+<!--                                            <i class="fa fa-camera"></i>-->
+<!--                                            <span id="printJobHistory-captureButtonText">Re-Capture</span></button>-->
+<!--                                        <button id="printJobHistory-cancelCaptureButton" style="display:none" data-bind="click: printJobEditDialog.cancelCaptureImage" class="btn">Cancel</button>-->
+<!--                                    </div>-->
+<!--                                </div>-->
 
 
                                 <div class="row ">

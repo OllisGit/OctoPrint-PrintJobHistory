@@ -94,6 +94,19 @@ function PrintJobHistoryEditDialog(){
                 _setSnapshotImageSource(self.apiClient.getSnapshotUrl(data.result.snapshotFilename));
 
                 self.snapshotUploadInProgress(false);
+            },
+            fail: function(e, data) {
+                debugger
+                new PNotify({
+                    title: gettext("Something went wrong"),
+                    text: gettext("Maybe the filesize was to big (limit 5MB). Please consult octoprint.log for details"),
+                    type: "error",
+                    hide: false
+                });
+
+//                self.uploadButton.unbind("click");
+                self.snapshotUploadName(undefined);
+                self.snapshotUploadInProgress(false);
             }
         });
 
@@ -140,6 +153,16 @@ function PrintJobHistoryEditDialog(){
                 self.saveDoneHandler(responseData);
             });
     }
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////// DELETE IMAGE
+    this.deleteImage  = function(){
+            self.apiClient.callDeleteSnapshotImage(self.printJobItemForEdit.snapshotFilename(), function(responseData){
+                // Update Image URL is the same, backend send the "no photo"-image
+                _setSnapshotImageSource(self.apiClient.getSnapshotUrl(responseData.snapshotFilename));
+            });
+    }
+
 
     /////////////////////////////////////////////////////////////////////////////////////////////////// CAPTURE IMAGE
     var reCaptureText = "Re-Capture";
@@ -207,6 +230,8 @@ function PrintJobHistoryEditDialog(){
         self.captureButtonText.text(reCaptureText);
         $("#printJobHistory-cancelCaptureButton").hide();
     }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////// UPLOAD IMAGE
 
     this.performSnapshotUpload = function() {
         if (self.snapshotUploadData === undefined) return;

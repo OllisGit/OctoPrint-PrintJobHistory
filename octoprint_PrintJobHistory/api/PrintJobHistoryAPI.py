@@ -104,6 +104,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 				del jobAsDict['filamentEntity']
 				filamentDict["usedLength"] = "{:.02f}".format(filamentDict["usedLength"])
 				filamentDict["usedWeight"] = "{:.02f}".format(filamentDict["usedWeight"])
+				filamentDict["usedCost"] = "{:.02f}".format(filamentDict["usedCost"])
 				filamentDict["calculatedLength"] = "{:.02f}".format(filamentDict["calculatedLength"])
 				jobAsDict['filamentEntity'] = filamentDict
 
@@ -138,7 +139,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		result.append(tempValue)
 
 		filamentAsDict = jobAsDict["filamentEntity"]
-		fields = ['spoolName', 'material', 'diameter', 'usedLength', 'calculatedLength', 'usedWeight']
+		fields = ['spoolName', 'material', 'diameter', 'usedLength', 'calculatedLength', 'usedWeight', 'usedCost']
 		for field in fields:
 			value = filamentAsDict[field]
 			result.append(value if value is not None else '-')
@@ -149,7 +150,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		result = None
 		si = StringIO.StringIO()
 
-		headers = ['User', 'Result', 'Start Date', 'End Date', 'Duration', 'File Name', 'File Path','File Size', 'Layers', 'Note', 'Temperatures', 'Spool Name', 'Material', 'Diameter', 'Used Length', 'Calculated Length', 'Used Weight']
+		headers = ['User', 'Result', 'Start Date', 'End Date', 'Duration', 'File Name', 'File Path','File Size', 'Layers', 'Note', 'Temperatures', 'Spool Name', 'Material', 'Diameter', 'Used Length', 'Calculated Length', 'Used Weight', 'Used Filament Cost']
 
 		writer = csv.writer(si, quoting=csv.QUOTE_ALL)
 		writer.writerow(headers)
@@ -188,6 +189,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		filamentEntity.spoolCostUnit = self._getValueFromDictOrNone("spoolCostUnit", jsonData)
 		filamentEntity.spoolWeight = self._getValueFromDictOrNone("spoolWeight", jsonData)
 		filamentEntity.usedLength = self._getValueFromDictOrNone("usedLength", jsonData)
+		filamentEntity.usedCost = self._getValueFromDictOrNone("usedCost", jsonData)
 		filamentEntity.calculatedLength = self._getValueFromDictOrNone("calculatedLength", jsonData)
 		filamentEntity.printjob_id = printJobEntity.databaseId
 		printJobEntity.filamentEntity = filamentEntity
@@ -202,8 +204,6 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		return None
 
 ################################################### APIs
-
-
 
 	def get_frame(self):
 
@@ -310,7 +310,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		})
 
 
-	@octoprint.plugin.BlueprintPlugin.route("/uploadSnapshot/<string:snapshotFilename>", methods=["POST"])
+	@octoprint.plugin.BlueprintPlugin.route("/upload/snapshot/<string:snapshotFilename>", methods=["POST"])
 	def post_snapshot(self, snapshotFilename):
 
 		input_name = "file"
@@ -319,9 +319,28 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		if input_upload_path in flask.request.values:
 			# file to restore was uploaded
 			sourceLocation = flask.request.values[input_upload_path]
-			targetLocation = self._cameraManager.buildSnapshotFilenameLocation(snapshotFilename)
+			targetLocation = self._cameraManager.buildSnapshotFilenameLocation(snapshotFilename, False)
 			os.rename(sourceLocation, targetLocation)
 			pass
+
+		return flask.jsonify({
+			"snapshotFilename": snapshotFilename
+		})	\
+
+	@octoprint.plugin.BlueprintPlugin.route("/deleteSnapshotImage/<string:snapshotFilename>", methods=["DELETE"])
+	def delete_snapshot(self, snapshotFilename):
+
+		self._cameraManager.deleteSnapshot(snapshotFilename)
+
+		# input_name = "file"
+		# input_upload_path = input_name + "." + self._settings.global_get(["server", "uploads", "pathSuffix"])
+		#
+		# if input_upload_path in flask.request.values:
+		# 	# file to restore was uploaded
+		# 	sourceLocation = flask.request.values[input_upload_path]
+		# 	targetLocation = self._cameraManager.buildSnapshotFilenameLocation(snapshotFilename)
+		# 	os.rename(sourceLocation, targetLocation)
+		# 	pass
 
 		return flask.jsonify({
 			"snapshotFilename": snapshotFilename

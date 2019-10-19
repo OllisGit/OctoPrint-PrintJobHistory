@@ -30,18 +30,26 @@ class CameraManager(object):
 		return dateTimeThumb
 
 
-	def buildSnapshotFilenameLocation(self, snapshotFilename):
-		imageLocation = self._snapshotStoragePath + "/" + snapshotFilename + ".jpg"
+	def buildSnapshotFilenameLocation(self, snapshotFilename, returnDefaultImage = True):
+		if str(snapshotFilename).endswith(".jpg"):
+			imageLocation = self._snapshotStoragePath + "/" + snapshotFilename
+		else:
+			imageLocation = self._snapshotStoragePath + "/" + snapshotFilename + ".jpg"
+
 		if os.path.isfile(imageLocation):
 			return imageLocation
+		if returnDefaultImage:
+			defaultImageSnapshotName = self._pluginBaseFolder + "/static/images/no-photo-icon.jpg"
+			# defaultImageSnapshotName = self._pluginBaseFolder + "/static/images/no-image-icon.png"
+			return defaultImageSnapshotName
+		return imageLocation
 
-		defaultImageSnapshotName = self._pluginBaseFolder + "/static/images/no-photo-icon.jpg"
-		# defaultImageSnapshotName = self._pluginBaseFolder + "/static/images/no-image-icon.png"
-		return defaultImageSnapshotName
 
 	def deleteSnapshot(self, snapshotFilename):
-		imageLocation= self.buildSnapshotFilenameLocation(snapshotFilename)
-		os.remove(imageLocation)
+		imageLocation= self.buildSnapshotFilenameLocation(snapshotFilename, False)
+
+		if os.path.isfile(imageLocation):
+			os.remove(imageLocation)
 
 	def takeSnapshot(self, snapshotFilename):
 		snapshotFilename = self._snapshotStoragePath + "/" +snapshotFilename+ ".jpg"

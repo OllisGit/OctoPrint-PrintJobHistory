@@ -17,7 +17,7 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
 
     this.uploadSnapshotUrl = function(snapshotFilename){
         //http://localhost:5000/plugin/PrintJobHistory/printJobSnapshot/20191003-153311
-        return "plugin/" + this.pluginId + "/uploadSnapshot/" + snapshotFilename;
+        return "plugin/" + this.pluginId + "/upload/snapshot/" + snapshotFilename;
     }
 
     // load all PrintJob-Items
@@ -76,6 +76,16 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
         $.ajax({
             url: this.baseUrl + "plugin/"+ this.pluginId +"/takeSnapshot/"+snapshotFilename,
             type: "PUT"
+        }).done(function( data ){
+            responseHandler(data)
+        });
+    }
+
+    // delete snapshotImage
+    this.callDeleteSnapshotImage =  function (snapshotFilename, responseHandler){
+        $.ajax({
+            url: this.baseUrl + "plugin/"+ this.pluginId +"/deleteSnapshotImage/"+snapshotFilename,
+            type: "DELETE"
         }).done(function( data ){
             responseHandler(data)
         });

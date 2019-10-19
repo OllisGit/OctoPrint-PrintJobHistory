@@ -59,6 +59,7 @@ class PrintJobHistoryPlugin(
 
 		self._cameraManager.initCamera(streamUrl, snapshotUrl, snapshotStorage, pluginBaseFolder)
 
+
 		self._currentPrintJobEntity = None
 
 
@@ -86,6 +87,7 @@ class PrintJobHistoryPlugin(
 									    message=missingMessage))
 
 
+	# Graps all informations for the filament attributes
 	def _createAndAssignFilamentEntity(self, printJob, payload):
 		filemanentEntity  = FilamentEntity()
 
@@ -130,6 +132,7 @@ class PrintJobHistoryPlugin(
 				usedWeight = volume * density
 
 				filemanentEntity.usedWeight = usedWeight
+				filemanentEntity.usedCost = spoolCost / spoolWeight * usedWeight
 
 		printJob.filamentEntity = filemanentEntity
 		pass
@@ -295,6 +298,11 @@ class PrintJobHistoryPlugin(
 			)
 		)
 
+	# Increase upload-size (default 100kb) for uploading images
+	def bodysize_hook(self, current_max_body_sizes, *args, **kwargs):
+		return [("POST", r"/upload/", 5 * 1024 * 1024)]	# size in bytes
+
+	# For Streaming I need a special ResponseHandler
 	def route_hook(self, server_routes, *args, **kwargs):
 		from octoprint.server.util.tornado import LargeResponseHandler, UrlProxyHandler, path_validation_factory
 		from octoprint.util import is_hidden_path
@@ -377,6 +385,9 @@ class StreamHandler(tornado.web.RequestHandler):
 				yield tornado.gen.Task(ioloop.add_timeout, ioloop.time() + interval)
 
 
+
+
+
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
 # ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
 # can be overwritten via __plugin_xyz__ control properties. See the documentation for that.
@@ -389,6 +400,7 @@ def __plugin_load__():
 	global __plugin_hooks__
 	__plugin_hooks__ = {
 		"octoprint.server.http.routes": __plugin_implementation__.route_hook,
+		"octoprint.server.http.bodysize": __plugin_implementation__.bodysize_hook,
 		"octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
 	}
 

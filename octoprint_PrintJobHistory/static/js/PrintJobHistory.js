@@ -52,6 +52,7 @@ $(function() {
 		this.usedLength = ko.observable();
 		this.calculatedLength = ko.observable();
 		this.usedWeight = ko.observable();
+		this.usedCost = ko.observable();
 
 		this.snapshotFilename = ko.observable();
 /*
@@ -115,6 +116,7 @@ $(function() {
             this.usedLength( updateData.filamentEntity.usedLength );
             this.calculatedLength( updateData.filamentEntity.calculatedLength );
             this.usedWeight( updateData.filamentEntity.usedWeight );
+            this.usedCost( updateData.filamentEntity.usedCost );
         } else {
             this.profileVendor(updateData.profileVendor);
             this.diameter(updateData.diameter);
@@ -129,6 +131,7 @@ $(function() {
             this.usedLength( updateData.usedLength );
             this.calculatedLength( updateData.calculatedLength );
             this.usedWeight( updateData.usedWeight );
+            this.usedCost( updateData.usedCost );
         }
 
 		this.snapshotFilename(updateData.snapshotFilename);
@@ -162,6 +165,7 @@ $(function() {
                 "usedLength" : "1m22mm",
                 "calculatedLength" : "12,5g",
                 "usedWeight" : "12,5g",
+                "usedCost" : "0,003",
                 "noteText" : "Good output of Legolas",
                 "noteDelta" : "Good output of Legolas",
                 "noteHtml" : "<h1>Good output of Legolas</h1>",
@@ -188,6 +192,7 @@ $(function() {
                 "usedLength" : "2m22mm",
                 "calculatedLength" : "312,6g",
                 "usedWeight" : "312,6g",
+                "usedCost" : "1,34",
 
                 "noteText" : "Bad quality",
                 "noteDelta" : "Bad quality",

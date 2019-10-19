@@ -8,3 +8,8 @@
 .quill-viewer > p {
     margin-bottom: 0px;
 }
+
+// Form-Controls
+.control-group.no-bottom-gap {
+    margin-bottom:0px
+}
