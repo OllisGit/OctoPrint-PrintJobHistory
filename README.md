@@ -35,6 +35,7 @@ should include the following features:
 - [x] Filament cost
 
 ### UI features
+- [ ] Better error-feedback (more then just the "happy-path")
 - [x] List all printjobs
 - [x] Edit single printjob
 - [x] Capture/Upload Image
