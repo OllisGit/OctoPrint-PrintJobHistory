@@ -10,7 +10,7 @@ from .entities.PluginMetaDataEntity import PluginMetaDataEntity
 
 from datetime import datetime
 
-FORCE_CREATE_TABLES = True
+FORCE_CREATE_TABLES = False
 
 
 class DatabaseManager(object):
