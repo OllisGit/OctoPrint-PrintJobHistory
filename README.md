@@ -8,6 +8,9 @@
 
 The OctoPrint Plugin stores all print-job informations of a print in a database
 
+#### Current implementation for Plugin-Manager URL: 
+    https://github.com/OllisGit/OctoPrint-PrintJobHistory/archive/master.zip
+
 #### Support my Efforts
 
 This plugin, as well as my [other plugins](https://github.com/OllisGit/) were developed in my spare time.
