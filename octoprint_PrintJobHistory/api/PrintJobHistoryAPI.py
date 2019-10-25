@@ -102,10 +102,10 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 			if job.filamentEntity != None:
 				filamentDict = job.filamentEntity.__dict__
 				del jobAsDict['filamentEntity']
-				filamentDict["usedLength"] = "{:.02f}".format(filamentDict["usedLength"])
-				filamentDict["usedWeight"] = "{:.02f}".format(filamentDict["usedWeight"])
-				filamentDict["usedCost"] = "{:.02f}".format(filamentDict["usedCost"])
-				filamentDict["calculatedLength"] = "{:.02f}".format(filamentDict["calculatedLength"])
+				filamentDict["usedLength"] = self._saveFormat("{:.02f}", filamentDict["usedLength"], "")
+				filamentDict["usedWeight"] = self._saveFormat("{:.02f}", filamentDict["usedWeight"], "")
+				filamentDict["usedCost"] = self._saveFormat("{:.02f}", filamentDict["usedCost"], "")
+				filamentDict["calculatedLength"] = self._saveFormat("{:.02f}", filamentDict["calculatedLength"], "")
 				jobAsDict['filamentEntity'] = filamentDict
 
 			if job.temperatureEntities != None and len(job.temperatureEntities) != 0:
@@ -122,6 +122,12 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 			result.append(jobAsDict)
 		return result
+
+	# TODO move to stringUtils
+	def _saveFormat(self, pattern, value, defaultString):
+		if (value == None):
+			return defaultString
+		return pattern.format(value)
 
 	def _convertPrintJobHistoryEntityToList(self, jobAsDict):
 		result = list()

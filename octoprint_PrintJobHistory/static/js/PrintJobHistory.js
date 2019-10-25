@@ -215,9 +215,8 @@ $(function() {
         self.printJobEditDialog = new PrintJobHistoryEditDialog(null, null);
         self.pluginCheckDialog = new PrintJobHistoryPluginCheckDialog();
 
-        self.printJobForEditing = ko.observable()
+        self.printJobForEditing = ko.observable();
         self.printJobForEditing(new PrintJobItem(printHistoryJobItems[0]));
-
 
         ////////////////////////////////////////////////////// Knockout model-binding/observer
 
@@ -227,7 +226,8 @@ $(function() {
             // assign current pluginSettings
             self.pluginSettings = self.settingsViewModel.settings.plugins[PLUGIN_ID];
 
-            self.printJobEditDialog.init(self.apiClient, self.settingsViewModel.settings.webcam.streamUrl());
+            self.printJobEditDialog.init(self.apiClient, self.settingsViewModel.settings.webcam);
+
             self.pluginCheckDialog.init(self.apiClient, self.pluginSettings);
 
         }

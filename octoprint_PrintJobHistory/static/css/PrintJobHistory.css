@@ -13,3 +13,48 @@
 .control-group.no-bottom-gap {
     margin-bottom:0px
 }
+
+
+#printjobhistory_webcam_contaier{
+    background-color: #000;
+//    height: 270px
+}
+#printjobhistory_webcam_contaier .nowebcam{
+//position:absolute;top:0;left:0;right:0;bottom:0
+}
+
+#printjobhistory_webcam_contaier .nowebcam .text{
+    color:#fff;
+    text-align:center;
+    position:relative;
+    margin:auto;
+    width:80%;
+//    top:135px;
+//    top:50%;
+//    transform:translateY(-50%);
+    display:block
+}
+
+#printjobhistory_webcam_contaier .nowebcam .text.webcam_loading{
+    animation:pulsate 3s ease-out;
+    animation-iteration-count:infinite
+}
+
+
+#printjobhistory_webcam_contaier .webcam_rotated{position:relative;width:100%;padding-bottom:100%;pointer-events:none}
+
+#printjobhistory_webcam_contaier .webcam_rotated .webcam_fixed_ratio{position:absolute;transform:rotate(-90deg);top:0;bottom:0;pointer-events:none}
+
+#printjobhistory_webcam_contaier .webcam_rotated .webcam_fixed_ratio .webcam_fixed_ratio_inner{width:100%;height:100%;pointer-events:none}
+
+#printjobhistory_webcam_contaier .webcam_unrotated .webcam_fixed_ratio{width:100%;pointer-events:none;padding-bottom:100%;position:relative}
+
+#printjobhistory_webcam_contaier .webcam_unrotated .webcam_fixed_ratio.ratio43{padding-bottom:75%}
+
+#printjobhistory_webcam_contaier .webcam_unrotated .webcam_fixed_ratio.ratio169{padding-bottom:56.25%}
+
+#printjobhistory_webcam_contaier .webcam_unrotated .webcam_fixed_ratio.ratio1610{padding-bottom:62.5%}
+
+#printjobhistory_webcam_contaier .webcam_unrotated .webcam_fixed_ratio .webcam_fixed_ratio_inner{position:absolute;top:0;bottom:0;left:0;right:0;pointer-events:none}
+
+#printjobhistory_webcam_contaier img{width:100%;height:100%;object-fit:contain}

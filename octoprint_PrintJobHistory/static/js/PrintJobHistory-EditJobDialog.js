@@ -4,11 +4,10 @@ function PrintJobHistoryEditDialog(){
     var self = this;
 
     this.apiClient = null;
-    this.streamUrl = null;
 
     this.editPrintJobItemDialog = null;
     this.printJobItemForEdit = null;
-    this.saveDoneHandler = null;
+    this.closeDialogHandler = null;
 
     this.lastSnapshotImageSource = null;
     this.snapshotSuccessMessageSpan = null;
@@ -20,9 +19,29 @@ function PrintJobHistoryEditDialog(){
 
     this.noteEditor = null;
 
+    this.shouldPrintJobTableReload = false;
+
+    var SHUTTER_DURATION = 5;   // in seconds
+    var IMAGEDISPLAYMODE_SNAPSHOTIMAGE = "snapshotImage";
+    var IMAGEDISPLAYMODE_VIDEOSTREAM = "videoStream";
+    var IMAGEDISPLAYMODE_VIDEOSTREAM_WITH_SHUTTER = "videoStreamWithShutter";
+    var IMAGEDISPLAYMODE_VIDEOSTREAM_LOADING = "videoStreamLoading";
+    var IMAGEDISPLAYMODE_VIDEOSTREAM_ERROR = "videoStreamError";
+
+    this.imageDisplayMode = ko.observable(IMAGEDISPLAYMODE_SNAPSHOTIMAGE);
+
     this.snapshotUploadName = ko.observable();
     this.snapshotUploadInProgress = ko.observable(false);
 
+    self.webCamSettings = null;
+
+    self.webcamRatioClass = ko.pureComputed(function() {
+        if (self.webCamSettings.streamRatio() == "4:3") {
+            return "ratio43";
+        } else {
+            return "ratio169";
+        }
+    });
 
     function _setSnapshotImageSource(snapshotUrl){
         self.lastSnapshotImageSource = self.snapshotImage.attr("src")
@@ -36,11 +55,16 @@ function PrintJobHistoryEditDialog(){
     }
     /////////////////////////////////////////////////////////////////////////////////////////////////// INIT
 
-    this.init = function(apiClient, videoStreamUrl){
+    this.init = function(apiClient, webCamSettings){
         self.apiClient = apiClient;
-        self.streamUrl = videoStreamUrl;
-// TODO WebCam-Settigs as an Object
-//self.settingsViewModel.webcam_streamTimeout()
+
+        self.webCamSettings = webCamSettings
+//        self.webCamEnabled = webCamSettings.webcamEnabled;
+
+//
+//        self.webcamRotate90( webCamSettings.rotate90() );
+//        self.webcamflipH( webCamSettings.flipH() );
+//        self.webcamflipV( webCamSettings.flipV() );
 
 //        self.captureImageInProgress = ko.observable(true)
 
@@ -96,7 +120,6 @@ function PrintJobHistoryEditDialog(){
                 self.snapshotUploadInProgress(false);
             },
             fail: function(e, data) {
-                debugger
                 new PNotify({
                     title: gettext("Something went wrong"),
                     text: gettext("Maybe the filesize was to big (limit 5MB). Please consult octoprint.log for details"),
@@ -113,13 +136,16 @@ function PrintJobHistoryEditDialog(){
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////// SHOW DIALOG
-    this.showDialog = function(printJobItemForEdit, saveDoneHandler){
+    this.showDialog = function(printJobItemForEdit, closeDialogHandler){
 
         self.printJobItemForEdit = printJobItemForEdit;
-        self.saveDoneHandler = saveDoneHandler;
+        self.closeDialogHandler = closeDialogHandler;
 
+        self.shouldPrintJobTableReload = false;
 //        TODO Wieso this statt self????
         _setSnapshotImageSource(self.apiClient.getSnapshotUrl(printJobItemForEdit.snapshotFilename()));
+
+        self.imageDisplayMode(IMAGEDISPLAYMODE_SNAPSHOTIMAGE);
 
         delta = JSON.parse(printJobItemForEdit.noteDelta());
         self.noteEditor.setContents(delta, 'api');
@@ -138,7 +164,16 @@ function PrintJobHistoryEditDialog(){
     }
 
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////// SAVE PRINT JOB
+    /////////////////////////////////////////////////////////////////////////////////////////////////// ABORT PRINT JOB ITEM
+    this.abortPrintJobItem  = function(){
+        if (self.shouldPrintJobTableReload == true){
+            self.apiClient.callLoadPrintHistoryJobs(function(allPrintJobsResponse){
+                self.closeDialogHandler(allPrintJobsResponse);
+            });
+        }
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////// SAVE PRINT JOB ITEM
     this.savePrintJobItem  = function(){
             var noteText = self.noteEditor.getText();
             var noteDelta = self.noteEditor.getContents();
@@ -148,10 +183,11 @@ function PrintJobHistoryEditDialog(){
             self.printJobItemForEdit.noteDelta(noteDelta);
             self.printJobItemForEdit.noteHtml(noteHtml);
 
-            self.apiClient.callUpdatePrintJob(self.printJobItemForEdit.databaseId(), self.printJobItemForEdit, function(responseData){
+            self.apiClient.callUpdatePrintJob(self.printJobItemForEdit.databaseId(), self.printJobItemForEdit, function(allPrintJobsResponse){
                 self.editPrintJobItemDialog.modal('hide');
-                self.saveDoneHandler(responseData);
+                self.closeDialogHandler(allPrintJobsResponse);
             });
+
     }
 
 
@@ -160,6 +196,7 @@ function PrintJobHistoryEditDialog(){
             self.apiClient.callDeleteSnapshotImage(self.printJobItemForEdit.snapshotFilename(), function(responseData){
                 // Update Image URL is the same, backend send the "no photo"-image
                 _setSnapshotImageSource(self.apiClient.getSnapshotUrl(responseData.snapshotFilename));
+                self.shouldPrintJobTableReload = true;
             });
     }
 
@@ -169,64 +206,94 @@ function PrintJobHistoryEditDialog(){
     var takeSnapshotText = "Take snapshot";
 
     this.captureImage = function(){
-
         self.snapshotSuccessMessageSpan.hide();
         self.snapshotErrorMessageSpan.hide();
 
         var newImageUrl = null;
         // check is in capture mode
         if (self.captureButtonText.text() == reCaptureText){
+            // SHOW VIDEOSTREAM
+            self.imageDisplayMode(IMAGEDISPLAYMODE_VIDEOSTREAM_LOADING);
 
-            $("#printJobHistory-captureInProgress").show();
-
-            OctoPrint.util.testUrl(self.streamUrl, {
+            OctoPrint.util.testUrl(self.webCamSettings.streamUrl(), {
                 method: "GET",
                 response: "bytes",
-                timeout: 5, //TODO real timeoutsettings
+                timeout: self.webCamSettings.streamTimeout(),
 //                validSsl: self.webcam_snapshotSslValidation(),
                 content_type_whitelist: ["image/*"]
             })
             .done(function(response){
-                if (!response.result && response.result == false && response.status == 0){
-                    _restoreSnapshotImageSource();
-                    self.captureButtonText.text(reCaptureText);
-                    $("#printJobHistory-cancelCaptureButton").hide();
-                    self.snapshotSuccessMessageSpan.text("Something wrong with the camera!");
-                    self.snapshotSuccessMessageSpan.show();
-                } else {
-                    newImageUrl  = self.streamUrl;
-                    $("#printJobHistory-cancelCaptureButton").show();
+                // Check if videoStream is available
+                if (response.status == 200 && response.result == false){
+                    //show stream in image
+                    self.imageDisplayMode(IMAGEDISPLAYMODE_VIDEOSTREAM);
+
+                    $("#printJobHistory-videoStream").attr("src", self.webCamSettings.streamUrl());
                     self.captureButtonText.text(takeSnapshotText);
-                    _setSnapshotImageSource(newImageUrl);
+                } else {
+                    // VideoStream is not available
+                    self.imageDisplayMode(IMAGEDISPLAYMODE_VIDEOSTREAM_ERROR);
                 }
-                $("#printJobHistory-captureInProgress").hide();
+//                if (!response.result && response.result == false && response.status == 0){
+//                    _restoreSnapshotImageSource();
+//                    self.captureButtonText.text(reCaptureText);
+//                    $("#printJobHistory-cancelCaptureButton").hide();
+//                    self.snapshotSuccessMessageSpan.text("Something wrong with the camera!");
+//                    self.snapshotSuccessMessageSpan.show();
+//
+//                    self.imageDisplayMode(IMAGEDISPLAYMODE_SNAPSHOTIMAGE);
+//                } else {
+//
+////                    newImageUrl  = self.webCamSettings.snapshotUrl();
+//                    $("#printJobHistory-cancelCaptureButton").show();
+//                    self.captureButtonText.text(takeSnapshotText);
+////                    _setSnapshotImageSource(newImageUrl);
+//                }
+//                $("#printJobHistory-captureInProgress").hide();
             })
             .fail(function() {
-                _restoreSnapshotImageSource();
-                self.captureButtonText.text(reCaptureText);
-                $("#printJobHistory-cancelCaptureButton").hide();
-                $("#printJobHistory-captureInProgress").hide();
-                self.snapshotSuccessMessageSpan.text("Something wrong with the camera!");
-                self.snapshotSuccessMessageSpan.show();
+                self.imageDisplayMode(IMAGEDISPLAYMODE_VIDEOSTREAM_ERROR);
+
+//                self.captureButtonText.text(reCaptureText);
+////                $("#printJobHistory-cancelCaptureButton").hide();
+//                $("#printJobHistory-captureInProgress").hide();
+//                self.snapshotSuccessMessageSpan.text("Something wrong with the camera!");
+//                self.snapshotSuccessMessageSpan.show();
+//                self.imageDisplayMode(IMAGEDISPLAYMODE_SNAPSHOTIMAGE);
             });
         } else {
-            $("#printJobHistory-cancelCaptureButton").hide();
+            // TAKE SNAPSHOT
+//            $("#printJobHistory-cancelCaptureButton").hide();
+            var startShutter = new Date().getTime();
+            self.imageDisplayMode(IMAGEDISPLAYMODE_VIDEOSTREAM_WITH_SHUTTER);
 
-            newImageUrl = self.cameraShutterUrl;
-            _setSnapshotImageSource(newImageUrl);
+            $("#printJobHistory-videoStream").attr("src", self.webCamSettings.snapshotUrl());
 
             self.apiClient.callTakeSnapshot(self.printJobItemForEdit.snapshotFilename(), function(responseData){
                 self.snapshotSuccessMessageSpan.show();
                 self.snapshotSuccessMessageSpan.text("Snapshot captured!");
                 self.snapshotImage.attr("src", self.apiClient.getSnapshotUrl(responseData.snapshotFilename));
                 self.captureButtonText.text(reCaptureText);
+
+                var now = new Date().getTime();
+                var captureDuration = now-startShutter;
+                if (captureDuration < (SHUTTER_DURATION*1000)){
+                    waitingDelta = (SHUTTER_DURATION*1000) - captureDuration
+                    setTimeout(function() {
+                        self.imageDisplayMode(IMAGEDISPLAYMODE_SNAPSHOTIMAGE);
+                    }, waitingDelta);
+                } else {
+                    // server call takes already a long time
+                    self.imageDisplayMode(IMAGEDISPLAYMODE_SNAPSHOTIMAGE);
+                }
+                self.shouldPrintJobTableReload = true;
             });
         }
     }
 
 
     this.cancelCaptureImage = function(){
-        _restoreSnapshotImageSource();
+        self.imageDisplayMode(IMAGEDISPLAYMODE_SNAPSHOTIMAGE);
         self.captureButtonText.text(reCaptureText);
         $("#printJobHistory-cancelCaptureButton").hide();
     }
@@ -244,6 +311,7 @@ function PrintJobHistoryEditDialog(){
 //                self.restoreDialog.modal({keyboard: false, backdrop: "static", show: true});
 
             self.snapshotUploadData.submit();
+            self.shouldPrintJobTableReload = true;
         };
         perform();
 //            showConfirmationDialog(_.sprintf(gettext("You are about to upload and restore the backup file \"%(name)s\". This cannot be undone."), {name: self.backupUploadName()}),

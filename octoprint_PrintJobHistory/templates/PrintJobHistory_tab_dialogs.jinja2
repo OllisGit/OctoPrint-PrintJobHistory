@@ -129,12 +129,13 @@
                                 <div class="row-fluid text-center">
 
                                     <span class="span5 text-left">
-
-                                        <button id="printJobHistory-captureButton" data-bind="click: printJobEditDialog.captureImage" class="btn btn-success">
+                                        <span data-bind="visible: !printJobEditDialog.webCamSettings.webcamEnabled()">WebCam not enabled!</span>
+                                        <button id="printJobHistory-captureButton" data-bind="visible: printJobEditDialog.webCamSettings.webcamEnabled, click: printJobEditDialog.captureImage" class="btn btn-success">
                                             <i class="fa fa-spinner fa-spin" id="printJobHistory-captureInProgress" style="display: none;"></i>
                                             <i class="fa fa-camera"></i>
                                             <span id="printJobHistory-captureButtonText">Re-Capture</span></button>
-                                        <button id="printJobHistory-cancelCaptureButton" style="display:none" data-bind="click: printJobEditDialog.cancelCaptureImage" class="btn">Cancel</button>
+                                        <button id="printJobHistory-cancelCaptureButton" style="display:none"
+                                                data-bind="click: printJobEditDialog.cancelCaptureImage, visible: printJobEditDialog.imageDisplayMode()=='videoStream' || printJobEditDialog.imageDisplayMode()=='videoStreamWithShutter'" class="btn">Cancel</button>
 
                                     </span>
 
@@ -142,30 +143,73 @@
                                         <button type="button" class="btn btn-danger" data-bind="click: printJobEditDialog.deleteImage" ><i class="fa fa-trash"></i>Delete Image</button>
                                     </span>
 
-
-
-
                                 </div>
-                                <div class="row">
-                                    <div class="span6 text-center">
-<!--                                        <img  id="printJobHistory-snapshotImage" class="img-polaroid" src="https://picsum.photos/id/20/400/400" alt=""/>-->
-                                        <!-- <img   src="http://localhost:5000/plugin/PrintJobHistory/static/images/no-image-icon.png" alt=""/> -->
-                                        <!-- <img src="http://192.168.178.44:8080/video" alt=""/> -->
-<!--                                        <img data-bind="attr: {src: $root.snapshotUrl( snapshotFilename )}" >-->
 
+
+                                <div class="row">
+                                    <div class="span6 text-center" style="z-index:10000;">
+<!--                                        <img  id="printJobHistory-snapshotImage" class="img-polaroid" src="https://picsum.photos/id/20/400/400" alt=""/>-->
+<!--                                        <img   src="http://localhost:5000/plugin/PrintJobHistory/static/images/no-image-icon.png" alt=""/> -->
+<!--                                        <img src="http://192.168.178.44:8080/video" alt=""/> -->
+<!--                                        <img data-bind="attr: {src: $root.snapshotUrl( snapshotFilename )}" >-->
 <!--                                        <img id="printJobHistory-snapshotImage" class="img-polaroid" data-bind="attr: {src: printJobEditDialog.printJobImageFilenameUrl}" >-->
-                                        <img id="printJobHistory-snapshotImage" class="img-polaroid" src="#" />
+
+                                        <div id="snapShotImageContainer" data-bind="visible: printJobEditDialog.imageDisplayMode()=='snapshotImage'" >
+                                            <img id="printJobHistory-snapshotImage" class="img-polaroid" src="#"  style="height:460px">
+
+                                        </div>
+
+<div id="printjobhistory_webcam_contaier" data-bind="visible: printJobEditDialog.imageDisplayMode()!='snapshotImage'">
+
+
+<!--  START WEBCAM LOADER   -->
+<!--
+data-bind="visible: !webcamLoaded()"
+-->
+        <div class="printjobhistory nowebcam" >
+            <div data-bind="visible: printJobEditDialog.imageDisplayMode()=='videoStreamLoading'" class="printjobhistory text webcam_loading" >
+                <p><strong>Webcam stream loading...</strong></p>
+            </div>
+            <div data-bind="visible: printJobEditDialog.imageDisplayMode()=='videoStreamError'" class="text webcam_error" >
+                <p><strong>Webcam stream not loaded</strong></p>
+<!--                <p data-bind="visible: !loginState.isAdmin()"><small>{{ _('It might not be configured correctly or require authentication. To have this fixed, get in touch with an administrator of this OctoPrint instance.') }}</small></p>-->
+<!--                <p data-bind="visible: loginState.isAdmin"><small>{{ _('It might not be configured correctly or require authentication. You can change the URL of the stream under "Settings" > "Webcam & Timelapse" > "Webcam" > "Stream URL". If you don\'t have a webcam you can also just disable webcam support there.') }}</small></p>-->
+                <p><small>Currently configured stream UR: <a target="_blank" rel="noreferrer" data-bind="attr: {href: printJobEditDialog.webCamSettings.streamUrl}, text: printJobEditDialog.webCamSettings.streamUrl"></a></small></p>
+            </div>
+        </div>
+<!--  END WEBCAM LOADER   -->
+
+
+        <div id="webcam_rotator" data-bind="visible: printJobEditDialog.imageDisplayMode()!='videoStreamLoading' && printJobEditDialog.imageDisplayMode()!='videoStreamError', css: { webcam_rotated: printJobEditDialog.webCamSettings.rotate90(), webcam_unrotated: !printJobEditDialog.webCamSettings.rotate90() }">
+            <div class="webcam_fixed_ratio" data-bind="css: printJobEditDialog.webcamRatioClass">
+                <div class="webcam_fixed_ratio_inner">
+<!--
+event: { load: onWebcamLoaded, error: onWebcamErrored }, visible: !webcamError()
+-->
+<img id="printJobHistory-videoStream" data-bind="css: { flipH: printJobEditDialog.webCamSettings.flipH(), flipV: printJobEditDialog.webCamSettings.flipV() }"  >
+<img id="printJobHistory-snapshotImage-shutter"
+     data-bind="visible: printJobEditDialog.imageDisplayMode()=='videoStreamWithShutter'"
+     style="position:absolute;top:0px;left:0px"
+     src="http://localhost:5000/plugin/PrintJobHistory/static/images/camera-shutter-animated.svg" />
+
+                </div>
+            </div>
+        </div>
+
+
+</div>
+
+<!-- FUNKTIONIERT   -->
+<!--                                        <div id="videoStreamContainer" style="position: relative; left: 0; top: 0;"-->
+<!--                                             data-bind="visible: printJobEditDialog.imageDisplayMode()=='videoStream' || printJobEditDialog.imageDisplayMode()=='videoStreamWithShutter'">-->
+<!--                                            <img id="printJobHistory-videoStream" class="img-polaroid"  width="480">-->
+<!--                                            <img id="printJobHistory-snapshotImage-shutter"-->
+<!--                                                 data-bind="visible: printJobEditDialog.imageDisplayMode()=='videoStreamWithShutter'" style="position:absolute;top:0px;left:120px"  width="240px" class="" src="http://localhost:5000/plugin/PrintJobHistory/static/images/camera-shutter-animated.svg" />-->
+<!--                                        </div>-->
+
                                     </div>
                                 </div>
-<!--                                <div class="row">-->
-<!--                                    <div class="span6 text-center">-->
-<!--                                        <button id="printJobHistory-captureButton" data-bind="click: printJobEditDialog.captureImage" class="btn btn-success">-->
-<!--                                            <i class="fa fa-spinner fa-spin" id="printJobHistory-captureInProgress" style="display: none;"></i>-->
-<!--                                            <i class="fa fa-camera"></i>-->
-<!--                                            <span id="printJobHistory-captureButtonText">Re-Capture</span></button>-->
-<!--                                        <button id="printJobHistory-cancelCaptureButton" style="display:none" data-bind="click: printJobEditDialog.cancelCaptureImage" class="btn">Cancel</button>-->
-<!--                                    </div>-->
-<!--                                </div>-->
+
 
 
                                 <div class="row ">
@@ -198,7 +242,7 @@
 
             <div class="control-group">
                 <div class="controls">
-                    <button class="btn " data-dismiss="modal" style="text-align:right">Abort</button>
+                    <button class="btn " data-bind="click: printJobEditDialog.abortPrintJobItem" data-dismiss="modal" style="text-align:right">Abort</button>
                     <button class="btn btn-primary" data-bind="click: printJobEditDialog.savePrintJobItem" style="text-align:right">Save</button>
                 </div>
             </div>

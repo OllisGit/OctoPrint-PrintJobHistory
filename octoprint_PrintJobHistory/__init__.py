@@ -43,23 +43,28 @@ class PrintJobHistoryPlugin(
 		self._displayLayerProgressPluginImplementation = None
 
 		pluginDataBaseFolder = self.get_plugin_data_folder()
-
+		# DATABASE
 		self._databaseManager = DatabaseManager()
 		databasePath = os.path.join(pluginDataBaseFolder, "printJobHistory.db")
 		self._databaseManager.initDatabase(databasePath)
 
-		pluginBaseFolder = self._basefolder
+		# CAMERA
 		self._cameraManager = CameraManager()
-		streamUrl = self._settings.global_get(["webcam", "stream"])
-		snapshotUrl =  self._settings.global_get(["webcam", "snapshot"])
-
+		# cameraEnabled = self._settings.global_get(["webcam", "webcamEnabled"])
+		# streamUrl = self._settings.global_get(["webcam", "stream"])
+		# snapshotUrl =  self._settings.global_get(["webcam", "snapshot"])
 		snapshotStorage = pluginDataBaseFolder + "/snapshots"
 		if not os.path.exists(snapshotStorage):
 			os.makedirs(snapshotStorage)
+		pluginBaseFolder = self._basefolder
+		# rotate = self._settings.global_get(["webcam", "rotate90"])
+		# flipH = self._settings.global_get(["webcam", "flipH"])
+		# flipV = self._settings.global_get(["webcam", "flipV"])
+		# self._cameraManager.initCamera(cameraEnabled, streamUrl, snapshotUrl, snapshotStorage, pluginBaseFolder, rotate, flipH, flipV)
 
-		self._cameraManager.initCamera(streamUrl, snapshotUrl, snapshotStorage, pluginBaseFolder)
+		self._cameraManager.initCamera(snapshotStorage, pluginBaseFolder, self._settings)
 
-
+		# OTHER STUFF
 		self._currentPrintJobEntity = None
 
 
