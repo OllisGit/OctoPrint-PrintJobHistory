@@ -146,12 +146,12 @@ class PrintJobHistoryPlugin(
 		self._currentPrintJobModel.printStartDateTime = datetime.datetime.now()
 		self._currentPrintJobModel.fileName = payload["filename"]
 		self._currentPrintJobModel.filePathName = payload["path"]
-		self._currentPrintJobModel.userName = payload["owner"]
+		if "owner" in payload:
+			self._currentPrpreintJobModel.userName = payload["owner"]
+		else:
+			self._currentPrpreintJobModel.userName = "John Doe"
 		self._currentPrintJobModel.fileSize = payload["size"]
-
-		self._logger.error("!!!!!!!!! READ CURRENT-TEMP")
 		currentTemps = self._printer.get_current_temperatures(),
-		self._logger.error("!!!!!!!!! CURRENT-TEMP" + str(currentTemps))
 		if (len(currentTemps) > 0):
 			bedTemp = currentTemps[0]["bed"]["target"]
 			tool0Temp = currentTemps[0]["tool0"]["target"]
