@@ -1,6 +1,6 @@
 # OctoPrint-PrintJobHistory
 
-# WORK IN PROGRESS!!!! Not released, yet!!
+# WORK IN PROGRESS!!!! Release Candidate 1 is out !!!!
 
 [![Version](https://img.shields.io/badge/dynamic/json.svg?color=brightgreen&label=version&url=https://api.github.com/repos/OllisGit/OctoPrint-PrintJobHistory/releases&query=$[0].name)]()
 [![Released](https://img.shields.io/badge/dynamic/json.svg?color=brightgreen&label=released&url=https://api.github.com/repos/OllisGit/OctoPrint-PrintJobHistory/releases&query=$[0].published_at)]()
@@ -23,7 +23,7 @@ If you like it, I would be thankful about a cup of coffee :)
  
 should include the following features:
 
-### Basic attributes to be captures:
+### Basic attributes to be captured:
 - [x] Print result (success, fail, cancel)
 - [x] Start/End datetime -> duration
 - [x] Username
@@ -43,10 +43,9 @@ should include the following features:
 - [x] Edit single printjob
 - [x] Capture/Upload Image
 - [x] Export all printjobs as CSV
-- [ ] Filter history table
-- [ ] Sort history table
-- [ ] Capture image after print
-- [ ] Link to timelaps
+- [x] Filter history table (only print result)
+- [x] Sort history table (printdate, filename)
+- [x] Capture image after print
 
 ### Not included
 - No report diagramms
@@ -66,8 +65,8 @@ should include the following features:
 
 ## Setup
 
-Install via the bundled [Plugin Manager](http://docs.octoprint.org/en/master/bundledplugins/pluginmanager.html)
-or manually using this URL:
+Plugin is not in "working-mode" and not released in offical OctoPrint Plugin-Repository.
+You need to install it manually using this URL: 
 
     https://github.com/OllisGit/OctoPrint-PrintJobHistory/releases/latest/download/master.zip
 

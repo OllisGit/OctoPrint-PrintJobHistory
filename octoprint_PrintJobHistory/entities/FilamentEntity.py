@@ -43,6 +43,8 @@ class FilamentEntity(object):
 		self.usedWeight = None
 		self.usedCost = None
 
+
+
 	########################################################################################### private static functions
 
 	@staticmethod
@@ -103,7 +105,7 @@ class FilamentEntity(object):
 
 	@staticmethod
 	def deleteByPrintJob(cursor, databaseId):
-		cursor.execute("DELETE FROM " + TABLE_NAME + " where " + COLUMN_PRINTJOB_ID + " = ?", (str(databaseId)))
+		cursor.execute("DELETE FROM " + TABLE_NAME + " where " + COLUMN_PRINTJOB_ID + " = ?", str(databaseId))
 		row = cursor.fetchone()
 		pass
 

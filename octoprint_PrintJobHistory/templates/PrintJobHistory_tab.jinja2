@@ -1,31 +1,60 @@
 {% include "PrintJobHistory_tab_dialogs.jinja2" %}
 <div id="tab_printJobHistory">
-    <!-- no sorting / filering, because this must be done in backend
-    <div class="pull-right">
-        <small>
-            Sort by:
-            <a href="#" data-bind="click: changeSortOrder.bind($data, 'param1')">Name<span data-bind="text: sortOrderLabel('fileName')"></span></a> |
-            <a href="#" data-bind="click: changeSortOrder.bind($data, 'param2')">Date<span data-bind="text: sortOrderLabel('timestamp')"></span></a> |
-            <a href="#" data-bind="click: changeSortOrder.bind($data, 'param3')">Print time<span data-bind="text: sortOrderLabel('printTime')"></span></a>
-        </small>
+
+    <div class="row-fluid">
+        <div class="span3">
+            <select class="input-mini text-right"
+                    data-bind="options: printJobHistoryTableHelper.pageSizeOptions,
+                               value: printJobHistoryTableHelper.selectedPageSize">
+            </select>
+            <a href="#" data-bind="click: printJobHistoryTableHelper.reloadItems" title="Force refresh" >Refresh <span class="icon-refresh"></span></a>
+        </div>
+
+        <div class="span9">
+            <div class="row">
+                <div class="text-right">
+                    <small>
+                        Export:
+                        <a href="#" data-bind="attr: {href: $root.exportUrl('CSV'), css: {disabled: !$root.exportUrl('CSV')}}">CSV</a>
+                    </small>
+                </div>
+            </div>
+            <div class="pull-right">
+                <small>
+                    Sort by:
+                    <a href="#" data-bind="click: function() { printJobHistoryTableHelper.changeSortOrder('fileName'); }">Name <span data-bind="text: printJobHistoryTableHelper.sortOrderLabel('fileName')"></span></a> |
+                    <a href="#" data-bind="click: function() { printJobHistoryTableHelper.changeSortOrder('printStartDateTime'); }">Date <span data-bind="text: printJobHistoryTableHelper.sortOrderLabel('printStartDateTime')"></span></a>
+                </small>
+            </div>
+            <div class="pull-right" style="clear: both;">
+            <small>
+                Show prints:
+                <a href="#" data-bind="click: function() { printJobHistoryTableHelper.changeFilter('all'); }"><i class="icon-ok" data-bind="style: {visibility: printJobHistoryTableHelper.isFilterSelected('all') ? 'visible' : 'hidden'}"></i> all</a> |
+                <a href="#" data-bind="click: function() { printJobHistoryTableHelper.changeFilter('onlySuccess'); }"><i class="icon-ok" data-bind="style: {visibility: printJobHistoryTableHelper.isFilterSelected('onlySuccess') ? 'visible' : 'hidden'}"></i> only successful</a> |
+                <a href="#" data-bind="click: function() { printJobHistoryTableHelper.changeFilter('onlyFailed'); }"><i class="icon-ok" data-bind="style: {visibility: printJobHistoryTableHelper.isFilterSelected('onlyFailed') ? 'visible' : 'hidden'}"></i> only failed</a>
+            </small>
+            </div>
+        </div>
     </div>
 
-    <div class="pull-right" style="clear: both;">
-    <small>
-        Show prints:
-        <a href="#" data-bind="click: function() { printJobHistorylistHelper.toggleFilter('all'); }"><i class="icon-ok" data-bind="style: {visibility: _.contains(printJobHistorylistHelper.currentFilters(), 'all') ? 'visible' : 'hidden'}"></i> all</a>
-        <a href="#" data-bind="click: function() { printJobHistorylistHelper.toggleFilter('successful'); }"><i class="icon-ok" data-bind="style: {visibility: _.contains(printJobHistorylistHelper.currentFilters(), 'successful') ? 'visible' : 'hidden'}"></i> only successful</a>
-        <a href="#" data-bind="click: function() { printJobHistorylistHelper.toggleFilter('failed'); }"><i class="icon-ok" data-bind="style: {visibility: _.contains(printJobHistorylistHelper.currentFilters(), 'failed') ? 'visible' : 'hidden'}"></i> only failed</a>
-    </small>
-    </div>
-    -->
-    <a href="#" data-bind="click: reloadTableData()" title="Force refresh" >Refresh <span class="icon-refresh"></span></a>
-     <div class="pull-right">
-        <small>
-            <a href="#" data-bind="attr: {href: $root.exportUrl('csv'), css: {disabled: !$root.exportUrl('CSV')}}">CSV</a>
-        </small>
-    </div>
 
+    <div class="pagination pagination-mini pagination-centered" style="margin:0px">
+        <ul>
+            <li data-bind="css: {disabled: printJobHistoryTableHelper.currentPage() === 0}">
+                <a href="#" data-bind="click: printJobHistoryTableHelper.prevPage">«</a>
+            </li>
+        </ul>
+        <ul data-bind="foreach: printJobHistoryTableHelper.pages">
+            <li data-bind="css: { active: $data.number === $root.printJobHistoryTableHelper.currentPage(), disabled: $data.number === -1 }">
+                <a href="#" data-bind="text: $data.text, click: $root.printJobHistoryTableHelper.changePage.bind($data, $data.number)"></a>
+            </li>
+        </ul>
+        <ul>
+            <li data-bind="css: {disabled: printJobHistoryTableHelper.currentPage() === printJobHistoryTableHelper.lastPage()}">
+                <a href="#" data-bind="click: printJobHistoryTableHelper.nextPage">»</a>
+            </li>
+        </ul>
+    </div>
 
     <table id="printjobhistory_main_table" class="table table-striped table-hover table-condensed table-hover" style="clear: both;">
         <thead>
@@ -39,7 +68,7 @@
                 <th style="width: 9%"></th>
             </tr>
         </thead>
-        <tbody data-bind="foreach: printJobHistorylistHelper.paginatedItems">
+        <tbody data-bind="foreach: printJobHistoryTableHelper.paginatedItems" >
             <tr>
                 <!--<td style="text-align: center;"><span data-bind="css: {'icon-ok-sign' : success() == 1, 'icon-exclamation-sign' : success() == 0}, style: { color: success() == 1 ? 'green' : 'red' }"></span></td>-->
                 <td style="text-align: center;"><span data-bind="css: {'icon-ok-sign' : printStatusResult() == 'success', 'icon-exclamation-sign' : printStatusResult() != 'success'}, style: { color: printStatusResult() == 'success' ? 'green' : 'red' }"></span></td>
@@ -47,24 +76,24 @@
                     <span><span data-bind="text: printStartDateTimeFormatted, attr: { title: printStartDateTimeFormatted }"></span></span>
                     <div class="additionalInfo">
                         <div><span data-bind="text: printEndDateTimeFormatted, attr: { title: printEndDateTimeFormatted }"></span></div>
-                        <div><span data-bind="text: durationFormatted, attr: { title: durationFormatted }"></span></div>
+                        <div>Duration: <span data-bind="text: durationFormatted, attr: { title: durationFormatted }"></span></div>
                     </div>
                 </td>
                 <td>
                     <span><span data-bind="text: fileName, attr: { title: fileName }"></span></span>
                     <div class="additionalInfo">
                         <div><span data-bind="text: fileSize , attr: { title: fileSize }"></span></div>
-                        <div><span data-bind="text: temperatureBed, attr: { title: temperatureBed }"></span></div>
-                        <div><span data-bind="text: temperatureNozzel, attr: { title: temperatureNozzel }"></span></div>
-                        <div><span data-bind="text: printedHeight, attr: { title: printedHeight }"></span></div>
-                        <div><span data-bind="text: printedLayers, attr: { title: printedLayers }"></span></div>
+                        <div>Bed: <span data-bind="text: temperatureBed, attr: { title: temperatureBed }"></span>°C</div>
+                        <div>Tool: <span data-bind="text: temperatureNozzel, attr: { title: temperatureNozzel }"></span>°C</div>
+                        <div>Height: <span data-bind="text: printedHeight, attr: { title: printedHeight }"></span>mm</div>
+                        <div>Layer: <span data-bind="text: printedLayers, attr: { title: printedLayers }"></span></div>
                     </div>
                 </td>
                 <td>
                     <span ><span data-bind="text: material, attr: { title: material }"></span></span>
                     <span ><span data-bind="text: spoolName, attr: { title: spoolName }"></span></span>
                     <div class="additionalInfo">
-                        <div ><span data-bind="text: usedLength, attr: { title: usedLength }"></span> / <span data-bind="text: calculatedLength, attr: { title: calculatedLength }"></span></div>
+                        <div >Lenght: <span data-bind="text: usedLength, attr: { title: usedLength }"></span>mm / <span data-bind="text: calculatedLength, attr: { title: calculatedLength }"></span>mm</div>
                         <!-- TODO weight and cost infos
                         <div data-bind="visible: note"><span data-bind="text: filamentWeight, attr: { title: filamentWeight }"></span></div>
                         <div data-bind="visible: note"><span data-bind="text: filamentCost, attr: { title: filamentCost }"></span></div>
@@ -84,7 +113,7 @@
                 </td>
                 <td>
                     <div class="btn-group action-buttons" >
-                        <div class="btn btn-mini" data-bind="click: function() { $root.showPrintJobDetailsDialogAction($data); }" title="{{ _('Additional data') }}"><i class="icon-wrench"></i></div>
+                        <div class="btn btn-mini" data-bind="click: function() { $root.showPrintJobDetailsDialogAction($data); }" title="{{ _('Additional data') }}"><i class="icon-pencil"></i></div>
                         <div class="btn btn-mini" data-bind="click: $root.removePrintJobAction" title="Remove Printjob from History"><i class="icon-trash"></i></div>
                     </div>
                 </td>
@@ -92,20 +121,20 @@
         </tbody>
     </table>
 
-    <div class="pagination pagination-mini pagination-centered">
+    <div class="pagination pagination-mini pagination-centered" style="margin:0px">
         <ul>
-            <li data-bind="css: {disabled: printJobHistorylistHelper.currentPage() === 0}">
-                <a href="#" data-bind="click: printJobHistorylistHelper.prevPage">«</a>
+            <li data-bind="css: {disabled: printJobHistoryTableHelper.currentPage() === 0}">
+                <a href="#" data-bind="click: printJobHistoryTableHelper.prevPage">«</a>
             </li>
         </ul>
-        <ul data-bind="foreach: printJobHistorylistHelper.pages">
-            <li data-bind="css: { active: $data.number === $root.printJobHistorylistHelper.currentPage(), disabled: $data.number === -1 }">
-                <a href="#" data-bind="text: $data.text, click: $root.printJobHistorylistHelper.changePage.bind($data, $data.number)"></a>
+        <ul data-bind="foreach: printJobHistoryTableHelper.pages">
+            <li data-bind="css: { active: $data.number === $root.printJobHistoryTableHelper.currentPage(), disabled: $data.number === -1 }">
+                <a href="#" data-bind="text: $data.text, click: $root.printJobHistoryTableHelper.changePage.bind($data, $data.number)"></a>
             </li>
         </ul>
         <ul>
-            <li data-bind="css: {disabled: printJobHistorylistHelper.currentPage() === printJobHistorylistHelper.lastPage()}">
-                <a href="#" data-bind="click: printJobHistorylistHelper.nextPage">»</a>
+            <li data-bind="css: {disabled: printJobHistoryTableHelper.currentPage() === printJobHistoryTableHelper.lastPage()}">
+                <a href="#" data-bind="click: printJobHistoryTableHelper.nextPage">»</a>
             </li>
         </ul>
     </div>

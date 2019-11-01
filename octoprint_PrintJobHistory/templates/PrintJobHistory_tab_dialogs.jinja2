@@ -27,8 +27,58 @@
     <!-- PrintJobItem-Dialog -->
     <div id="dialog_printJobHistory_editPrintJobItem" class="modal hide fade large" >
         <div class="modal-header">
-            <h4 class="modal-title" data-bind="text: printJobForEditing().fileName"></h4>
+            <div class="row">
+                <div class="span10">
+                    <h4 class="modal-title" data-bind="text: printJobForEditing().fileName"></h4>
+                </div>
+                <div class="span2">
 
+                    <!-- Customize Field visiblity -->
+                    <div id="configFields" class="btn-group" >
+                      <a id="openConfigFields" class="btn dropdown-toggle" onclick="machwas()" href="#">
+                        Configure Fields (TODO)
+                        <span class="caret"></span>
+                      </a>
+                      <ul id="configFieldsDropDown" class="dropdown-menu pull-right">
+                        <li>
+                              <div class="container" style="max-width: 480px;">
+                                <h3>TODO: needs to be implemented</h3>
+                                <div class="row">
+                                    <div class="span1">&nbsp;</div>
+                                    <div class="span2">
+                                        <label class="checkbox"><input type="checkbox"> Displayname</label>
+                                    </div>`
+                                    <div class="span2">
+                                        <label class="checkbox"><input type="checkbox"> Material</label>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="span1">&nbsp;</div>
+                                    <div class="span2">
+                                        <label class="checkbox"><input type="checkbox"> Displayname</label>
+                                    </div>
+                                    <div class="span2">
+                                        <label class="checkbox"><input type="checkbox"> Material</label>
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="span1">&nbsp;</div>
+                                    <div class="span2">
+                                        <label class="checkbox"><input type="checkbox"> Displayname</label>
+                                    </div>
+                                    <div class="span2">
+                                        <label class="checkbox"><input type="checkbox"> Material</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                      </ul>
+                    </div>
+
+
+
+                </div>
+            </div>
             <div class="row">
                 <div class="span1" >
                     <div class="span1"><span class="icon-4x" data-bind="css: {'icon-ok-sign' : printJobForEditing().printStatusResult() == 'success', 'icon-exclamation-sign' : printJobForEditing().printStatusResult() != 'success'}, style: { color: printJobForEditing().printStatusResult() == 'success' ? 'green' : 'red' }"></span></div>
@@ -38,15 +88,14 @@
                         <div class="span12">
                             <div class="row">
                                 <div class="span4"><b>Start</b> <span data-bind="text: printJobForEditing().printStartDateTimeFormatted" /></div>
-                                <div class="span3"><b>Height</b> <span data-bind="text: printJobForEditing().printedHeight" /></div>
-                                <div class="span2"></div>
+                                <div class="span3"><b>Height</b> <span data-bind="text: printJobForEditing().printedHeight" ></span>mm</div>
+                                <div class="span2"><b>Nozzel</b> <span data-bind="text: printJobForEditing().temperatureNozzel" ></span>°C</div>
                                 <div class="span3"></div>
                             </div>
                             <div class="row">
-
                                 <div class="span4"><b>End</b> <span data-bind="text: printJobForEditing().printEndDateTimeFormatted" /></div>
-                                <div class="span3"><b>Layer</b> <span data-bind="text: printJobForEditing().printedLayers" /></div>
-                                <div class="span2"></div>
+                                <div class="span3"><b>Layer</b> <span data-bind="text: printJobForEditing().printedLayers" ></span></div>
+                                <div class="span2"><b>Bed</b> <span data-bind="text: printJobForEditing().temperatureBed" ></span>°C</div>
                                 <div class="span3"></div>
                             </div>
                             <div class="row">
@@ -77,7 +126,7 @@
                                         <input type="text" class="input-large" data-bind="value: printJobForEditing().material" />
                                     </div>
                                 </div>
-                                <div class="control-group  no-bottom-gap">
+                                <div class="control-group no-bottom-gap">
                                     <label class="control-label">Used length</label>
                                     <div class="controls">
                                         <div class="input-append">
@@ -133,7 +182,7 @@
                                         <button id="printJobHistory-captureButton" data-bind="visible: printJobEditDialog.webCamSettings.webcamEnabled, click: printJobEditDialog.captureImage" class="btn btn-success">
                                             <i class="fa fa-spinner fa-spin" id="printJobHistory-captureInProgress" style="display: none;"></i>
                                             <i class="fa fa-camera"></i>
-                                            <span id="printJobHistory-captureButtonText">Re-Capture</span></button>
+                                            <span id="printJobHistory-captureButtonText">Capture</span></button>
                                         <button id="printJobHistory-cancelCaptureButton" style="display:none"
                                                 data-bind="click: printJobEditDialog.cancelCaptureImage, visible: printJobEditDialog.imageDisplayMode()=='videoStream' || printJobEditDialog.imageDisplayMode()=='videoStreamWithShutter'" class="btn">Cancel</button>
 
@@ -155,7 +204,7 @@
 <!--                                        <img id="printJobHistory-snapshotImage" class="img-polaroid" data-bind="attr: {src: printJobEditDialog.printJobImageFilenameUrl}" >-->
 
                                         <div id="snapShotImageContainer" data-bind="visible: printJobEditDialog.imageDisplayMode()=='snapshotImage'" >
-                                            <img id="printJobHistory-snapshotImage" class="img-polaroid" src="#"  style="height:460px">
+                                            <img id="printJobHistory-snapshotImage" class="img-polaroid" src="#" >
 
                                         </div>
 
@@ -242,7 +291,7 @@ event: { load: onWebcamLoaded, error: onWebcamErrored }, visible: !webcamError()
 
             <div class="control-group">
                 <div class="controls">
-                    <button class="btn " data-bind="click: printJobEditDialog.abortPrintJobItem" data-dismiss="modal" style="text-align:right">Abort</button>
+                    <button class="btn " data-bind="click: printJobEditDialog.abortPrintJobItem" style="text-align:right">Abort</button>
                     <button class="btn btn-primary" data-bind="click: printJobEditDialog.savePrintJobItem" style="text-align:right">Save</button>
                 </div>
             </div>

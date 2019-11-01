@@ -5,10 +5,10 @@
     <div class="tabbable"> <!-- Only required for left/right tabs -->
         <ul class="nav nav-tabs">
             <li class="active"><a href="#tab-pjh-General" data-toggle="tab">General</a></li>
-            <li><a href="#tab-pjh-Visibility" data-toggle="tab">Visibility</a></li>
-            <li><a href="#tab-pjh-Filament" data-toggle="tab">Filament</a></li>
+<!--            <li><a href="#tab-pjh-Visibility" data-toggle="tab">Visibility</a></li>-->
+<!--            <li><a href="#tab-pjh-Filament" data-toggle="tab">Filament</a></li>-->
             <li><a href="#tab-pjh-Camera" data-toggle="tab">Camera</a></li>
-            <li><a href="#tab-pjh-Database" data-toggle="tab">Database</a></li>
+            <li><a href="#tab-pjh-Storage" data-toggle="tab">Storage</a></li>
             <li><a href="#tab-pjh-Debugging" data-toggle="tab">Debugging</a></li>
 
         </ul>
@@ -23,29 +23,48 @@
                         </label>
                     </div>
                 </div>
-
-                TODO some general-settings
-                (x) Show PrintJob-Edit Dialog after print
-                    Always, Failed, Canceled
-                    (x) Show PrintJob Edit-Dialog after startup, if not edit before
+                <div class="control-group">
+                    <div class="controls">
+                        <label class="checkbox">
+                            <input type="checkbox" data-bind="checked: pluginSettings.showPrintJobDialogAfterPrint" > Show print job edit dialog after print
+                        </label>
+                    </div>
+                </div>
             </div>
-            <!-- GENERAL - TAB -->
-            <div class="tab-pane" id="tab-pjh-Visibility">
-                TODO some visibility-settings
-            </div>
-            <!-- GENERAL - TAB -->
-            <div class="tab-pane" id="tab-pjh-Filament">
-                TODO some filament-settings
-            </div>
-            <!-- GENERAL - TAB -->
+            <!-- VISIBILITY - TAB -->
+<!--            <div class="tab-pane" id="tab-pjh-Visibility">-->
+<!--                TODO some visibility-settings-->
+<!--            </div>-->
+            <!-- FILAMENT - TAB -->
+<!--            <div class="tab-pane" id="tab-pjh-Filament">-->
+<!--                TODO some filament-settings-->
+<!--            </div>-->
+            <!-- CAMERA - TAB -->
             <div class="tab-pane" id="tab-pjh-Camera">
-                TODO some camera-settings
+                <div class="control-group">
+                    <div class="controls">
+                        <label class="checkbox">
+                            <input type="checkbox" data-bind="checked: pluginSettings.takeSnapshotAfterPrint" > Take snapshot after print
+                        </label>
+                    </div>
+                </div>
             </div>
-            <!-- GENERAL - TAB -->
-            <div class="tab-pane" id="tab-pjh-Database">
-                TODO some database-settings
+            <!-- DATABASE - TAB -->
+            <div class="tab-pane" id="tab-pjh-Storage">
+                <div class="control-group">
+                    <label class="control-label">Database file location</label>
+                    <div class="controls">
+                        <input type="text" disabled class="input-xlarge text-right" data-bind="value: pluginSettings.databaseFileLocation"/>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Snapshot file location</label>
+                    <div class="controls">
+                        <input type="text" disabled class="input-xlarge text-right" data-bind="value: pluginSettings.snapshotFileLocation"/>
+                    </div>
+                </div>
             </div>
-            <!-- GENERAL - TAB -->
+            <!-- DEBUGGING - TAB -->
             <div class="tab-pane" id="tab-pjh-Debugging">
                 TODO some debugging-settings
             </div>

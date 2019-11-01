@@ -33,7 +33,6 @@ function PrintJobHistoryPluginCheckDialog(){
 
         self.confirmButton.unbind("click");
         self.confirmButton.bind("click", function() {
-            debugger
             disableCheck = self.deactivatePluginCheck()
             if (disableCheck == true) {
                 self.pluginSettings.pluginCheckActivated(false)

@@ -1,6 +1,8 @@
 # coding=utf-8
 from __future__ import absolute_import
 
+import threading
+
 import requests
 from io import open as i_open
 #from PIL import ImageFile
@@ -9,6 +11,8 @@ from PIL import ImageFile
 
 import os.path
 import StringIO
+
+
 class CameraManager(object):
 
 	def __init__(self):
@@ -18,19 +22,38 @@ class CameraManager(object):
 
 		self._snapshotStoragePath = None
 
+	@staticmethod
+	def doSomething():
+		print("Hallo Welt")
+
+	@staticmethod
+	def buildSnapshotFilename(startDateTime):
+		dateTimeThumb = startDateTime.strftime("%Y%m%d-%H%M%S") + ".jpg"
+		return dateTimeThumb
+
+
 	# def initCamera(self, enabled, streamUrl, snapshotUrl, snapshotStoragePath, pluginBaseFolder, rotate = None, flipH = None, flipV = None):
-	def initCamera(self, snapshotStoragePath, pluginBaseFolder, globalSettings):
+	def initCamera(self, pluginDataBaseFolder, pluginBaseFolder, globalSettings):
+
+		# cameraEnabled = self._settings.global_get(["webcam", "webcamEnabled"])
+		# streamUrl = self._settings.global_get(["webcam", "stream"])
+		# snapshotUrl =  self._settings.global_get(["webcam", "snapshot"])
+		snapshotStoragePath = pluginDataBaseFolder + "/snapshots"
+		if not os.path.exists(snapshotStoragePath):
+			os.makedirs(snapshotStoragePath)
+
 		self._snapshotStoragePath = snapshotStoragePath
 		self._pluginBaseFolder = pluginBaseFolder
-
 		self._globalSettings = globalSettings
+
+	def getSnapshotFileLocation(self):
+		return self._snapshotStoragePath
+
 
 	def isVideoStreamEnabled(self):
 		self._globalSettings.global_get(["webcam", "webcamEnabled"])
 
-	def buildSnapshotFilename(self, startDateTime):
-		dateTimeThumb = startDateTime.strftime("%Y%m%d-%H%M%S") + ".jpg"
-		return dateTimeThumb
+
 
 	def buildSnapshotFilenameLocation(self, snapshotFilename, returnDefaultImage = True):
 		if str(snapshotFilename).endswith(".jpg"):
@@ -42,7 +65,7 @@ class CameraManager(object):
 			return imageLocation
 		if returnDefaultImage:
 			# defaultImageSnapshotName = self._pluginBaseFolder + "/static/images/no-photo-icon.jpg"
-			defaultImageSnapshotName = self._pluginBaseFolder + "/static/images/no-image-icon.png"
+			defaultImageSnapshotName = self._pluginBaseFolder + "/static/images/no-image-icon-big.png"
 			return defaultImageSnapshotName
 		return imageLocation
 
@@ -52,6 +75,7 @@ class CameraManager(object):
 
 		if os.path.isfile(imageLocation):
 			os.remove(imageLocation)
+
 
 	def takeSnapshot(self, snapshotFilename):
 
@@ -104,6 +128,13 @@ class CameraManager(object):
 			# hsize = int((float(img.size[1]) * float(wpercent)))
 			# img = img.resize((basewidth, hsize), Image.ANTIALIAS)
 			# img.save(snapshotThumbnailFilename, "JPEG")
+
+	def takeSnapshotAsync(self, snapshotFilename):
+		thread = threading.Thread(name='TakeSnapshot', target=self.takeSnapshot, args=(snapshotFilename,))
+		thread.daemon = True
+		thread.start()
+
+
 
 
 calc = 5065.81694999996

@@ -9,11 +9,14 @@
     margin-bottom: 0px;
 }
 
-// Form-Controls
-.control-group.no-bottom-gap {
-    margin-bottom:0px
+.no-bottom-gap {
+    margin-bottom:0px !important;
 }
 
+
+.debug-outline {
+    outline: 1px solid magenta;
+}
 
 #printjobhistory_webcam_contaier{
     background-color: #000;

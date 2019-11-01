@@ -8,8 +8,6 @@ $(function() {
 
     var PLUGIN_ID = "PrintJobHistory"; // from setup.py plugin_identifier
 
-
-
     ////////////////////////////////////////////////////////////
 //    function formatFilamentLength(length){
 //        var pattern = "%.02fm"
@@ -34,7 +32,7 @@ $(function() {
 		this.printStatusResult = ko.observable();
 		this.durationFormatted = ko.observable();
 		this.noteText = ko.observable();
-		this.noteDelta = ko.observable();
+		this.noteDeltaFormat = ko.observable();
 		this.noteHtml = ko.observable();
 		this.printedLayers = ko.observable();
 		this.printedHeight = ko.observable();
@@ -84,39 +82,39 @@ $(function() {
         this.printStatusResult(updateData.printStatusResult);
         this.durationFormatted(updateData.durationFormatted);
         this.noteText(updateData.noteText);
-        this.noteDelta(updateData.noteDelta);
+        this.noteDeltaFormat(updateData.noteDeltaFormat);
         this.noteHtml(updateData.noteHtml);
         this.printedLayers(updateData.printedLayers);
         this.printedHeight(updateData.printedHeight);
-        //Tool
-        tempDataArray = data["temperatureEntities"];
-/* TODO
-        sensorName = tempDataArray[0]["sensorName"]
-        sensorValue = tempDataArray[0]["sensorValue"]
-        this.temperatureNozzel(sensorValue);
-        if (tempDataArray.length == 2){
-            sensorName = tempDataArray[1]["sensorName"]
-            sensorValue = tempDataArray[1]["sensorValue"]
 
-            this.temperatureBed(sensorValue);
+        // Flatten all releations
+        // Temperature
+        tempDataArray = data["temperatureModels"];
+        // Just grab the first value
+        if (tempDataArray != null && tempDataArray.length >=2) {
+            this.temperatureBed(tempDataArray[0].sensorValue);
+            this.temperatureNozzel(tempDataArray[1].sensorValue);
+        } else {
+            this.temperatureBed(updateData.temperatureBed);
+            this.temperatureNozzel(updateData.temperatureNozzel);
         }
-*/
+
         //Filament
-        if (updateData.filamentEntity != null){
-            this.profileVendor(updateData.filamentEntity.profileVendor);
-            this.diameter(updateData.filamentEntity.diameter);
-            this.density(updateData.filamentEntity.density);
-            this.material(updateData.filamentEntity.material);
-            this.spoolName(updateData.filamentEntity.spoolName);
-            this.spoolCost(updateData.filamentEntity.spoolCost);
-            this.spoolCostUnit(updateData.filamentEntity.spoolCostUnit);
-            this.spoolWeight(updateData.filamentEntity.spoolWeight);
+        if (updateData.filamentModel != null){
+            this.profileVendor(updateData.filamentModel.profileVendor);
+            this.diameter(updateData.filamentModel.diameter);
+            this.density(updateData.filamentModel.density);
+            this.material(updateData.filamentModel.material);
+            this.spoolName(updateData.filamentModel.spoolName);
+            this.spoolCost(updateData.filamentModel.spoolCost);
+            this.spoolCostUnit(updateData.filamentModel.spoolCostUnit);
+            this.spoolWeight(updateData.filamentModel.spoolWeight);
 //            this.usedLength( formatFilamentLength(updateData.filamentEntity.usedLength) );
 //            this.calculatedLength( formatFilamentLength(updateData.filamentEntity.calculatedLength) );
-            this.usedLength( updateData.filamentEntity.usedLength );
-            this.calculatedLength( updateData.filamentEntity.calculatedLength );
-            this.usedWeight( updateData.filamentEntity.usedWeight );
-            this.usedCost( updateData.filamentEntity.usedCost );
+            this.usedLength( updateData.filamentModel.usedLength );
+            this.calculatedLength( updateData.filamentModel.calculatedLength );
+            this.usedWeight( updateData.filamentModel.usedWeight );
+            this.usedCost( updateData.filamentModel.usedCost );
         } else {
             this.profileVendor(updateData.profileVendor);
             this.diameter(updateData.diameter);
@@ -167,7 +165,7 @@ $(function() {
                 "usedWeight" : "12,5g",
                 "usedCost" : "0,003",
                 "noteText" : "Good output of Legolas",
-                "noteDelta" : "Good output of Legolas",
+                "noteDeltaFormat" : "Good output of Legolas",
                 "noteHtml" : "<h1>Good output of Legolas</h1>",
                 "snapshotFilename" : ko.observable("20191003-123322")
 
@@ -195,7 +193,7 @@ $(function() {
                 "usedCost" : "1,34",
 
                 "noteText" : "Bad quality",
-                "noteDelta" : "Bad quality",
+                "noteDeltaFormat" : "Bad quality",
                 "noteHtml" : "<h2>Bad quality,/h2>",
                 "snapshotFilename" : ko.observable("20191003-153312")
 
@@ -212,24 +210,34 @@ $(function() {
         self.pluginSettings = null;
 
         self.apiClient = new PrintJobHistoryAPIClient(PLUGIN_ID, BASEURL);
+        self.componentFactory = new ComponentFactory(PLUGIN_ID);
         self.printJobEditDialog = new PrintJobHistoryEditDialog(null, null);
         self.pluginCheckDialog = new PrintJobHistoryPluginCheckDialog();
 
         self.printJobForEditing = ko.observable();
         self.printJobForEditing(new PrintJobItem(printHistoryJobItems[0]));
 
+        self.printJobToShowAfterStartup = null;
+
         ////////////////////////////////////////////////////// Knockout model-binding/observer
 
 
         ///////////////////////////////////////////////////// START: OctoPrint Hooks
+
         self.onBeforeBinding = function() {
             // assign current pluginSettings
             self.pluginSettings = self.settingsViewModel.settings.plugins[PLUGIN_ID];
-
             self.printJobEditDialog.init(self.apiClient, self.settingsViewModel.settings.webcam);
-
             self.pluginCheckDialog.init(self.apiClient, self.pluginSettings);
 
+        }
+
+
+        self.onAfterBinding = function() {
+            // all inits were done
+            if (self.printJobToShowAfterStartup != null){
+                self.showPrintJobDetailsDialogAction(self.printJobToShowAfterStartup);
+            }
         }
 
         // receive data from server
@@ -245,7 +253,18 @@ $(function() {
             }
 
             if ("printFinished" == data.action){
-                self.reloadTableData();
+                self.printJobHistoryTableHelper.reloadItems();
+                if (data.printJobItem != null){
+                    self.printJobToShowAfterStartup = data.printJobItem;
+                    self.showPrintJobDetailsDialogAction(data.printJobItem);
+                }
+                return
+            }
+
+            if ("showPrintJobDialogAfterClientConnection" == data.action){
+                if (data.printJobItem != null){
+                    self.printJobToShowAfterStartup = data.printJobItem;
+                }
             }
         }
 
@@ -256,57 +275,9 @@ $(function() {
             }
         }
 
-        self.reloadTableData = function(){
-            self.apiClient.callLoadPrintHistoryJobs( self.handleAllPrintJobDataResponse );
-        }
-
         ///////////////////////////////////////////////////// END: OctoPrint Hooks
 
-        self.handleAllPrintJobDataResponse = function (allPrintJobs){
-            // Print Jobs from Backend
-            var dataRows = ko.utils.arrayMap(allPrintJobs, function (data) {
-                return new PrintJobItem(data);
-            });
 
-            //self.pureData = data.history;
-
-            //self.dataIsStale = false;
-            self.printJobHistorylistHelper.updateItems(dataRows);
-        }
-
-
-        // helper.js
-        // listType, supportedSorting, supportedFilters, defaultSorting, defaultFilters, exclusiveFilters, defaultPageSize)
-        self.printJobHistorylistHelper = new ItemListHelper(
-            "printJobHistoryItems",
-            // sorting stuff
-            {
-                "column1": function (a,b){
-                    //some sort stuff
-                    return 0;
-                }
-            },
-            // filtering
-            {
-                "all": function(item){
-                    return true;
-                },
-                "successful": function (item) {
-                    return (item.success() == 1);
-                },
-                "failed": function (item) {
-                    return (item.success() == 0);
-                }
-            },
-            // defaultSorting
-            "defaultSorting",
-            // defaultFilter
-            ["all"],
-            // exclusiveFilter
-            [["all", "successful", "failed"]],
-            // pageSize
-            10
-        );
 
         ///////////////////////////////////////////////////// START: DAILOG Stuff
 
@@ -314,10 +285,20 @@ $(function() {
         self.showPrintJobDetailsDialogAction = function(selectedPrintJobItem) {
 
             self.printJobForEditing(new PrintJobItem(ko.mapping.toJS(selectedPrintJobItem)));
-            self.printJobEditDialog.showDialog(self.printJobForEditing(), function(allPrintJobs){
-                debugger
-                self.handleAllPrintJobDataResponse(allPrintJobs);
 
+            self.printJobEditDialog.showDialog(self.printJobForEditing(), function(shouldTableReload){
+                if (shouldTableReload == true){
+                    self.printJobHistoryTableHelper.reloadItems();
+                }
+
+                if (self.printJobToShowAfterStartup != null){
+                    // PrintJob was presented to user and user confirmed
+                    self.printJobToShowAfterStartup = null;
+                    payload = {
+                        "showPrintJobDialogAfterPrint_jobId": null
+                    };
+                    OctoPrint.settings.savePluginSettings(PLUGIN_ID, payload);
+                }
             });
         };
 
@@ -325,8 +306,27 @@ $(function() {
 
 
 
+        //////////// TABLE BEHAVIOR
+
+        loadJobFunction = function(tableQuery, observableTableModel, observableTotalItemCount){
+            // api-call
+            self.apiClient.callLoadPrintJobsByQuery(tableQuery, function(responseData){
+                totalItemCount = responseData["totalItemCount"];
+                allPrintJobs = responseData["allPrintJobs"];
+                var dataRows = ko.utils.arrayMap(allPrintJobs, function (data) {
+                    return new PrintJobItem(data);
+                });
+
+                observableTotalItemCount(totalItemCount);
+                observableTableModel(dataRows);
+
+            });
+        }
+
+        self.printJobHistoryTableHelper = new TableItemHelper(loadJobFunction, 10, "printStartDateTime", "all");
+
         self.exportUrl = function(exportType) {
-            if (self.printJobHistorylistHelper.items().length > 0) {
+            if (self.printJobHistoryTableHelper.items().length > 0) {
                 return self.apiClient.getExportUrl(exportType)
             } else {
                 return false;
@@ -334,40 +334,92 @@ $(function() {
         };
 
 
-        //////////// TABLE BEHAVIOR
-
-
-        self.snapshotUrl = function(printJobItem){
-            return self.apiClient.getSnapshotUrl(printJobItem.snapshotFilename());
-        }
-
-        self.removePrintJobAction = function(printJobItem) {
-            self.apiClient.callRemovePrintJob(printJobItem.databaseId(), self.handleAllPrintJobDataResponse)
-        };
-
+//        self.handleAllPrintJobDataResponse = function (allPrintJobs){
+//            // Print Jobs from Backend
+//            var dataRows = ko.utils.arrayMap(allPrintJobs, function (data) {
+//                return new PrintJobItem(data);
+//            });
+//
+//            //self.pureData = data.history;
+//
+//            //self.dataIsStale = false;
+//            self.printJobHistorylistHelper.updateItems(dataRows);
+//        }
 
         self.sortOrderLabel = function(orderType) {
             var order = "";
 
             if (orderType == "fileName") {
                 order = (self.printJobHistorylistHelper.currentSorting() == 'fileNameAsc') ? '(' + _('ascending') + ')' : (self.printJobHistorylistHelper.currentSorting() == 'fileNameDesc') ? '(' + _('descending') + ')' : '';
-            } else if (orderType == "timestamp") {
-                order = (self.printJobHistorylistHelper.currentSorting() == 'timestampAsc') ? '(' + _('ascending') + ')' : (self.printJobHistorylistHelper.currentSorting() == 'timestampDesc') ? '(' + _('descending') + ')' : '';
-            } else {
-                order = (self.printJobHistorylistHelper.currentSorting() == 'printTimeAsc') ? '(' + _('ascending') + ')' : (self.printJobHistorylistHelper.currentSorting() == 'printTimeDesc') ? '(' + _('descending') + ')' : '';
+            } else if (orderType == "startDateTime") {
+                order = (self.printJobHistorylistHelper.currentSorting() == 'startDateTimeAsc') ? '(' + _('ascending') + ')' : (self.printJobHistorylistHelper.currentSorting() == 'startDateTimeDesc') ? '(' + _('descending') + ')' : '';
             }
-
             return order;
         };
 
 
         self.changeSortOrder = function(columnToSort) {
-            if (self.printJobHistorylistHelper.currentSorting() == "fileNameAsc") {
-                self.printJobHistorylistHelper.changeSorting("fileNameDesc");
-            } else {
-                self.printJobHistorylistHelper.changeSorting("fileNameAsc");
+            if ("fileName" == columnToSort){
+                if (self.printJobHistorylistHelper.currentSorting() == "fileNameAsc") {
+                    self.printJobHistorylistHelper.changeSorting("fileNameDesc");
+                } else {
+                    self.printJobHistorylistHelper.changeSorting("fileNameAsc");
+                }
+            }
+            if ("startDateTime" == columnToSort){
+                if (self.printJobHistorylistHelper.currentSorting() == "startDateTimeAsc") {
+                    self.printJobHistorylistHelper.changeSorting("startDateTimeDesc");
+                } else {
+                    self.printJobHistorylistHelper.changeSorting("startDateTimeAsc");
+                }
             }
         };
+
+        // helper.js
+        // listType, supportedSorting, supportedFilters, defaultSorting, defaultFilters, exclusiveFilters, defaultPageSize)
+//        self.printJobHistorylistHelper = new ItemListHelper(
+//            "printJobHistoryItems",
+//            // sorting stuff
+//            {
+//                "column1": function (a,b){
+//                    //some sort stuff
+//                    return 0;
+//                }
+//            },
+//            // filtering
+//            {
+//                "all": function(item){
+//                    return true;
+//                },
+//                "successful": function (item) {
+//                    return (item.success() == 1);
+//                },
+//                "failed": function (item) {
+//                    return (item.success() == 0);
+//                }
+//            },
+//            // defaultSorting
+//            "defaultSorting",
+//            // defaultFilter
+//            ["all"],
+//            // exclusiveFilter
+//            [["all", "successful", "failed"]],
+//            // pageSize
+//            10
+//        );
+
+        self.snapshotUrl = function(printJobItem){
+            return self.apiClient.getSnapshotUrl(printJobItem.snapshotFilename());
+        }
+
+        self.removePrintJobAction = function(printJobItem) {
+            self.apiClient.callRemovePrintJob(printJobItem.databaseId(), function(responseData) {
+                self.printJobHistoryTableHelper.reloadItems();
+            });
+        };
+
+
+
 
 
     }

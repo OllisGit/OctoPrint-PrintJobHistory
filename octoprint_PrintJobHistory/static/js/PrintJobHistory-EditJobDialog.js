@@ -147,8 +147,8 @@ function PrintJobHistoryEditDialog(){
 
         self.imageDisplayMode(IMAGEDISPLAYMODE_SNAPSHOTIMAGE);
 
-        delta = JSON.parse(printJobItemForEdit.noteDelta());
-        self.noteEditor.setContents(delta, 'api');
+        deltaFormat = JSON.parse(printJobItemForEdit.noteDeltaFormat());
+        self.noteEditor.setContents(deltaFormat, 'api');
 
 
         self.editPrintJobItemDialog.modal({
@@ -166,26 +166,22 @@ function PrintJobHistoryEditDialog(){
 
     /////////////////////////////////////////////////////////////////////////////////////////////////// ABORT PRINT JOB ITEM
     this.abortPrintJobItem  = function(){
-        if (self.shouldPrintJobTableReload == true){
-            self.apiClient.callLoadPrintHistoryJobs(function(allPrintJobsResponse){
-                self.closeDialogHandler(allPrintJobsResponse);
-            });
-        }
+        self.editPrintJobItemDialog.modal('hide');
+        self.closeDialogHandler(self.shouldPrintJobTableReload);
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////// SAVE PRINT JOB ITEM
     this.savePrintJobItem  = function(){
             var noteText = self.noteEditor.getText();
-            var noteDelta = self.noteEditor.getContents();
+            var noteDeltaFormat = self.noteEditor.getContents();
             var noteHtml = self.noteEditor.getHtml();
-
             self.printJobItemForEdit.noteText(noteText);
-            self.printJobItemForEdit.noteDelta(noteDelta);
+            self.printJobItemForEdit.noteDeltaFormat(noteDeltaFormat);
             self.printJobItemForEdit.noteHtml(noteHtml);
 
             self.apiClient.callUpdatePrintJob(self.printJobItemForEdit.databaseId(), self.printJobItemForEdit, function(allPrintJobsResponse){
                 self.editPrintJobItemDialog.modal('hide');
-                self.closeDialogHandler(allPrintJobsResponse);
+                self.closeDialogHandler(true);
             });
 
     }
@@ -202,7 +198,7 @@ function PrintJobHistoryEditDialog(){
 
 
     /////////////////////////////////////////////////////////////////////////////////////////////////// CAPTURE IMAGE
-    var reCaptureText = "Re-Capture";
+    var reCaptureText = "Capture";
     var takeSnapshotText = "Take snapshot";
 
     this.captureImage = function(){

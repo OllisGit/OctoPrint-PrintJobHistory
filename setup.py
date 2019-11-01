@@ -14,11 +14,11 @@ plugin_package = "octoprint_PrintJobHistory"
 plugin_name = "PrintJobHistory"
 
 # The plugin's version. Can be overwritten within OctoPrint's internal data via __plugin_version__ in the plugin module
-plugin_version = "1.0.0dev"
+plugin_version = "1.0.0rc1"
 
 # The plugin's description. Can be overwritten within OctoPrint's internal data via __plugin_description__ in the plugin
 # module
-plugin_description = """TODO"""
+plugin_description = """Collects all print jobs and stores the job data into a database"""
 
 # The plugin's author. Can be overwritten within OctoPrint's internal data via __plugin_author__ in the plugin module
 plugin_author = "OllisGit"
@@ -33,7 +33,9 @@ plugin_url = "https://github.com/OllisGit/OctoPrint-PrintJobHistory"
 plugin_license = "AGPLv3"
 
 # Any additional requirements besides OctoPrint should be listed here
-plugin_requires = ["pillow"]
+plugin_requires = [
+	"peewee"
+]
 
 ### --------------------------------------------------------------------------------------------------------------------
 ### More advanced options that you usually shouldn't have to touch follow after this point
