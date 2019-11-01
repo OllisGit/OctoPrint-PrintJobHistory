@@ -113,7 +113,8 @@ class DatabaseManager(object):
 				for temperatureModel in printJobModel.getTemperatureModels():
 					temperatureModel.printJob = printJobModel
 					temperatureModel.save()
-
+				# do expicit commit
+				transaction.commit()
 			except Exception as e:
 				# Because this block of code is wrapped with "atomic", a
 				# new transaction will begin automatically after the call
@@ -122,6 +123,7 @@ class DatabaseManager(object):
 				print(str(e))
 				# 	TODO do something usefull
 			pass
+
 		return databaseId
 
 	def updatePrintJob(self, printJobModel):
