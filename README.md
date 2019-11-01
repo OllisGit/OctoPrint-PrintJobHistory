@@ -1,6 +1,6 @@
 # OctoPrint-PrintJobHistory
 
-# WORK IN PROGRESS!!!! Release Candidate 1 is out !!!!
+# WORK IN PROGRESS!!!! 
 
 [![Version](https://img.shields.io/badge/dynamic/json.svg?color=brightgreen&label=version&url=https://api.github.com/repos/OllisGit/OctoPrint-PrintJobHistory/releases&query=$[0].name)]()
 [![Released](https://img.shields.io/badge/dynamic/json.svg?color=brightgreen&label=released&url=https://api.github.com/repos/OllisGit/OctoPrint-PrintJobHistory/releases&query=$[0].published_at)]()
