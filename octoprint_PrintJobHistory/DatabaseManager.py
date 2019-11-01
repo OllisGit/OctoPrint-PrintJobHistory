@@ -1,6 +1,7 @@
 # coding=utf-8
 from __future__ import absolute_import
 
+import logging
 import os
 import sqlite3
 
@@ -31,6 +32,7 @@ MODELS = [PluginMetaDataModel, PrintJobModel, FilamentModel, TemperatureModel]
 class DatabaseManager(object):
 
 	def __init__(self):
+		self._logger = logging.getLogger(__name__)
 		self._database = None
 		self._databaseFileLocation = None
 
@@ -64,6 +66,7 @@ class DatabaseManager(object):
 		# 	#	sql
 		# 	pass
 	def _createDatabaseTables(self):
+		self._logger.info("Creating new database tables for printjob-plugin")
 		self._database.connect(reuse_if_open=True)
 		self._database.drop_tables(MODELS)
 		self._database.create_tables(MODELS)
@@ -76,7 +79,7 @@ class DatabaseManager(object):
 	def initDatabase(self, databasePath):
 
 		self._databaseFileLocation = os.path.join(databasePath, "printJobHistory.db")
-
+		self._logger.info("Creating new database in: " + str(self._databaseFileLocation))
 		if SQL_LOGGING == True:
 			import logging
 			logger = logging.getLogger('peewee')
@@ -120,8 +123,8 @@ class DatabaseManager(object):
 				# new transaction will begin automatically after the call
 				# to rollback().
 				transaction.rollback()
-				print(str(e))
-				# 	TODO do something usefull
+				self._logger.exception("Could not insert printJob into database:" + str(e))
+				# TODO Inform user about exception
 			pass
 
 		return databaseId
@@ -140,16 +143,14 @@ class DatabaseManager(object):
 				# for temperatureModel in printJobModel.getTemperatureModels():
 				# 	temperatureModel.printJob = printJobModel
 				# 	temperatureModel.save()
-			except:
+			except Exception as e:
 				# Because this block of code is wrapped with "atomic", a
 				# new transaction will begin automatically after the call
 				# to rollback().
 				transaction.rollback()
-				# 	TODO do something usefull
+				self._logger.exception("Could not update printJob into database:" + str(e))
+				# TODO Inform user about exception
 			pass
-
-
-
 
 	def countPrintJobsByQuery(self, tableQuery):
 
@@ -217,8 +218,6 @@ class DatabaseManager(object):
 				# new transaction will begin automatically after the call
 				# to rollback().
 				transaction.rollback()
-				# 	TODO do something usefull
-				print('DELETE FAILED: ' + str(e))
+				self._logger.exception("Could not delete printJob from database:" + str(e))
+				# TODO Inform user about exception
 			pass
-
-

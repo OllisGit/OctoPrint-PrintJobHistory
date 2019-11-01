@@ -218,6 +218,7 @@ $(function() {
         self.printJobForEditing(new PrintJobItem(printHistoryJobItems[0]));
 
         self.printJobToShowAfterStartup = null;
+        self.missingPluginDialogMessage = null;
 
         ////////////////////////////////////////////////////// Knockout model-binding/observer
 
@@ -232,11 +233,16 @@ $(function() {
 
         }
 
-
         self.onAfterBinding = function() {
             // all inits were done
+
+            // to bring up dialogs the binding must be already done
             if (self.printJobToShowAfterStartup != null){
                 self.showPrintJobDetailsDialogAction(self.printJobToShowAfterStartup);
+            }
+            if (self.missingPluginDialogMessage != null){
+                self.pluginCheckDialog.showMissingPluginsDialog(self.missingPluginDialogMessage);
+                self.missingPluginDialogMessage = null;
             }
         }
 
@@ -248,7 +254,8 @@ $(function() {
             }
 
             if ("missingPlugin" == data.action){
-                self.pluginCheckDialog.showMissingPluginsDialog(data.message);
+                // NOT POSSIBLE, because init not done self.pluginCheckDialog.showMissingPluginsDialog(data.message);
+                self.missingPluginDialogMessage = data.message;
                 return;
             }
 

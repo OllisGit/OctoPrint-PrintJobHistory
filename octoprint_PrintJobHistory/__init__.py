@@ -224,15 +224,20 @@ class PrintJobHistoryPlugin(
 
 	def on_after_startup(self):
 
-		plugin = self._plugin_manager.plugins["preheat"]
-		if plugin != None and plugin.enabled == True:
-			self._preHeatPluginImplementation = plugin.implementation
-		plugin = self._plugin_manager.plugins["filamentmanager"]
-		if plugin != None and plugin.enabled == True:
-			self._filamentManagerPluginImplementation = plugin.implementation
-		plugin = self._plugin_manager.plugins["DisplayLayerProgress"]
-		if plugin != None and plugin.enabled == True:
-			self._displayLayerProgressPluginImplementation = plugin.implementation
+		if "preheat" in self._plugin_manager.plugins:
+			plugin = self._plugin_manager.plugins["preheat"]
+			if plugin != None and plugin.enabled == True:
+				self._preHeatPluginImplementation = plugin.implementation
+
+		if "filamentmanager" in self._plugin_manager.plugins:
+			plugin = self._plugin_manager.plugins["filamentmanager"]
+			if plugin != None and plugin.enabled == True:
+				self._filamentManagerPluginImplementation = plugin.implementation
+
+		if "DisplayLayerProgress" in self._plugin_manager.plugins:
+			plugin = self._plugin_manager.plugins["DisplayLayerProgress"]
+			if plugin != None and plugin.enabled == True:
+				self._displayLayerProgressPluginImplementation = plugin.implementation
 
 	def on_event(self, event, payload):
 
