@@ -14,7 +14,7 @@ repository:
 #  private: false
 
   # Either `true` to enable issues for this repository, `false` to disable them.
-#  has_issues: true
+  has_issues: true
 
   # Either `true` to enable the wiki for this repository, `false` to disable it.
   has_wiki: false
