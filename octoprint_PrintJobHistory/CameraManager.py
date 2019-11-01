@@ -33,10 +33,6 @@ class CameraManager(object):
 
 	# def initCamera(self, enabled, streamUrl, snapshotUrl, snapshotStoragePath, pluginBaseFolder, rotate = None, flipH = None, flipV = None):
 	def initCamera(self, pluginDataBaseFolder, pluginBaseFolder, globalSettings):
-
-		# cameraEnabled = self._settings.global_get(["webcam", "webcamEnabled"])
-		# streamUrl = self._settings.global_get(["webcam", "stream"])
-		# snapshotUrl =  self._settings.global_get(["webcam", "snapshot"])
 		snapshotStoragePath = pluginDataBaseFolder + "/snapshots"
 		if not os.path.exists(snapshotStoragePath):
 			os.makedirs(snapshotStoragePath)
@@ -49,8 +45,9 @@ class CameraManager(object):
 		return self._snapshotStoragePath
 
 
-	def isVideoStreamEnabled(self):
-		self._globalSettings.global_get(["webcam", "webcamEnabled"])
+	# NOT WORKING IN 1.3.10
+	# def isVideoStreamEnabled(self):
+	# 	self._globalSettings.global_get(["webcam", "webcamEnabled"])
 
 
 

@@ -35,6 +35,16 @@ function PrintJobHistoryEditDialog(){
 
     self.webCamSettings = null;
 
+    self.webCamEnabled = ko.pureComputed(function(){
+        if (self.webCamSettings.webcamEnabled != null){
+            return self.webCamSettings.webcamEnabled();
+        } else {
+            return self.webCamSettings.snapshotUrl() != null && self.webCamSettings.streamUrl();
+        }
+    });
+
+
+
     self.webcamRatioClass = ko.pureComputed(function() {
         if (self.webCamSettings.streamRatio() == "4:3") {
             return "ratio43";
@@ -43,6 +53,9 @@ function PrintJobHistoryEditDialog(){
         }
     });
 
+
+
+
     function _setSnapshotImageSource(snapshotUrl){
         self.lastSnapshotImageSource = self.snapshotImage.attr("src")
         if (self.lastSnapshotImageSource="#"){
@@ -50,6 +63,7 @@ function PrintJobHistoryEditDialog(){
         }
         self.snapshotImage.attr("src", snapshotUrl);
     }
+
     function _restoreSnapshotImageSource(){
         _setSnapshotImageSource(self.lastSnapshotImageSource);
     }
@@ -59,14 +73,6 @@ function PrintJobHistoryEditDialog(){
         self.apiClient = apiClient;
 
         self.webCamSettings = webCamSettings
-//        self.webCamEnabled = webCamSettings.webcamEnabled;
-
-//
-//        self.webcamRotate90( webCamSettings.rotate90() );
-//        self.webcamflipH( webCamSettings.flipH() );
-//        self.webcamflipV( webCamSettings.flipV() );
-
-//        self.captureImageInProgress = ko.observable(true)
 
         self.editPrintJobItemDialog = $("#dialog_printJobHistory_editPrintJobItem");
         self.snapshotSuccessMessageSpan = $("#printJobHistory-editdialog-success-message");
