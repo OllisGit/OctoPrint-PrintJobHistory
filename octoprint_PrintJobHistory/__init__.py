@@ -147,9 +147,9 @@ class PrintJobHistoryPlugin(
 		self._currentPrintJobModel.fileName = payload["filename"]
 		self._currentPrintJobModel.filePathName = payload["path"]
 		if "owner" in payload:
-			self._currentPrpreintJobModel.userName = payload["owner"]
+			self._currentPrintJobModel.userName = payload["owner"]
 		else:
-			self._currentPrpreintJobModel.userName = "John Doe"
+			self._currentPrintJobModel.userName = "John Doe"
 		self._currentPrintJobModel.fileSize = payload["size"]
 		currentTemps = self._printer.get_current_temperatures(),
 		if (len(currentTemps) > 0):
