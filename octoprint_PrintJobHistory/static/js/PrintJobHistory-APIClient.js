@@ -29,17 +29,17 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
 
 
     this.getExportUrl = function(exportType){
-        return "plugin/" + this.pluginId + "/exportPrintJobHistory/" + exportType;
+        return "./plugin/" + this.pluginId + "/exportPrintJobHistory/" + exportType + "?apiKey=" + jQuery.ajaxSettings.headers["X-Api-Key"];
     }
 
     this.getSnapshotUrl = function(snapshotFilename){
         //http://localhost:5000/plugin/PrintJobHistory/printJobSnapshot/20191003-153311
-        return "plugin/" + this.pluginId + "/printJobSnapshot/" + snapshotFilename;
+        return "./plugin/" + this.pluginId + "/printJobSnapshot/" + snapshotFilename + "?apiKey=" + jQuery.ajaxSettings.headers["X-Api-Key"];
     }
 
     this.uploadSnapshotUrl = function(snapshotFilename){
         //http://localhost:5000/plugin/PrintJobHistory/printJobSnapshot/20191003-153311
-        return "plugin/" + this.pluginId + "/upload/snapshot/" + snapshotFilename;
+        return "./plugin/" + this.pluginId + "/upload/snapshot/" + snapshotFilename + "?apiKey=" + jQuery.ajaxSettings.headers["X-Api-Key"];
     }
 
     // load FILTERED/SORTED PrintJob-Items
