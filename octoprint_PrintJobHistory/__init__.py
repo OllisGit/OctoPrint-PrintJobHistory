@@ -149,7 +149,7 @@ class PrintJobHistoryPlugin(
 		self._currentPrintJobModel.userName = payload["owner"]
 		self._currentPrintJobModel.fileSize = payload["size"]
 
-
+		self._logger.debug("!!!!!!!!! READ CURRENT-TEMP")
 		currentTemps = self._printer.get_current_temperatures(),
 		self._logger.debug("!!!!!!!!! CURRENT-TEMP" + str(currentTemps))
 		if (len(currentTemps) > 0):
@@ -164,6 +164,7 @@ class PrintJobHistoryPlugin(
 			tempModel.sensorName = "tool0"
 			tempModel.sensorValue = tool0Temp
 			self._currentPrintJobModel.addTemperatureModel(tempModel)
+
 
 # PreHeat not needed anymore
 		# if self._preHeatPluginImplementation != None:
