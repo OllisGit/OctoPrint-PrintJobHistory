@@ -289,7 +289,7 @@ class PrintJobHistoryPlugin(
 	##~~ SettingsPlugin mixin
 	def get_settings_defaults(self):
 		settings = dict()
-		settings[SettingsKeys.SETTINGS_KEY_PLUGIN_DEPENDENCY_CHECK] = False
+		settings[SettingsKeys.SETTINGS_KEY_PLUGIN_DEPENDENCY_CHECK] = True
 		settings[SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT] = True
 		settings[SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT_JOB_ID] = None
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT] = True
@@ -303,7 +303,7 @@ class PrintJobHistoryPlugin(
 	##~~ TemplatePlugin mixin
 	def get_template_configs(self):
 		return [
-			dict(type="tab", name="History"),
+			dict(type="tab", name="Job History"),
 			dict(type="settings", custom_bindings=True)
 		]
 
