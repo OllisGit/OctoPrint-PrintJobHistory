@@ -2,15 +2,12 @@
 from __future__ import absolute_import
 
 import octoprint.plugin
-import tornado
 from flask import jsonify, request, make_response, Response, send_file
 import flask
 
 import json
 
 import os
-
-import cv2
 
 from datetime import datetime
 
@@ -249,97 +246,6 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 
 
-
-######################################################################### Ab hier Baustelle
-
-
-	def get_frame(self):
-
-		self.cap = cv2.VideoCapture("http://192.168.178.44:8080/video")
-		# self.cap = cv2.VideoCapture("http://192.168.178.44:8080/shot.jpg")
-		ret, frame = self.cap.read()
-
-		if ret:
-			ret, jpeg = cv2.imencode('.jpg', frame)
-
-			# Record video
-			# if self.is_record:
-			#     if self.out == None:
-			#         fourcc = cv2.VideoWriter_fourcc(*'MJPG')
-			#         self.out = cv2.VideoWriter('./static/video.avi',fourcc, 20.0, (640,480))
-
-			#     ret, frame = self.cap.read()
-			#     if ret:
-			#         self.out.write(frame)
-			# else:
-			#     if self.out != None:
-			#         self.out.release()
-			#         self.out = None
-
-			return jpeg.tobytes()
-
-		else:
-			return None
-
-	global_frame = None
-
-
-	def video_stream(self):
-		from time import sleep
-		global video_camera
-		global global_frame
-
-		# while True:
-		yield "1"
-		sleep(4)
-		yield "2"
-		sleep(4)
-		yield "3"
-		# if video_camera == None:
-		# 	video_camera = VideoCamera()
-
-		# while True:
-		# frame = self.get_frame()
-		#
-		# if frame != None:
-		# 	global_frame = frame
-		# 	yield (b'--frame\r\n'
-		# 		   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
-		# else:
-		# 	yield (b'--frame\r\n'
-		# 		   b'Content-Type: image/jpeg\r\n\r\n' + global_frame + b'\r\n\r\n')
-
-	from flask import stream_with_context, request, Response
-
-
-
-	@octoprint.plugin.BlueprintPlugin.route('/stream')
-	def streamed_response(self):
-
-
-		# app = tornado.web.Application([
-		# 	(r'/', HtmlPageHandler),
-		# 	(r'/videofeed', StreamHandler)
-		# ])
-		# app.listen(9090)
-		# pass
-
-		def generate():
-			from time import sleep
-			yield "1"
-			sleep(4)
-			yield "2"
-			sleep(4)
-			yield "3"
-		return Response(generate(),mimetype='text/event-stream')
-
-	@octoprint.plugin.BlueprintPlugin.route("/myvideo")
-	def video_feed(self):
-		# return the response generated along with the specific media
-		# type (mime type)
-		return Response(self.video_stream(),
-						mimetype="text/plain")
-						# mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
 

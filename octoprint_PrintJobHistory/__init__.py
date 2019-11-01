@@ -1,19 +1,9 @@
 # coding=utf-8
 from __future__ import absolute_import
 
-### (Don't forget to remove me)
-# This is a basic skeleton for your plugin's __init__.py. You probably want to adjust the class name of your plugin
-# as well as the plugin mixins it's subclassing from. This is really just a basic skeleton to get you started,
-# defining your plugin as a template plugin, settings and asset plugin. Feel free to add or remove mixins
-# as necessary.
-#
-# Take a look at the documentation on what other plugin mixins are available.
-import json
-
 import octoprint.plugin
 from octoprint.events import Events
 
-import os
 import datetime
 import math
 
@@ -359,91 +349,6 @@ class PrintJobHistoryPlugin(
 	def bodysize_hook(self, current_max_body_sizes, *args, **kwargs):
 		return [("POST", r"/upload/", 5 * 1024 * 1024)]	# size in bytes
 
-	# For Streaming I need a special ResponseHandler
-	def route_hook(self, server_routes, *args, **kwargs):
-		from octoprint.server.util.tornado import LargeResponseHandler, UrlProxyHandler, path_validation_factory
-		from octoprint.util import is_hidden_path
-
-		return [
-			(r'myvideofeed', StreamHandler, dict(url=self._settings.global_get(["webcam", "snapshot"]),
-													as_attachment=True)),
-			(r"myforward", UrlProxyHandler, dict(url=self._settings.global_get(["webcam", "snapshot"]),
-													as_attachment=True))
-		]
-
-import cv2
-import tornado
-import time
-import imutils
-from pyzbar import pyzbar
-
-class StreamHandler(tornado.web.RequestHandler):
-
-	def initialize(self, url=None, as_attachment=False, basename=None, access_validation=None):
-		tornado.web.RequestHandler.initialize(self)
-		self._url = url
-		self._as_attachment = as_attachment
-		self._basename = basename
-		self._access_validation = access_validation
-
-	@tornado.web.asynchronous
-	@tornado.gen.coroutine
-	def get(self):
-		ioloop = tornado.ioloop.IOLoop.current()
-
-		self.set_header('Cache-Control', 'no-store, no-cache, must-revalidate, pre-check=0, post-check=0, max-age=0')
-		self.set_header( 'Pragma', 'no-cache')
-		self.set_header( 'Content-Type', 'multipart/x-mixed-replace;boundary=--jpgboundary')
-		self.set_header('Connection', 'close')
-
-		self.served_image_timestamp = time.time()
-		my_boundary = "--jpgboundary"
-		found = set()
-		while True:
-			# Generating images for mjpeg stream and wraps them into http resp
-			# if self.get_argument('fd') == "true":
-			#     img = cam.get_frame(True)
-			# else:
-			#     img = cam.get_frame(False)
-
-			self.cap = cv2.VideoCapture("http://192.168.178.44:8080/video")
-			# self.cap = cv2.VideoCapture("http://192.168.178.44:8080/shot.jpg")
-			ret, frame = self.cap.read()
-
-			frameData = frame
-			frameData = imutils.resize(frameData, width=600)
-			barcodes = pyzbar.decode(frameData)
-			for barcode in barcodes:
-				(x, y, width, height) = barcode.rect
-				cv2.rectangle(frameData, (x, y), (x + width, y + height), (0, 0, 255), 2)
-				barcodeData = barcode.data.decode("utf-8")
-				barcodeType = barcode.type
-				textData = "{} ({})".format(barcodeData, barcodeType)
-				cv2.putText(frameData, textData, (x, y - 10),
-							cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
-				if barcodeData not in found:
-					print("BBBBBBBEEEEEEEEEEPPPPPPPP")
-
-
-			img = frameData
-
-			ret, jpeg = cv2.imencode('.jpg', frameData)
-			data = jpeg.tobytes()
-
-			interval = 0.1
-			if self.served_image_timestamp + interval < time.time():
-				self.write(my_boundary)
-				self.write("Content-type: image/jpeg\r\n")
-				self.write("Content-length: %s\r\n\r\n" % len(data))
-				self.write(data)
-				self.served_image_timestamp = time.time()
-				yield tornado.gen.Task(self.flush)
-			else:
-				yield tornado.gen.Task(ioloop.add_timeout, ioloop.time() + interval)
-
-
-
-
 
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
 # ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
@@ -457,7 +362,6 @@ def __plugin_load__():
 
 	global __plugin_hooks__
 	__plugin_hooks__ = {
-		"octoprint.server.http.routes": __plugin_implementation__.route_hook,
 		"octoprint.server.http.bodysize": __plugin_implementation__.bodysize_hook,
 		"octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
 	}
