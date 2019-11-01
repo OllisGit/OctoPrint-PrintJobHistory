@@ -5,7 +5,6 @@ import threading
 
 import requests
 from io import open as i_open
-#from PIL import ImageFile
 from PIL import Image
 from PIL import ImageFile
 
