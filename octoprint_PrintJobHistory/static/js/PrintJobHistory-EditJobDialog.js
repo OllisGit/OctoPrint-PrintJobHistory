@@ -226,7 +226,7 @@ function PrintJobHistoryEditDialog(){
             })
             .done(function(response){
                 // Check if videoStream is available
-                if (response.status == 200 && response.result == false){
+                if (response.status == 200 && response.result == true){
                     //show stream in image
                     self.imageDisplayMode(IMAGEDISPLAYMODE_VIDEOSTREAM);
 
