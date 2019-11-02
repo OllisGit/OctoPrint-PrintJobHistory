@@ -21,7 +21,7 @@ function PrintJobHistoryEditDialog(){
 
     this.shouldPrintJobTableReload = false;
 
-    var SHUTTER_DURATION = 5;   // in seconds
+    var SHUTTER_DURATION = 4;   // in seconds
     var IMAGEDISPLAYMODE_SNAPSHOTIMAGE = "snapshotImage";
     var IMAGEDISPLAYMODE_VIDEOSTREAM = "videoStream";
     var IMAGEDISPLAYMODE_VIDEOSTREAM_WITH_SHUTTER = "videoStreamWithShutter";
@@ -178,28 +178,33 @@ function PrintJobHistoryEditDialog(){
 
     /////////////////////////////////////////////////////////////////////////////////////////////////// SAVE PRINT JOB ITEM
     this.savePrintJobItem  = function(){
-            var noteText = self.noteEditor.getText();
-            var noteDeltaFormat = self.noteEditor.getContents();
-            var noteHtml = self.noteEditor.getHtml();
-            self.printJobItemForEdit.noteText(noteText);
-            self.printJobItemForEdit.noteDeltaFormat(noteDeltaFormat);
-            self.printJobItemForEdit.noteHtml(noteHtml);
+        var noteText = self.noteEditor.getText();
+        var noteDeltaFormat = self.noteEditor.getContents();
+        var noteHtml = self.noteEditor.getHtml();
+        self.printJobItemForEdit.noteText(noteText);
+        self.printJobItemForEdit.noteDeltaFormat(noteDeltaFormat);
+        self.printJobItemForEdit.noteHtml(noteHtml);
 
-            self.apiClient.callUpdatePrintJob(self.printJobItemForEdit.databaseId(), self.printJobItemForEdit, function(allPrintJobsResponse){
-                self.editPrintJobItemDialog.modal('hide');
-                self.closeDialogHandler(true);
-            });
+        self.apiClient.callUpdatePrintJob(self.printJobItemForEdit.databaseId(), self.printJobItemForEdit, function(allPrintJobsResponse){
+            self.editPrintJobItemDialog.modal('hide');
+            self.closeDialogHandler(true);
+        });
 
     }
 
 
     /////////////////////////////////////////////////////////////////////////////////////////////////// DELETE IMAGE
     this.deleteImage  = function(){
+
+
+        var result = confirm("Do you really want to delete the image?");
+        if (result == true){
             self.apiClient.callDeleteSnapshotImage(self.printJobItemForEdit.snapshotFilename(), function(responseData){
                 // Update Image URL is the same, backend send the "no photo"-image
                 _setSnapshotImageSource(self.apiClient.getSnapshotUrl(responseData.snapshotFilename));
                 self.shouldPrintJobTableReload = true;
             });
+        }
     }
 
 

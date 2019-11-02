@@ -2,6 +2,8 @@
 
 # WORK IN PROGRESS!!!! 
 
+# Release Candidate is out (rc2)
+
 [![Version](https://img.shields.io/badge/dynamic/json.svg?color=brightgreen&label=version&url=https://api.github.com/repos/OllisGit/OctoPrint-PrintJobHistory/releases&query=$[0].name)]()
 [![Released](https://img.shields.io/badge/dynamic/json.svg?color=brightgreen&label=released&url=https://api.github.com/repos/OllisGit/OctoPrint-PrintJobHistory/releases&query=$[0].published_at)]()
 ![GitHub Releases (by Release)](https://img.shields.io/github/downloads/OllisGit/OctoPrint-PrintJobHistory/latest/total.svg)
@@ -65,7 +67,7 @@ should include the following features:
 
 ## Setup
 
-Plugin is not in "working-mode" and not released in offical OctoPrint Plugin-Repository.
+Plugin is in "working-mode" and not released in official OctoPrint Plugin-Repository.
 You need to install it manually using this URL: 
 
     https://github.com/OllisGit/OctoPrint-PrintJobHistory/releases/latest/download/master.zip

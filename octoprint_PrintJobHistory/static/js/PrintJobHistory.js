@@ -420,9 +420,12 @@ $(function() {
         }
 
         self.removePrintJobAction = function(printJobItem) {
-            self.apiClient.callRemovePrintJob(printJobItem.databaseId(), function(responseData) {
-                self.printJobHistoryTableHelper.reloadItems();
-            });
+            var result = confirm("Do you really want to delete the print job?");
+            if (result == true){
+                self.apiClient.callRemovePrintJob(printJobItem.databaseId(), function(responseData) {
+                    self.printJobHistoryTableHelper.reloadItems();
+                });
+            }
         };
 
 
