@@ -31,7 +31,6 @@ class PrintJobHistoryPlugin(
 
 
 	def initialize(self):
-		self._preHeatPluginImplementation = None
 		self._filamentManagerPluginImplementation = None
 		self._displayLayerProgressPluginImplementation = None
 
@@ -67,8 +66,6 @@ class PrintJobHistoryPlugin(
 
 	def _checkForMissingPluginInfos(self):
 		missingMessage = ""
-		if self._preHeatPluginImplementation == None:
-			missingMessage = "<li>PreHeat</li>"
 
 		if self._filamentManagerPluginImplementation == None:
 			missingMessage = missingMessage + "<li>FilamentManager</li>"
@@ -165,28 +162,6 @@ class PrintJobHistoryPlugin(
 			tempModel.sensorValue = tool0Temp
 			self._currentPrintJobModel.addTemperatureModel(tempModel)
 
-
-# PreHeat not needed anymore
-		# if self._preHeatPluginImplementation != None:
-		# 	filename = payload["path"]
-		# 	destination = payload["origin"]
-		# 	path_on_disk = octoprint.server.fileManager.path_on_disk(destination, filename)
-		#
-		# 	preHeatTemperature = self._preHeatPluginImplementation.read_temperatures_from_file(path_on_disk)
-		# 	nozzel = preHeatTemperature["tool0"]
-		# 	tempModel = TemperatureModel()
-		# 	tempModel.sensorName = "tool0"
-		# 	tempModel.sensorValue = nozzel
-		# 	self._currentPrintJobModel.addTemperatureModel(tempModel)
-		#
-		# 	if "bed" in preHeatTemperature:
-		# 		bed = preHeatTemperature["bed"]
-		# 		tempModel = TemperatureModel()
-		# 		tempModel.sensorName = "bed"
-		# 		tempModel.sensorValue = bed
-		# 		self._currentPrintJobModel.addTemperatureModel(tempModel)
-		# 	pass
-
 	def _printJobFinished(self, printStatus, payload):
 		self._currentPrintJobModel.printEndDateTime = datetime.datetime.now()
 		self._currentPrintJobModel.duration = (self._currentPrintJobModel.printEndDateTime - self._currentPrintJobModel.printStartDateTime).total_seconds()
@@ -225,11 +200,6 @@ class PrintJobHistoryPlugin(
 	######################################################################################### Hooks and public functions
 
 	def on_after_startup(self):
-
-		if "preheat" in self._plugin_manager.plugins:
-			plugin = self._plugin_manager.plugins["preheat"]
-			if plugin != None and plugin.enabled == True:
-				self._preHeatPluginImplementation = plugin.implementation
 
 		if "filamentmanager" in self._plugin_manager.plugins:
 			plugin = self._plugin_manager.plugins["filamentmanager"]
