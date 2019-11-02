@@ -268,8 +268,10 @@ function PrintJobHistoryEditDialog(){
 //            $("#printJobHistory-cancelCaptureButton").hide();
             var startShutter = new Date().getTime();
             self.imageDisplayMode(IMAGEDISPLAYMODE_VIDEOSTREAM_WITH_SHUTTER);
-
-            $("#printJobHistory-videoStream").attr("src", self.webCamSettings.snapshotUrl());
+            // freeze video stream -> show current tken snapshot
+//            $("#printJobHistory-videoStream").attr("src", self.webCamSettings.snapshotUrl());
+            var mySnapshotUrl = self.apiClient.getProxiedSnapshotUrl();
+            $("#printJobHistory-videoStream").attr("src", mySnapshotUrl);
 
             self.apiClient.callTakeSnapshot(self.printJobItemForEdit.snapshotFilename(), function(responseData){
                 self.snapshotSuccessMessageSpan.show();

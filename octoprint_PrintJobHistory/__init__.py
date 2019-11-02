@@ -362,6 +362,19 @@ class PrintJobHistoryPlugin(
 		return [("POST", r"/upload/", 5 * 1024 * 1024)]	# size in bytes
 
 
+	# For Streaming I need a special ResponseHandler
+	def route_hook(self, server_routes, *args, **kwargs):
+		from octoprint.server.util.tornado import LargeResponseHandler, UrlProxyHandler, path_validation_factory
+		from octoprint.util import is_hidden_path
+
+		return [
+			# (r'myvideofeed', StreamHandler, dict(url=self._settings.global_get(["webcam", "snapshot"]),
+			# 									 as_attachment=True)),
+			(r"mysnapshot", UrlProxyHandler, dict(url=self._settings.global_get(["webcam", "snapshot"]),
+												 as_attachment=True))
+		]
+
+
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
 # ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
 # can be overwritten via __plugin_xyz__ control properties. See the documentation for that.
@@ -374,6 +387,7 @@ def __plugin_load__():
 
 	global __plugin_hooks__
 	__plugin_hooks__ = {
+		"octoprint.server.http.routes": __plugin_implementation__.route_hook,
 		"octoprint.server.http.bodysize": __plugin_implementation__.bodysize_hook,
 		"octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
 	}
