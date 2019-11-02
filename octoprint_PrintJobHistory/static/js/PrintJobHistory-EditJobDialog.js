@@ -217,7 +217,7 @@ function PrintJobHistoryEditDialog(){
             // SHOW VIDEOSTREAM
             self.imageDisplayMode(IMAGEDISPLAYMODE_VIDEOSTREAM_LOADING);
 
-            OctoPrint.util.testUrl(self.webCamSettings.streamUrl(), {
+            OctoPrint.util.testUrl(self.webCamSettings.snapshotUrl(), {
                 method: "GET",
                 response: "bytes",
                 timeout: self.webCamSettings.streamTimeout(),
