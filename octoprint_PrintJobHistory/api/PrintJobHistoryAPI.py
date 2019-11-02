@@ -227,7 +227,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		if exportType == "CSV":
 			allJobsModels = self._databaseManager.loadAllPrintJobs()
 			# allJobsDict = self._convertPrintJobHistoryEntitiesToDict(allJobsEntities)
-			allJobsDict = self._convertPrintJobHistoryModelsToDict(allJobsModels)
+			allJobsDict = TransformPrintJob2JSON.transformAllPrintJobModels(allJobsModels)
 
 			# csvContent = self._convertPrintJobHistoryEntitiesToCSV(allJobsDict)
 			csvContent = Transform2CSV.transform2CSV(allJobsDict)

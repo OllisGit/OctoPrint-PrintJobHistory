@@ -27,19 +27,25 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
 
     };
 
+    var _addApiKeyIfNecessary = function(urlContext){
+        if (UI_API_KEY){
+            urlContext = urlContext + "?apikey=" + UI_API_KEY;
+        }
+        return urlContext;
+    }
 
     this.getExportUrl = function(exportType){
-        return "./plugin/" + this.pluginId + "/exportPrintJobHistory/" + exportType + "?apikey=" + jQuery.ajaxSettings.headers["X-Api-Key"];
+        return _addApiKeyIfNecessary("./plugin/" + this.pluginId + "/exportPrintJobHistory/" + exportType);
     }
 
     this.getSnapshotUrl = function(snapshotFilename){
         //http://localhost:5000/plugin/PrintJobHistory/printJobSnapshot/20191003-153311
-        return "./plugin/" + this.pluginId + "/printJobSnapshot/" + snapshotFilename + "?apikey=" + jQuery.ajaxSettings.headers["X-Api-Key"];
+        return _addApiKeyIfNecessary("./plugin/" + this.pluginId + "/printJobSnapshot/" + snapshotFilename);
     }
 
     this.uploadSnapshotUrl = function(snapshotFilename){
         //http://localhost:5000/plugin/PrintJobHistory/printJobSnapshot/20191003-153311
-        return "./plugin/" + this.pluginId + "/upload/snapshot/" + snapshotFilename + "?apikey=" + jQuery.ajaxSettings.headers["X-Api-Key"];
+        return _addApiKeyIfNecessary("./plugin/" + this.pluginId + "/upload/snapshot/" + snapshotFilename);
     }
 
     // load FILTERED/SORTED PrintJob-Items
