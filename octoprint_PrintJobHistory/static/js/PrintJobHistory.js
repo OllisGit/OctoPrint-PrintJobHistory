@@ -254,8 +254,13 @@ $(function() {
             }
 
             if ("missingPlugin" == data.action){
-                // NOT POSSIBLE, because init not done self.pluginCheckDialog.showMissingPluginsDialog(data.message);
-                self.missingPluginDialogMessage = data.message;
+                // NOT POSSIBLE, because init not done
+                if (self.pluginCheckDialog != null && self.pluginCheckDialog.isInitialized()){
+                    self.pluginCheckDialog.showMissingPluginsDialog(data.message);
+                } else {
+                    // save message for later use
+                    self.missingPluginDialogMessage = data.message;
+                }
                 return;
             }
 
@@ -265,13 +270,25 @@ $(function() {
                     self.printJobToShowAfterStartup = data.printJobItem;
                     self.showPrintJobDetailsDialogAction(data.printJobItem);
                 }
-                return
+                return;
             }
 
             if ("showPrintJobDialogAfterClientConnection" == data.action){
                 if (data.printJobItem != null){
                     self.printJobToShowAfterStartup = data.printJobItem;
+                    self.showPrintJobDetailsDialogAction(data.printJobItem);
                 }
+                return;
+            }
+            if ("errorPopUp" == data.action){
+                new PNotify({
+                    title: 'ERROR:' + data.title,
+                    text: data.message,
+                    type: "error",
+                    hide: false
+                    });
+
+                return;
             }
         }
 

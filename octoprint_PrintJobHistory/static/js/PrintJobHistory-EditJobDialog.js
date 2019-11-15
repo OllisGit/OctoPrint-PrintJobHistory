@@ -138,8 +138,12 @@ function PrintJobHistoryEditDialog(){
                 self.snapshotUploadInProgress(false);
             }
         });
-
     }
+
+    this.isInitialized = function() {
+        return self.apiClient != null;
+    }
+
 
     /////////////////////////////////////////////////////////////////////////////////////////////////// SHOW DIALOG
     this.showDialog = function(printJobItemForEdit, closeDialogHandler){

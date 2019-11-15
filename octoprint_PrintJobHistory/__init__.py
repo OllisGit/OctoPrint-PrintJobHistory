@@ -32,18 +32,22 @@ class PrintJobHistoryPlugin(
 
 	def initialize(self):
 		self._filamentManagerPluginImplementation = None
+		self._filamentManagerPluginImplementationState = None
 		self._displayLayerProgressPluginImplementation = None
+		self._displayLayerProgressPluginImplementationState = None
 
 		pluginDataBaseFolder = self.get_plugin_data_folder()
-		# DATABASE
-		self._databaseManager = DatabaseManager()
 
-		self._databaseManager.initDatabase(pluginDataBaseFolder)
+		self._logger.info("Start initializing")
+		# DATABASE
+		self._databaseManager = DatabaseManager(self._logger)
+
+		self._databaseManager.initDatabase(pluginDataBaseFolder, self._sendErrorMessageToClient)
 		# databasePath = os.path.join(pluginDataBaseFolder, "printJobHistory.db")
 		# self._databaseManager.initDatabase(databasePath)
 
 		# CAMERA
-		self._cameraManager = CameraManager()
+		self._cameraManager = CameraManager(self._logger)
 		pluginBaseFolder = self._basefolder
 
 		self._cameraManager.initCamera(pluginDataBaseFolder, pluginBaseFolder, self._settings)
@@ -57,21 +61,25 @@ class PrintJobHistoryPlugin(
 
 		self.alreadyCanceled = False
 
+		self._logger.info("Done initializing")
 	################################################################################################## private functions
 	def _sendDataToClient(self, payloadDict):
-
 		self._plugin_manager.send_plugin_message(self._identifier,
 												 payloadDict)
 
+	def _sendErrorMessageToClient(self, title, message):
+		self._sendDataToClient(dict(action="errorPopUp",
+									title= title,
+									message=message))
 
 	def _checkForMissingPluginInfos(self):
 		missingMessage = ""
 
 		if self._filamentManagerPluginImplementation == None:
-			missingMessage = missingMessage + "<li>FilamentManager</li>"
+			missingMessage = missingMessage + "<li>FilamentManager (<b>" + self._filamentManagerPluginImplementationState + "</b>)</li>"
 
 		if self._displayLayerProgressPluginImplementation == None:
-			missingMessage = missingMessage + "<li>DisplayLayerProgress</li>"
+			missingMessage = missingMessage + "<li>DisplayLayerProgress (<b>" + self._displayLayerProgressPluginImplementationState + "</b>)</li>"
 
 		if missingMessage != "":
 			missingMessage = "<ul>" + missingMessage + "</ul>"
@@ -79,7 +87,7 @@ class PrintJobHistoryPlugin(
 									    message=missingMessage))
 
 
-	# Graps all informations for the filament attributes
+	# Grabs all informations for the filament attributes
 	def _createAndAssignFilamentModel(self, printJob, payload):
 		filemanentModel  = FilamentModel()
 
@@ -184,11 +192,6 @@ class PrintJobHistoryPlugin(
 			# inform client to show job edit dialog
 			printJobModel = self._databaseManager.loadPrintJob(databaseId)
 			printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel)
-			# payload = {
-			# 	"action": "showPrintJobDialog",
-			# 	"printJobItem": printJobItem
-			# }
-			# self._sendDataToClient(payload)
 
 		# inform client for a reload
 		payload = {
@@ -200,19 +203,32 @@ class PrintJobHistoryPlugin(
 	######################################################################################### Hooks and public functions
 
 	def on_after_startup(self):
+		# check if needed plugins were available
+		self._displayLayerProgressPluginImplementationState = "enabled"
+		self._filamentManagerPluginImplementationState = "enabled"
 
 		if "filamentmanager" in self._plugin_manager.plugins:
 			plugin = self._plugin_manager.plugins["filamentmanager"]
 			if plugin != None and plugin.enabled == True:
 				self._filamentManagerPluginImplementation = plugin.implementation
+			else:
+				self._filamentManagerPluginImplementationState = "disabled"
+		else:
+			self._filamentManagerPluginImplementationState = "missing"
 
 		if "DisplayLayerProgress" in self._plugin_manager.plugins:
 			plugin = self._plugin_manager.plugins["DisplayLayerProgress"]
 			if plugin != None and plugin.enabled == True:
 				self._displayLayerProgressPluginImplementation = plugin.implementation
+			else:
+				self._displayLayerProgressPluginImplementationState = "disabled"
+		else:
+			self._displayLayerProgressPluginImplementationState = "missing"
+
+		self._logger.info("Plugin-State: DisplayLayerProgress=" + self._displayLayerProgressPluginImplementationState + " filamentmanager=" + self._filamentManagerPluginImplementationState)
 
 	def on_event(self, event, payload):
-
+		# WebBroswer opened
 		if Events.CLIENT_OPENED == event:
 			# Check if all needed Plugins are available, if not modale dialog to User
 			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_PLUGIN_DEPENDENCY_CHECK]):
@@ -249,13 +265,11 @@ class PrintJobHistoryPlugin(
 			self.alreadyCanceled = True
 			self._printJobFinished("canceled", payload)
 
-
 		pass
 
 	def on_settings_save(self, data):
 		# default save function
 		octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
-
 
 	# to allow the frontend to trigger an GET call
 	def on_api_get(self, request):
@@ -276,11 +290,10 @@ class PrintJobHistoryPlugin(
 
 		return settings
 
-
 	##~~ TemplatePlugin mixin
 	def get_template_configs(self):
 		return [
-			dict(type="tab", name="Job History"),
+			dict(type="tab", name="Print Job History"),
 			dict(type="settings", custom_bindings=True)
 		]
 
@@ -349,7 +362,7 @@ class PrintJobHistoryPlugin(
 # ("OctoPrint-PluginSkeleton"), you may define that here. Same goes for the other metadata derived from setup.py that
 # can be overwritten via __plugin_xyz__ control properties. See the documentation for that.
 # Name is used in the left Settings-Menue
-__plugin_name__ = "Job History"
+__plugin_name__ = "PrintJobHistory"
 
 def __plugin_load__():
 	global __plugin_implementation__

@@ -20,6 +20,10 @@ function PrintJobHistoryPluginCheckDialog(){
         self.confirmButton = $("button.btn-confirm", self.missingPluginsDialog);
     }
 
+    this.isInitialized = function() {
+        return self.apiClient != null;
+    }
+
     this.hideDialog = function(){
         self.missingPluginsDialog.modal('hide');
     }
@@ -33,7 +37,7 @@ function PrintJobHistoryPluginCheckDialog(){
 
         self.confirmButton.unbind("click");
         self.confirmButton.bind("click", function() {
-            disableCheck = self.deactivatePluginCheck()
+            disableCheck = self.deactivatePluginCheck();
             if (disableCheck == true) {
                 self.pluginSettings.pluginCheckActivated(false)
                 self.apiClient.callDeactivatePluginCheck();

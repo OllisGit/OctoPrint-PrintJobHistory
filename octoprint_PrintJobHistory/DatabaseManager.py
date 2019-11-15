@@ -5,20 +5,13 @@ import logging
 import os
 import sqlite3
 
+from octoprint_PrintJobHistory.WrappedLoggingHandler import WrappedLoggingHandler
 from octoprint_PrintJobHistory.models.FilamentModel import FilamentModel
 from octoprint_PrintJobHistory.models.PrintJobModel import PrintJobModel
 from octoprint_PrintJobHistory.models.PluginMetaDataModel import PluginMetaDataModel
 from octoprint_PrintJobHistory.models.TemperatureModel import TemperatureModel
 from peewee import *
 
-from peewee import BackrefAccessor
-
-from .entities.PrintJobEntity import PrintJobEntity
-from .entities.FilamentEntity import FilamentEntity
-from .entities.TemperatureEntity import TemperatureEntity
-from .entities.PluginMetaDataEntity import PluginMetaDataEntity
-
-from datetime import datetime
 
 FORCE_CREATE_TABLES = False
 SQL_LOGGING = True
@@ -31,10 +24,13 @@ MODELS = [PluginMetaDataModel, PrintJobModel, FilamentModel, TemperatureModel]
 
 class DatabaseManager(object):
 
-	def __init__(self):
-		self._logger = logging.getLogger(__name__)
+	def __init__(self, parentLogger):
+		self._logger = logging.getLogger(parentLogger.name + "." + self.__class__.__name__)
+		self._sqlLogger = logging.getLogger(parentLogger.name + "." + self.__class__.__name__ + ".SQL")
+
 		self._database = None
 		self._databaseFileLocation = None
+		self._sendDataToClient = None
 
 	################################################################################################## private functions
 
@@ -46,15 +42,18 @@ class DatabaseManager(object):
 		except Exception as e:
 			errorMessage = e.message
 			if errorMessage.startswith("no such table"):
+
+				self._logger.info("Create database-table, because didn't exists")
 				self._createDatabaseTables()
 			else:
-				print(str(e))
+				self._logger.error(str(e))
 
 		if not schemeVersionFromDatabaseModel == None:
 			currentDatabaseSchemeVersion = int(schemeVersionFromDatabaseModel.value)
 			if (currentDatabaseSchemeVersion < CURRENT_DATABASE_SCHEME_VERSION):
 				# evautate upgrade steps (from 1-2 , 1...6)
-				print("We need to upgrade the database scheme from: '" + str(currentDatabaseSchemeVersion) + "' to: '" + str(CURRENT_DATABASE_SCHEME_VERSION) + "'")
+				self._logger.info("We need to upgrade the database scheme from: '" + str(currentDatabaseSchemeVersion) + "' to: '" + str(CURRENT_DATABASE_SCHEME_VERSION) + "'")
+				self._logger.info("...not needed/implemented...")
 				pass
 		pass
 
@@ -66,35 +65,48 @@ class DatabaseManager(object):
 		# 	#	sql
 		# 	pass
 	def _createDatabaseTables(self):
-		self._logger.info("Creating new database tables for printjob-plugin")
 		self._database.connect(reuse_if_open=True)
 		self._database.drop_tables(MODELS)
 		self._database.create_tables(MODELS)
 
 		PluginMetaDataModel.create(key=PluginMetaDataModel.KEY_DATABASE_SCHEME_VERSION, value=CURRENT_DATABASE_SCHEME_VERSION)
 		self._database.close()
+		self._logger.info("Database tables created")
 
 	################################################################################################### public functions
 	# datapasePath '/Users/o0632/Library/Application Support/OctoPrint/data/PrintJobHistory'
-	def initDatabase(self, databasePath):
-
+	def initDatabase(self, databasePath, sendErrorMessageToClient):
+		self._logger.info("Init DatabaseManager")
+		self.sendErrorMessageToClient = sendErrorMessageToClient
 		self._databaseFileLocation = os.path.join(databasePath, "printJobHistory.db")
-		self._logger.info("Creating new database in: " + str(self._databaseFileLocation))
+
+		self._logger.info("Creating database in: " + str(self._databaseFileLocation))
 		if SQL_LOGGING == True:
 			import logging
 			logger = logging.getLogger('peewee')
+			# we need only the single logger without parent
+			logger.parent = None
 			# logger.addHandler(logging.StreamHandler())
+			# activate SQL logging on PEEWEE side and on PLUGIN side
 			logger.setLevel(logging.DEBUG)
+			self._sqlLogger.setLevel(logging.DEBUG)
+
+			wrappedHandler = WrappedLoggingHandler(self._sqlLogger)
+			logger.addHandler(wrappedHandler)
+
 
 		self._database = SqliteDatabase(self._databaseFileLocation)
 		DatabaseManager.db = self._database
 		self._database.bind(MODELS)
 
 		if FORCE_CREATE_TABLES:
+			self._logger.info("Creating new database-tables, because FORCE == TRUE!")
 			self._createDatabaseTables()
 		else:
 			# check, if we need an scheme upgrade
+			self._logger.info("Check if database-scheme upgrade needed.")
 			self._createOrUpgradeSchemeIfNecessary()
+		self._logger.info("Done DatabaseManager")
 		pass
 
 	def getDatabaseFileLocation(self):
@@ -124,7 +136,8 @@ class DatabaseManager(object):
 				# to rollback().
 				transaction.rollback()
 				self._logger.exception("Could not insert printJob into database:" + str(e))
-				# TODO Inform user about exception
+
+				self.sendErrorMessageToClient("DatabaseManager", "Could not insert the printjob into the database. See OctoPrint.log for details!")
 			pass
 
 		return databaseId
@@ -136,9 +149,9 @@ class DatabaseManager(object):
 				databaseId = printJobModel.get_id()
 				# save all relations
 				# - Filament
-				# for filamentModel in printJobModel.getFilamentModels():
-				# 	filamentModel.printJob = printJobModel
-				# 	filamentModel.save()
+				for filamentModel in printJobModel.getFilamentModels():
+					filamentModel.save()
+
 				# # - Temperature
 				# for temperatureModel in printJobModel.getTemperatureModels():
 				# 	temperatureModel.printJob = printJobModel
@@ -149,7 +162,7 @@ class DatabaseManager(object):
 				# to rollback().
 				transaction.rollback()
 				self._logger.exception("Could not update printJob into database:" + str(e))
-				# TODO Inform user about exception
+				self.sendErrorMessageToClient("DatabaseManager", "Could not update the printjob ('"+ printJobModel.fileName +"') into the database. See OctoPrint.log for details!")
 			pass
 
 	def countPrintJobsByQuery(self, tableQuery):
@@ -219,5 +232,6 @@ class DatabaseManager(object):
 				# to rollback().
 				transaction.rollback()
 				self._logger.exception("Could not delete printJob from database:" + str(e))
-				# TODO Inform user about exception
+
+				self.sendErrorMessageToClient("DatabaseManager", "Could not update the printjob ('"+ str(databaseId) +"') into the database. See OctoPrint.log for details!")
 			pass

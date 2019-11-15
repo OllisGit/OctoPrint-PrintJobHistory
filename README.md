@@ -2,13 +2,13 @@
 
 # WORK IN PROGRESS!!!! 
 
-# Release Candidate is out (rc2.1)
+# Release Candidate is out (rc3)
 
 [![Version](https://img.shields.io/badge/dynamic/json.svg?color=brightgreen&label=version&url=https://api.github.com/repos/OllisGit/OctoPrint-PrintJobHistory/releases&query=$[0].name)]()
 [![Released](https://img.shields.io/badge/dynamic/json.svg?color=brightgreen&label=released&url=https://api.github.com/repos/OllisGit/OctoPrint-PrintJobHistory/releases&query=$[0].published_at)]()
 ![GitHub Releases (by Release)](https://img.shields.io/github/downloads/OllisGit/OctoPrint-PrintJobHistory/latest/total.svg)
 
-The OctoPrint Plugin stores all print-job informations of a print in a database
+The OctoPrint-Plugin stores all print-job informations of a print in a database
 
 #### Current implementation for Plugin-Manager URL: 
     https://github.com/OllisGit/OctoPrint-PrintJobHistory/releases/latest/download/master.zip
@@ -40,7 +40,7 @@ should include the following features:
 - [x] Filament cost
 
 ### UI features
-- [ ] Better error-feedback (more then just the "happy-path")
+- [x] Better error-feedback (more then just the "happy-path")
 - [x] List all printjobs
 - [x] Edit single printjob
 - [x] Capture/Upload Image
@@ -56,7 +56,9 @@ should include the following features:
 
 
 ## Planning Release #2, ... 
-....to be done.... see Planning Board: https://github.com/OllisGit/OctoPrint-PrintJobHistory/projects/1
+....to be done.... see:
+- Poll: "What is the next big thing?" https://github.com/OllisGit/OctoPrint-PrintJobHistory/issues/6
+- Planning Board: https://github.com/OllisGit/OctoPrint-PrintJobHistory/projects/1
 
 ## Screenshots
 ![plugin-settings](screenshots/plugin-settings.png "Plugin-Settings")

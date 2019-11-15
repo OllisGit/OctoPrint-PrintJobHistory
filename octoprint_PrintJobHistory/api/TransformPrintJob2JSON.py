@@ -17,9 +17,9 @@ def transformPrintJobModel(job):
 	durationFormatted = StringUtils.secondsToText(duration)
 	jobAsDict["durationFormatted"] = durationFormatted
 
-	allFilements = job.getFilamentFromAssoziation()
-	if allFilements != None:
-		filamentDict = allFilements.__data__
+	allFilaments = job.loadFilamentFromAssoziation()
+	if allFilaments != None:
+		filamentDict = allFilaments.__data__
 		filamentDict["usedLength"] = StringUtils.formatSave("{:.02f}", filamentDict["usedLength"], "")
 		filamentDict["usedWeight"] = StringUtils.formatSave("{:.02f}", filamentDict["usedWeight"], "")
 		filamentDict["usedCost"] = StringUtils.formatSave("{:.02f}", filamentDict["usedCost"], "")

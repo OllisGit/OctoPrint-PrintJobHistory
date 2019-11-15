@@ -80,6 +80,14 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		printJobModel.printedLayers = self._getValueFromDictOrNone("printedLayers", jsonData)
 		printJobModel.printedHeight = self._getValueFromDictOrNone("printedHeight", jsonData)
 
+		filamentModel = printJobModel.loadFilamentFromAssoziation()
+		filamentModel.spoolName = self._getValueFromDictOrNone("spoolName", jsonData)
+		filamentModel.material = self._getValueFromDictOrNone("material", jsonData)
+		filamentModel.usedLength = self._getValueFromDictOrNone("usedLength", jsonData)
+		filamentModel.calculatedLength = self._getValueFromDictOrNone("calculatedLength", jsonData)
+		filamentModel.usedWeight = self._getValueFromDictOrNone("usedWeight", jsonData)
+		filamentModel.usedCost = self._getValueFromDictOrNone("usedCost", jsonData)
+
 		# filamentModel = FilamentModel()
 		# filamentModel.profileVendor = self._getValueFromDictOrNone("profileVendor", jsonData)
 		# filamentModel.diameter = self._getValueFromDictOrNone("diameter", jsonData)

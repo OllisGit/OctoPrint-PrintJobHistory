@@ -1,12 +1,13 @@
 <!-- Modal-Dialogs -->
 <span id="modal-dialogs-printJobHistory" style="display:none" >
+
     <!-- PluginDependencyCheck-Dialog -->
     <div id="dialog_printJobHistory_missingPlugins" class="modal hide fade">
         <div class="modal-header">
             <h3 class="modal-title">Missing plugins</h3>
         </div>
         <div class="modal-body">
-            To get the real power of the <b>PrintJobHistory-Plugin</b> you need the following plugins installed/enabled:
+            To get the real power of the <b>Print Job History - Plugin</b> you need the following plugins installed/enabled:
 
             <div><br></div>
             <div id="missingPluginMessage">&nbsp;</div>
@@ -17,7 +18,7 @@
         <div class="control-group">
             <div class="controls">
                 <span class="" style="text-align:left">
-                    <input data-bind="checked: pluginCheckDialog.deactivatePluginCheck" type="checkbox" style="margin-bottom: 10px;"> Disable Plugin-Dependency check
+                    <input data-bind="checked: pluginCheckDialog.deactivatePluginCheck" type="checkbox" style="margin-bottom: 10px;"> disable Plugin-Dependency check
                 </span>
                 <button class="btn btn-confirm" style="text-align:right">Close</button></div>
             </div>
@@ -32,51 +33,47 @@
                     <h4 class="modal-title" data-bind="text: printJobForEditing().fileName"></h4>
                 </div>
                 <div class="span3">
-
                     <!-- Customize Field visiblity -->
-                    <div id="configFields" class="btn-group" >
-                      <a id="openConfigFields" class="btn dropdown-toggle" onclick="machwas()" href="#">
-                        Configure Fields (TODO)
-                        <span class="caret"></span>
-                      </a>
-                      <ul id="configFieldsDropDown" class="dropdown-menu pull-right">
-                        <li>
-                              <div class="container" style="max-width: 480px;">
-                                <h3>TODO: needs to be implemented</h3>
-                                <div class="row">
-                                    <div class="span1">&nbsp;</div>
-                                    <div class="span2">
-                                        <label class="checkbox"><input type="checkbox"> Displayname</label>
-                                    </div>`
-                                    <div class="span2">
-                                        <label class="checkbox"><input type="checkbox"> Material</label>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="span1">&nbsp;</div>
-                                    <div class="span2">
-                                        <label class="checkbox"><input type="checkbox"> Displayname</label>
-                                    </div>
-                                    <div class="span2">
-                                        <label class="checkbox"><input type="checkbox"> Material</label>
-                                    </div>
-                                </div>
-                                <div class="row">
-                                    <div class="span1">&nbsp;</div>
-                                    <div class="span2">
-                                        <label class="checkbox"><input type="checkbox"> Displayname</label>
-                                    </div>
-                                    <div class="span2">
-                                        <label class="checkbox"><input type="checkbox"> Material</label>
-                                    </div>
-                                </div>
-                            </div>
-                        </li>
-                      </ul>
-                    </div>
-
-
-
+<!--                    <div id="configFields" class="btn-group" >-->
+<!--                      <a id="openConfigFields" class="btn dropdown-toggle" onclick="machwas()" href="#">-->
+<!--                        Configure Fields (TODO)-->
+<!--                        <span class="caret"></span>-->
+<!--                      </a>-->
+<!--                      <ul id="configFieldsDropDown" class="dropdown-menu pull-right">-->
+<!--                        <li>-->
+<!--                              <div class="container" style="max-width: 480px;">-->
+<!--                                <h3>TODO: needs to be implemented</h3>-->
+<!--                                <div class="row">-->
+<!--                                    <div class="span1">&nbsp;</div>-->
+<!--                                    <div class="span2">-->
+<!--                                        <label class="checkbox"><input type="checkbox"> Displayname</label>-->
+<!--                                    </div>`-->
+<!--                                    <div class="span2">-->
+<!--                                        <label class="checkbox"><input type="checkbox"> Material</label>-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                                <div class="row">-->
+<!--                                    <div class="span1">&nbsp;</div>-->
+<!--                                    <div class="span2">-->
+<!--                                        <label class="checkbox"><input type="checkbox"> Displayname</label>-->
+<!--                                    </div>-->
+<!--                                    <div class="span2">-->
+<!--                                        <label class="checkbox"><input type="checkbox"> Material</label>-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                                <div class="row">-->
+<!--                                    <div class="span1">&nbsp;</div>-->
+<!--                                    <div class="span2">-->
+<!--                                        <label class="checkbox"><input type="checkbox"> Displayname</label>-->
+<!--                                    </div>-->
+<!--                                    <div class="span2">-->
+<!--                                        <label class="checkbox"><input type="checkbox"> Material</label>-->
+<!--                                    </div>-->
+<!--                                </div>-->
+<!--                            </div>-->
+<!--                        </li>-->
+<!--                      </ul>-->
+<!--                    </div>-->
                 </div>
             </div>
             <div class="row">
@@ -115,16 +112,19 @@
                     <div class="row">
                         <div class="span6" style="">
                                 <div class="control-group">
-                                    <label class="control-label">Spool</label>
+                                    <label class="control-label">Spool *</label>
                                     <div class="controls">
                                         <input type="text" class="input-large" data-bind="value: printJobForEditing().spoolName" />
                                     </div>
                                 </div>
-                                <div class="control-group">
-                                    <label class="control-label">Material</label>
+                                <div class="control-group no-bottom-gap">
+                                    <label class="control-label">Material *</label>
                                     <div class="controls">
                                         <input type="text" class="input-large" data-bind="value: printJobForEditing().material" />
                                     </div>
+                                </div>
+                                <div class="" style="margin-left:80px">
+                                    <small><font color="Gray"> * spool values will not be reflected to FilamentManager-Plugin</font></small>
                                 </div>
                                 <div class="control-group no-bottom-gap">
                                     <label class="control-label">Used length</label>
@@ -163,7 +163,6 @@
                                     </div>
                                 </div>
                                 <div class="" style="margin-left:40px">
-<!--                                    <label class="control-label">Notes:</label>-->
                                     <div class="">
                                         <div class="note-quill-editor-container">
                                             <div id="note-quill-editor"></div>
@@ -176,22 +175,18 @@
                             <div class="">
 
                                 <div class="row-fluid text-center">
-
                                     <span class="span5 text-left">
                                         <span data-bind="visible: !printJobEditDialog.webCamEnabled()">WebCam not enabled!</span>
                                         <button id="printJobHistory-captureButton" data-bind="visible: printJobEditDialog.webCamEnabled, click: printJobEditDialog.captureImage" class="btn btn-success">
                                             <i class="fa fa-spinner fa-spin" id="printJobHistory-captureInProgress" style="display: none;"></i>
                                             <i class="fa fa-camera"></i>
                                             <span id="printJobHistory-captureButtonText">Capture</span></button>
-                                        <button id="printJobHistory-cancelCaptureButton" style="display:none"
-                                                data-bind="click: printJobEditDialog.cancelCaptureImage, visible: printJobEditDialog.imageDisplayMode()=='videoStream' || printJobEditDialog.imageDisplayMode()=='videoStreamWithShutter'" class="btn">Cancel</button>
-
+                                            <button id="printJobHistory-cancelCaptureButton" style="display:none"
+                                                    data-bind="click: printJobEditDialog.cancelCaptureImage, visible: printJobEditDialog.imageDisplayMode()=='videoStream' || printJobEditDialog.imageDisplayMode()=='videoStreamWithShutter'" class="btn">Cancel</button>
                                     </span>
-
                                     <span class="span6 text-right">
                                         <button type="button" class="btn btn-danger" data-bind="click: printJobEditDialog.deleteImage" ><i class="fa fa-trash"></i>Delete Image</button>
                                     </span>
-
                                 </div>
 
 
@@ -208,69 +203,52 @@
 
                                         </div>
 
-<div id="printjobhistory_webcam_contaier" data-bind="visible: printJobEditDialog.imageDisplayMode()!='snapshotImage'">
+                                        <div id="printjobhistory_webcam_contaier" data-bind="visible: printJobEditDialog.imageDisplayMode()!='snapshotImage'">
+                                            <!--  START WEBCAM LOADER   -->
+                                            <!--
+                                            data-bind="visible: !webcamLoaded()"
+                                            -->
+                                            <div class="printjobhistory nowebcam" >
+                                                <div data-bind="visible: printJobEditDialog.imageDisplayMode()=='videoStreamLoading'" class="printjobhistory text webcam_loading" >
+                                                    <p><strong>Webcam stream loading...</strong></p>
+                                                </div>
+                                                <div data-bind="visible: printJobEditDialog.imageDisplayMode()=='videoStreamError'" class="text webcam_error" >
+                                                    <p><strong>Webcam stream not loaded</strong></p>
+                                    <!--                <p data-bind="visible: !loginState.isAdmin()"><small>{{ _('It might not be configured correctly or require authentication. To have this fixed, get in touch with an administrator of this OctoPrint instance.') }}</small></p>-->
+                                    <!--                <p data-bind="visible: loginState.isAdmin"><small>{{ _('It might not be configured correctly or require authentication. You can change the URL of the stream under "Settings" > "Webcam & Timelapse" > "Webcam" > "Stream URL". If you don\'t have a webcam you can also just disable webcam support there.') }}</small></p>-->
+                                                    <p><small>Currently configured stream UR: <a target="_blank" rel="noreferrer" data-bind="attr: {href: printJobEditDialog.webCamSettings.streamUrl}, text: printJobEditDialog.webCamSettings.streamUrl"></a></small></p>
+                                                </div>
+                                            </div>
+                                            <!--  END WEBCAM LOADER   -->
 
 
-<!--  START WEBCAM LOADER   -->
-<!--
-data-bind="visible: !webcamLoaded()"
--->
-        <div class="printjobhistory nowebcam" >
-            <div data-bind="visible: printJobEditDialog.imageDisplayMode()=='videoStreamLoading'" class="printjobhistory text webcam_loading" >
-                <p><strong>Webcam stream loading...</strong></p>
-            </div>
-            <div data-bind="visible: printJobEditDialog.imageDisplayMode()=='videoStreamError'" class="text webcam_error" >
-                <p><strong>Webcam stream not loaded</strong></p>
-<!--                <p data-bind="visible: !loginState.isAdmin()"><small>{{ _('It might not be configured correctly or require authentication. To have this fixed, get in touch with an administrator of this OctoPrint instance.') }}</small></p>-->
-<!--                <p data-bind="visible: loginState.isAdmin"><small>{{ _('It might not be configured correctly or require authentication. You can change the URL of the stream under "Settings" > "Webcam & Timelapse" > "Webcam" > "Stream URL". If you don\'t have a webcam you can also just disable webcam support there.') }}</small></p>-->
-                <p><small>Currently configured stream UR: <a target="_blank" rel="noreferrer" data-bind="attr: {href: printJobEditDialog.webCamSettings.streamUrl}, text: printJobEditDialog.webCamSettings.streamUrl"></a></small></p>
-            </div>
-        </div>
-<!--  END WEBCAM LOADER   -->
-
-
-        <div id="webcam_rotator" data-bind="visible: printJobEditDialog.imageDisplayMode()!='videoStreamLoading' && printJobEditDialog.imageDisplayMode()!='videoStreamError', css: { webcam_rotated: printJobEditDialog.webCamSettings.rotate90(), webcam_unrotated: !printJobEditDialog.webCamSettings.rotate90() }">
-            <div class="webcam_fixed_ratio" data-bind="css: printJobEditDialog.webcamRatioClass">
-                <div class="webcam_fixed_ratio_inner">
-<!--
-event: { load: onWebcamLoaded, error: onWebcamErrored }, visible: !webcamError()
--->
-<img id="printJobHistory-videoStream" data-bind="css: { flipH: printJobEditDialog.webCamSettings.flipH(), flipV: printJobEditDialog.webCamSettings.flipV() }"  >
-<img id="printJobHistory-snapshotImage-shutter"
-     data-bind="visible: printJobEditDialog.imageDisplayMode()=='videoStreamWithShutter'"
-     style="position:absolute;top:0px;left:0px"
-     src="plugin/PrintJobHistory/static/images/camera-shutter-animated.svg" />
-
-                </div>
-            </div>
-        </div>
-
-
-</div>
-
-<!-- FUNKTIONIERT   -->
-<!--                                        <div id="videoStreamContainer" style="position: relative; left: 0; top: 0;"-->
-<!--                                             data-bind="visible: printJobEditDialog.imageDisplayMode()=='videoStream' || printJobEditDialog.imageDisplayMode()=='videoStreamWithShutter'">-->
-<!--                                            <img id="printJobHistory-videoStream" class="img-polaroid"  width="480">-->
-<!--                                            <img id="printJobHistory-snapshotImage-shutter"-->
-<!--                                                 data-bind="visible: printJobEditDialog.imageDisplayMode()=='videoStreamWithShutter'" style="position:absolute;top:0px;left:120px"  width="240px" class="" src="http://localhost:5000/plugin/PrintJobHistory/static/images/camera-shutter-animated.svg" />-->
-<!--                                        </div>-->
-
+                                            <div id="webcam_rotator" data-bind="visible: printJobEditDialog.imageDisplayMode()!='videoStreamLoading' && printJobEditDialog.imageDisplayMode()!='videoStreamError', css: { webcam_rotated: printJobEditDialog.webCamSettings.rotate90(), webcam_unrotated: !printJobEditDialog.webCamSettings.rotate90() }">
+                                                <div class="webcam_fixed_ratio" data-bind="css: printJobEditDialog.webcamRatioClass">
+                                                    <div class="webcam_fixed_ratio_inner">
+                                                    <!--
+                                                    event: { load: onWebcamLoaded, error: onWebcamErrored }, visible: !webcamError()
+                                                    -->
+                                                    <img id="printJobHistory-videoStream" data-bind="css: { flipH: printJobEditDialog.webCamSettings.flipH(), flipV: printJobEditDialog.webCamSettings.flipV() }"  >
+                                                    <img id="printJobHistory-snapshotImage-shutter"
+                                                         data-bind="visible: printJobEditDialog.imageDisplayMode()=='videoStreamWithShutter'"
+                                                         style="position:absolute;top:0px;left:0px"
+                                                         src="plugin/PrintJobHistory/static/images/camera-shutter-animated.svg" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
-
-
                                 <div class="row ">
                                     <div class="span6 text-center">
-                                                <span class="input-prepend">
-                                                    <span class="btn fileinput-button">
-                                                        <span>Browse Image:</span>
-                                                        <input id="printJobHistory-snapshotUploadButton" type="file" name="file" accept=".jpg">
-<!--                                                        <input id="printJobHistory-snapshotUploadButton" type="file" name="file" data-url="selectedUploaadSnapshotlUrl" accept=".zip">-->
-                                                    </span>
-                                                    <span class="add-on" data-bind="text: printJobEditDialog.snapshotUploadName"></span><button data-bind="enable: !printJobEditDialog.snapshotUploadInProgress(), click: printJobEditDialog.performSnapshotUpload" class="btn btn-primary"><i class="fa fa-spinner fa-spin" data-bind="visible: printJobEditDialog.snapshotUploadInProgress" style="display: none;"></i>Upload</button>
-                                                </span>
+                                        <span class="input-prepend">
+                                            <span class="btn fileinput-button">
+                                                <span>Browse Image:</span>
+                                                <input id="printJobHistory-snapshotUploadButton" type="file" name="file" accept=".jpg">
+                                            </span>
+                                            <span class="add-on" data-bind="text: printJobEditDialog.snapshotUploadName"></span><button data-bind="enable: !printJobEditDialog.snapshotUploadInProgress(), click: printJobEditDialog.performSnapshotUpload" class="btn btn-primary"><i class="fa fa-spinner fa-spin" data-bind="visible: printJobEditDialog.snapshotUploadInProgress" style="display: none;"></i>Upload</button>
+                                        </span>
                                     </div>
                                 </div>
                                 <div class="row ">
@@ -279,16 +257,14 @@ event: { load: onWebcamLoaded, error: onWebcamErrored }, visible: !webcamError()
                                         <span id="printJobHistory-editdialog-error-message" class="hide text-error">Image is saved</span>
                                     </div>
                                 </div>
-
-
                             </div>
                         </div>
                     </div>
                 </div>
             </form>
         </div>
-        <div class="modal-footer">
 
+        <div class="modal-footer">
             <div class="control-group">
                 <div class="controls">
                     <button class="btn " data-bind="click: printJobEditDialog.abortPrintJobItem" style="text-align:right">Abort</button>
@@ -297,6 +273,4 @@ event: { load: onWebcamLoaded, error: onWebcamErrored }, visible: !webcamError()
             </div>
         </div>
     </div>
-
-
 </span>

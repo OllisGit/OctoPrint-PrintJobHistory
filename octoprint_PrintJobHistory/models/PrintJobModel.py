@@ -37,13 +37,14 @@ class PrintJobModel(BaseModel):
 		return self.allFilaments
 
 	# Current UI implementation could only handle one filament-spool, but databasemodel support multiple spools
-	def getFilamentFromAssoziation(self):
+	def loadFilamentFromAssoziation(self):
 		result = None
 		allFilaments = self.filaments
 		allFilamentsCount = len(allFilaments)
 		if allFilamentsCount != 0:
 			for filament in allFilaments:
 				result = filament
+				self.addFilamentModel(result)
 				break
 		return result
 

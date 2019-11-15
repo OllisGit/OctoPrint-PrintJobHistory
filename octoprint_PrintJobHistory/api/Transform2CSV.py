@@ -27,7 +27,14 @@ def _convertPrintJobHistoryEntityToList(jobAsDict):
 	fields = ['userName', 'printStatusResult', 'printStartDateTimeFormatted', 'printEndDateTimeFormatted', 'durationFormatted', 'fileName', 'filePathName', 'fileSize', 'printedLayers', 'noteText']
 	for field in fields:
 		value = jobAsDict[field]
-		result.append(value if value is not None else '-')
+
+		adjustedValue = value if value is not None else '-'
+		if (type(adjustedValue) is int or type(adjustedValue) is float):
+			adjustedValue = str(adjustedValue)
+		adjustedValue = adjustedValue.encode("utf-8")
+
+		adjustedValue = adjustedValue.replace('\n', ' ').replace('\r', '')
+		result.append(adjustedValue)
 	tempValue = str()
 	for tempValues in jobAsDict["temperatureModels"]:
 		sensorName = tempValues["sensorName"]

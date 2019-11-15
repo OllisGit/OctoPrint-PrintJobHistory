@@ -8,14 +8,15 @@ from io import open as i_open
 from PIL import Image
 from PIL import ImageFile
 
+import logging
 import os.path
 import StringIO
 
 
 class CameraManager(object):
 
-	def __init__(self):
-
+	def __init__(self, parentLogger):
+		self._logger = logging.getLogger(parentLogger.name + "." + self.__class__.__name__)
 		self._streamUrl = None
 		self._snapshotUrl = None
 
@@ -23,7 +24,7 @@ class CameraManager(object):
 
 	@staticmethod
 	def doSomething():
-		print("Hallo Welt")
+		print("Hello World")
 
 	@staticmethod
 	def buildSnapshotFilename(startDateTime):
@@ -33,13 +34,19 @@ class CameraManager(object):
 
 	# def initCamera(self, enabled, streamUrl, snapshotUrl, snapshotStoragePath, pluginBaseFolder, rotate = None, flipH = None, flipV = None):
 	def initCamera(self, pluginDataBaseFolder, pluginBaseFolder, globalSettings):
+		self._logger.info("Init CameraManager")
+
 		snapshotStoragePath = pluginDataBaseFolder + "/snapshots"
 		if not os.path.exists(snapshotStoragePath):
 			os.makedirs(snapshotStoragePath)
+		self._logger.info("Snapshot-Folderr:"+snapshotStoragePath)
 
 		self._snapshotStoragePath = snapshotStoragePath
 		self._pluginBaseFolder = pluginBaseFolder
 		self._globalSettings = globalSettings
+
+		self._logger.info("Done CameraMenager")
+
 
 	def getSnapshotFileLocation(self):
 		return self._snapshotStoragePath
@@ -48,7 +55,6 @@ class CameraManager(object):
 	# NOT WORKING IN 1.3.10
 	# def isVideoStreamEnabled(self):
 	# 	self._globalSettings.global_get(["webcam", "webcamEnabled"])
-
 
 
 	def buildSnapshotFilenameLocation(self, snapshotFilename, returnDefaultImage = True):
@@ -71,10 +77,9 @@ class CameraManager(object):
 
 		if os.path.isfile(imageLocation):
 			os.remove(imageLocation)
-
+		self._logger.info("Snapshot '" + imageLocation + "' deleted")
 
 	def takeSnapshot(self, snapshotFilename):
-
 		if str(snapshotFilename).endswith(".jpg"):
 			snapshotFilename = self._snapshotStoragePath + "/" +snapshotFilename
 		else:
@@ -82,21 +87,24 @@ class CameraManager(object):
 
 		snapshotThumbnailFilename = self._snapshotStoragePath + "/" +snapshotFilename+ "-thumbnail.jpg"
 
+
 		# streamUrl = self._settings.global_get(["webcam", "stream"])
 		snapshotUrl =  self._globalSettings.global_get(["webcam", "snapshot"])
+		self._logger.info("Try taking snapshot '" + snapshotFilename + "' from '" + snapshotUrl + "'")
+		if (snapshotUrl == None or snapshotUrl == ""):
+			return
+
 		rotate = self._globalSettings.global_get(["webcam", "rotate90"])
 		flipH = self._globalSettings.global_get(["webcam", "flipH"])
 		flipV = self._globalSettings.global_get(["webcam", "flipV"])
 
-
 		response = requests.get(snapshotUrl, verify=not True,timeout=float(120))
 		if response.status_code == requests.codes.ok:
-
+			self._logger.info("Process snapshot image")
 			with i_open(snapshotFilename, 'wb') as snapshot_file:
 				for chunk in response.iter_content(1024):
 					if chunk:
 						snapshot_file.write(chunk)
-				print("image downloaded")
 
 			# adjust orientation
 			if flipH or flipV or rotate:
@@ -110,6 +118,7 @@ class CameraManager(object):
 					image = image.transpose(Image.ROTATE_90)
 				# output = StringIO.StringIO()
 				image.save(snapshotFilename, format="JPEG")
+				self._logger.info("Image stored to '" + snapshotFilename + "'")
 				# data = output.getvalue()
 				# output.close()
 
@@ -124,27 +133,10 @@ class CameraManager(object):
 			# hsize = int((float(img.size[1]) * float(wpercent)))
 			# img = img.resize((basewidth, hsize), Image.ANTIALIAS)
 			# img.save(snapshotThumbnailFilename, "JPEG")
+		else:
+			self._logger.error("Invalid response code from snapshot-url. Code:" + str(response.status_code))
 
 	def takeSnapshotAsync(self, snapshotFilename):
 		thread = threading.Thread(name='TakeSnapshot', target=self.takeSnapshot, args=(snapshotFilename,))
 		thread.daemon = True
 		thread.start()
-
-
-
-
-calc = 5065.81694999996
-# %.02fm"
-# {:06.2f}
-mystring = "{:.02f}m".format(calc)
-print(mystring)
-
-# print("hallo welt")
-# url = "http://192.168.178.44:8080/shot.jpg"
-# targetPath = "/Users/o0632/Library/Application Support/OctoPrint/data/PrintJobHistory/"
-# targetPathThumb = "/Users/o0632/Library/Application Support/OctoPrint/data/PrintJobHistory/myImage-Thumb.jpg"
-""""
-cam = CameraManager()
-cam.initWebCam(url, targetPath)
-cam.createSnapshot(815, "bild.gcode")
-"""
