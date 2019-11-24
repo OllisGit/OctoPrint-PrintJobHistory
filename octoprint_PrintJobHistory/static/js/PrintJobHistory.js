@@ -223,6 +223,20 @@ $(function() {
         ////////////////////////////////////////////////////// Knockout model-binding/observer
 
 
+        ///////////////////////////////////////////////////// START: SETTINGS
+        self.deleteDatabaseAction = function() {
+            var result = confirm("Do you really want to delete all printjob history data?");
+            if (result == true){
+                self.apiClient.callDeleteDatabase(function(responseData) {
+                    self.printJobHistoryTableHelper.reloadItems();
+                });
+            }
+        };
+
+        self.downloadDatabaseUrl = ko.observable();
+
+        ///////////////////////////////////////////////////// END: SETTINGS
+
         ///////////////////////////////////////////////////// START: OctoPrint Hooks
 
         self.onBeforeBinding = function() {
@@ -235,7 +249,7 @@ $(function() {
 
         self.onAfterBinding = function() {
             // all inits were done
-
+            self.downloadDatabaseUrl(self.apiClient.getDownloadDatabaseUrl());
             // to bring up dialogs the binding must be already done
             if (self.printJobToShowAfterStartup != null){
                 self.showPrintJobDetailsDialogAction(self.printJobToShowAfterStartup);
@@ -303,7 +317,7 @@ $(function() {
 
 
 
-        ///////////////////////////////////////////////////// START: DAILOG Stuff
+        ///////////////////////////////////////////////////// START: DIALOG Stuff
 
 
         self.showPrintJobDetailsDialogAction = function(selectedPrintJobItem) {
@@ -326,7 +340,7 @@ $(function() {
             });
         };
 
-        ///////////////////////////////////////////////////// END: DAILOG Stuff
+        ///////////////////////////////////////////////////// END: DIALOG Stuff
 
 
 
@@ -444,10 +458,6 @@ $(function() {
                 });
             }
         };
-
-
-
-
 
     }
 

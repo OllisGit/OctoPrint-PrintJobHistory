@@ -94,12 +94,16 @@ class DatabaseManager(object):
 			wrappedHandler = WrappedLoggingHandler(self._sqlLogger)
 			logger.addHandler(wrappedHandler)
 
+		self._createDatabase(FORCE_CREATE_TABLES)
 
+		pass
+
+	def _createDatabase(self, forceCreateTables):
 		self._database = SqliteDatabase(self._databaseFileLocation)
 		DatabaseManager.db = self._database
 		self._database.bind(MODELS)
 
-		if FORCE_CREATE_TABLES:
+		if forceCreateTables:
 			self._logger.info("Creating new database-tables, because FORCE == TRUE!")
 			self._createDatabaseTables()
 		else:
@@ -107,11 +111,13 @@ class DatabaseManager(object):
 			self._logger.info("Check if database-scheme upgrade needed.")
 			self._createOrUpgradeSchemeIfNecessary()
 		self._logger.info("Done DatabaseManager")
-		pass
+
 
 	def getDatabaseFileLocation(self):
 		return self._databaseFileLocation
 
+	def recreateDatabase(self):
+		self._createDatabase(True)
 
 	def insertPrintJob(self, printJobModel):
 		databaseId = None

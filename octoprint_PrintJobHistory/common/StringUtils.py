@@ -123,10 +123,15 @@ def compactTimeDeltaFormatter(tdelta, inputtype='timedelta'):
 def formatSave(pattern, value, defaultString):
 	if (value == None):
 		return defaultString
-	return pattern.format(value)
+	floatValue = float(value)
+	return pattern.format(floatValue)
 
 
-
+# bla = unicode('1')
+#
+# param = bla
+# result = formatSave("{:.0f}", param, "unbekannt")
+# print(result)
 
 ### TEST-ZONE
 #day = 0

@@ -2,7 +2,7 @@
 
 # WORK IN PROGRESS!!!! 
 
-# Release Candidate is out (rc3)
+# Release Candidate 4 is out (planed total = 5)
 
 [![Version](https://img.shields.io/badge/dynamic/json.svg?color=brightgreen&label=version&url=https://api.github.com/repos/OllisGit/OctoPrint-PrintJobHistory/releases&query=$[0].name)]()
 [![Released](https://img.shields.io/badge/dynamic/json.svg?color=brightgreen&label=released&url=https://api.github.com/repos/OllisGit/OctoPrint-PrintJobHistory/releases&query=$[0].published_at)]()
@@ -48,6 +48,7 @@ should include the following features:
 - [x] Filter history table (only print result)
 - [x] Sort history table (printdate, filename)
 - [x] Capture image after print
+- [x] Take Thumbnail from [UltimakerFormatPackage-Plugin](https://plugins.octoprint.org/plugins/UltimakerFormatPackage/)
 
 ### Not included
 - No report diagramms

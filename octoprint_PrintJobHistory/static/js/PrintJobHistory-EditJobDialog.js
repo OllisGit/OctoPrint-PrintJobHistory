@@ -197,6 +197,18 @@ function PrintJobHistoryEditDialog(){
     }
 
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////// DELETE PRINT JOB
+    this.deletePrintJobItem  = function(){
+        var result = confirm("Do you really want to delete the print job?");
+        if (result == true){
+            self.apiClient.callRemovePrintJob(self.printJobItemForEdit.databaseId(), function(responseData) {
+                self.editPrintJobItemDialog.modal('hide');
+                self.closeDialogHandler(true);
+            });
+        }
+    }
+
+
     /////////////////////////////////////////////////////////////////////////////////////////////////// DELETE IMAGE
     this.deleteImage  = function(){
 

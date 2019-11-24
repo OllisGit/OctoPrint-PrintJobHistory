@@ -48,13 +48,24 @@
                         </label>
                     </div>
                 </div>
+                <div class="control-group">
+                    <div class="controls">
+                        <label class="checkbox">
+                            <input type="checkbox" data-bind="checked: pluginSettings.takeUltimakerThumbnailAfterPrint" > Use UltimakerPackage thumbnail after print (if possible)
+                        </label>
+                    </div>
+                </div>
             </div>
             <!-- DATABASE - TAB -->
             <div class="tab-pane" id="tab-pjh-Storage">
                 <div class="control-group">
                     <label class="control-label">Database file location</label>
                     <div class="controls">
-                        <input type="text" disabled class="input-xlarge text-right" data-bind="value: pluginSettings.databaseFileLocation"/>
+                        <div class="input-append">
+                            <input type="text" disabled class="input-xlarge text-right" data-bind="value: pluginSettings.databaseFileLocation"/>
+                            <a href="#" class="btn btn-danger" title="Delete Database" data-bind="click: deleteDatabaseAction"><i class="icon-trash"></i></a>
+                            <a href="#" class="btn btn-primary" title="Download Database" data-bind="attr: {href: downloadDatabaseUrl}" target="_blank"><i class="icon-download"></i></a>
+                        </div>
                     </div>
                 </div>
                 <div class="control-group">

@@ -42,6 +42,7 @@ class CameraManager(object):
 		self._logger.info("Snapshot-Folderr:"+snapshotStoragePath)
 
 		self._snapshotStoragePath = snapshotStoragePath
+		self._pluginDataBaseFolder = pluginDataBaseFolder
 		self._pluginBaseFolder = pluginBaseFolder
 		self._globalSettings = globalSettings
 
@@ -138,5 +139,38 @@ class CameraManager(object):
 
 	def takeSnapshotAsync(self, snapshotFilename):
 		thread = threading.Thread(name='TakeSnapshot', target=self.takeSnapshot, args=(snapshotFilename,))
+		thread.daemon = True
+		thread.start()
+
+
+	def takeUltimakerThumbnail(self, snapshotFilename, printJobFilename):
+		if str(snapshotFilename).endswith(".jpg"):
+			snapshotFilename = self._snapshotStoragePath + "/" +snapshotFilename
+		else:
+			snapshotFilename = self._snapshotStoragePath + "/" +snapshotFilename + ".jpg"
+
+		if str(printJobFilename).endswith(".ufp.gcode"):
+			printJobFilename = printJobFilename[0:len(printJobFilename)-10]
+
+		ultimakerThumnailLocation = self._pluginDataBaseFolder + "/../UltimakerFormatPackage/" + printJobFilename + ".png"
+		if os.path.isfile(ultimakerThumnailLocation):
+			# Convert png to jpg and save in printjobhistory storage
+
+			self._logger.info("Try converting thumbnail '" + ultimakerThumnailLocation + "' to '" + snapshotFilename + "'")
+
+			im = Image.open(ultimakerThumnailLocation)
+			rgb_im = im.convert('RGB')
+			rgb_im.save(snapshotFilename)
+
+			self._logger.info("Converting successfull!")
+			pass
+
+		else:
+			self._logger.warning("UltimakerFormat Thumbnail doesn't exists in: '"+ultimakerThumnailLocation+"'")
+
+
+
+	def takeUltimakerPackageThumbnailAsync(self, snapshotFilename, printJobFilename):
+		thread = threading.Thread(name='TakeUltimakerThumbnail', target=self.takeUltimakerThumbnail, args=(snapshotFilename,printJobFilename,))
 		thread.daemon = True
 		thread.start()

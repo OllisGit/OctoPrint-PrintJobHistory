@@ -266,9 +266,14 @@
 
         <div class="modal-footer">
             <div class="control-group">
-                <div class="controls">
-                    <button class="btn " data-bind="click: printJobEditDialog.abortPrintJobItem" style="text-align:right">Abort</button>
-                    <button class="btn btn-primary" data-bind="click: printJobEditDialog.savePrintJobItem" style="text-align:right">Save</button>
+                <div class="controls row-fluid">
+                    <span class="span6" style="text-align:left">
+                        <button type="button" class="btn btn-danger" data-bind="click: printJobEditDialog.deletePrintJobItem" >Delete Print Job</button>
+                    </span>
+                    <span class="span6 text-right">
+                        <button class="btn " data-bind="click: printJobEditDialog.abortPrintJobItem" style="text-align:right">Abort</button>
+                        <button class="btn btn-primary" data-bind="click: printJobEditDialog.savePrintJobItem" style="text-align:right">Save</button>
+                    </span>
                 </div>
             </div>
         </div>

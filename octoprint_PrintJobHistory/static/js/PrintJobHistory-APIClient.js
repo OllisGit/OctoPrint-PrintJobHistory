@@ -34,6 +34,10 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
         return urlContext;
     }
 
+    this.getDownloadDatabaseUrl = function(exportType){
+        return _addApiKeyIfNecessary("./plugin/" + this.pluginId + "/downloadDatabase");
+    }
+
     this.getExportUrl = function(exportType){
         return _addApiKeyIfNecessary("./plugin/" + this.pluginId + "/exportPrintJobHistory/" + exportType);
     }
@@ -61,6 +65,19 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
             //url: API_BASEURL + "plugin/"+PLUGIN_ID+"/loadPrintJobHistory",
             url: urlToCall,
             type: "GET"
+        }).done(function( data ){
+            responseHandler(data)
+            //shoud be done by the server to make sure the server is informed countdownDialog.modal('hide');
+            //countdownDialog.modal('hide');
+            //countdownCircle = null;
+        });
+    }
+
+    this.callDeleteDatabase = function(responseHandler){
+        $.ajax({
+            //url: API_BASEURL + "plugin/"+PLUGIN_ID+"/loadPrintJobHistory",
+            url: this.baseUrl + "plugin/"+this.pluginId+"/deleteDatabase",
+            type: "DELETE"
         }).done(function( data ){
             responseHandler(data)
             //shoud be done by the server to make sure the server is informed countdownDialog.modal('hide');

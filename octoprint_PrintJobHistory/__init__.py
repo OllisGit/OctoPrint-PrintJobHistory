@@ -35,6 +35,10 @@ class PrintJobHistoryPlugin(
 		self._filamentManagerPluginImplementationState = None
 		self._displayLayerProgressPluginImplementation = None
 		self._displayLayerProgressPluginImplementationState = None
+		self._ultimakerFormatPluginImplementation = None
+		self._ultimakerFormatPluginImplementationState = None
+
+
 
 		pluginDataBaseFolder = self.get_plugin_data_folder()
 
@@ -80,6 +84,9 @@ class PrintJobHistoryPlugin(
 
 		if self._displayLayerProgressPluginImplementation == None:
 			missingMessage = missingMessage + "<li>DisplayLayerProgress (<b>" + self._displayLayerProgressPluginImplementationState + "</b>)</li>"
+
+		if self._ultimakerFormatPluginImplementation == None:
+			missingMessage = missingMessage + "<li>UltimakerFormatPackage (<b>" + self._ultimakerFormatPluginImplementationState + "</b>)</li>"
 
 		if missingMessage != "":
 			missingMessage = "<ul>" + missingMessage + "</ul>"
@@ -178,6 +185,14 @@ class PrintJobHistoryPlugin(
 		if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT]):
 			self._cameraManager.takeSnapshotAsync(CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime))
 
+		if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_ULTIMAKER_THUMBNAIL_AFTER_PRINT]):
+			# check if available
+			if (not self._ultimakerFormatPluginImplementation == None):
+				self._cameraManager.takeUltimakerPackageThumbnailAsync(CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime), self._currentPrintJobModel.fileName)
+			else:
+				self._logger.error("UltimakerPackageFormat Thumbnail enabled, but Plugin not available! Activate Plugin-Depenedency check")
+
+
 		# FilamentInformations e.g. length
 		self._createAndAssignFilamentModel(self._currentPrintJobModel, payload)
 
@@ -206,6 +221,7 @@ class PrintJobHistoryPlugin(
 		# check if needed plugins were available
 		self._displayLayerProgressPluginImplementationState = "enabled"
 		self._filamentManagerPluginImplementationState = "enabled"
+		self._ultimakerFormatPluginImplementationState = "enabled"
 
 		if "filamentmanager" in self._plugin_manager.plugins:
 			plugin = self._plugin_manager.plugins["filamentmanager"]
@@ -225,7 +241,18 @@ class PrintJobHistoryPlugin(
 		else:
 			self._displayLayerProgressPluginImplementationState = "missing"
 
-		self._logger.info("Plugin-State: DisplayLayerProgress=" + self._displayLayerProgressPluginImplementationState + " filamentmanager=" + self._filamentManagerPluginImplementationState)
+		if "UltimakerFormatPackage" in self._plugin_manager.plugins:
+			plugin = self._plugin_manager.plugins["UltimakerFormatPackage"]
+			if plugin != None and plugin.enabled == True:
+				self._ultimakerFormatPluginImplementation = plugin.implementation
+			else:
+				self._ultimakerFormatPluginImplementationState = "disabled"
+		else:
+			self._ultimakerFormatPluginImplementationState = "missing"
+
+
+
+		self._logger.info("Plugin-State: DisplayLayerProgress=" + self._displayLayerProgressPluginImplementationState + " filamentmanager=" + self._filamentManagerPluginImplementationState + " ultimakerformat=" + self._ultimakerFormatPluginImplementationState)
 
 	def on_event(self, event, payload):
 		# WebBroswer opened
@@ -284,6 +311,7 @@ class PrintJobHistoryPlugin(
 		settings[SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT] = True
 		settings[SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT_JOB_ID] = None
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT] = True
+		settings[SettingsKeys.SETTINGS_KEY_TAKE_ULTIMAKER_THUMBNAIL_AFTER_PRINT] = True
 
 		settings[SettingsKeys.SETTINGS_KEY_DATABASE_PATH] = ""
 		settings[SettingsKeys.SETTINGS_KEY_SNAPSHOT_PATH] = ""

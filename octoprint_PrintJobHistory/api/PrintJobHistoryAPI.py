@@ -229,6 +229,26 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		})
 
 
+	#######################################################################################   DOWNLOAD DATABASE
+	@octoprint.plugin.BlueprintPlugin.route("/downloadDatabase", methods=["GET"])
+	def download_database(self):
+		return send_file(self._databaseManager.getDatabaseFileLocation(),
+						 mimetype='application/octet-stream',
+						 attachment_filename='printJobHistory.db',
+						 as_attachment=True)
+
+
+	#######################################################################################   DELETE DATABASE
+	@octoprint.plugin.BlueprintPlugin.route("/deleteDatabase", methods=["DELETE"])
+	def delete_database(self):
+
+		self._databaseManager.recreateDatabase()
+
+		return flask.jsonify({
+			"result": "success"
+		})
+
+
 	@octoprint.plugin.BlueprintPlugin.route("/exportPrintJobHistory/<string:exportType>", methods=["GET"])
 	def exportPrintJobHistoryData(self, exportType):
 
