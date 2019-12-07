@@ -2,7 +2,7 @@
 
 # WORK IN PROGRESS!!!! 
 
-# Release Candidate 4 is out (planed total = 5)
+# Release Candidate 5 is out (last release candidate)!
 
 [![Version](https://img.shields.io/badge/dynamic/json.svg?color=brightgreen&label=version&url=https://api.github.com/repos/OllisGit/OctoPrint-PrintJobHistory/releases&query=$[0].name)]()
 [![Released](https://img.shields.io/badge/dynamic/json.svg?color=brightgreen&label=released&url=https://api.github.com/repos/OllisGit/OctoPrint-PrintJobHistory/releases&query=$[0].published_at)]()
@@ -52,7 +52,6 @@ should include the following features:
 
 ### Not included
 - No report diagramms
-- No adjustment settings (e.g ???)
 - No fancy looking UI
 
 
