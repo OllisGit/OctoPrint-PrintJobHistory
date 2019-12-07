@@ -1,8 +1,10 @@
 # coding=utf-8
 from __future__ import absolute_import
 
+import datetime
 import logging
 import os
+import shutil
 import sqlite3
 
 from octoprint_PrintJobHistory.WrappedLoggingHandler import WrappedLoggingHandler
@@ -16,7 +18,7 @@ from peewee import *
 FORCE_CREATE_TABLES = False
 SQL_LOGGING = True
 
-CURRENT_DATABASE_SCHEME_VERSION = 1
+CURRENT_DATABASE_SCHEME_VERSION = 2
 
 # List all Models
 MODELS = [PluginMetaDataModel, PrintJobModel, FilamentModel, TemperatureModel]
@@ -53,17 +55,81 @@ class DatabaseManager(object):
 			if (currentDatabaseSchemeVersion < CURRENT_DATABASE_SCHEME_VERSION):
 				# evautate upgrade steps (from 1-2 , 1...6)
 				self._logger.info("We need to upgrade the database scheme from: '" + str(currentDatabaseSchemeVersion) + "' to: '" + str(CURRENT_DATABASE_SCHEME_VERSION) + "'")
-				self._logger.info("...not needed/implemented...")
-				pass
+
+				try:
+					self._backupDatabaseFile()
+					if (currentDatabaseSchemeVersion < 2):
+						self._upgradeFrom1To2()
+				except Exception as e:
+					self._logger.error("Error during database upgrade!!!!")
+					self._logger.error(str(e))
+				self._logger.info("Database-scheme successfully upgraded.")
 		pass
 
-		# databaseSchemeVersion = PluginMetaDataEntity.getDatabaseSchemeVersion(cursor)
-		# if databaseSchemeVersion == None or FORCE_CREATE_TABLES == True:
-		# 	self._createCurrentTables(cursor, FORCE_CREATE_TABLES)
-		# else:
-		# 	# check from which version we need to upgrade
-		# 	#	sql
-		# 	pass
+
+	def _backupDatabaseFile(self):
+		now = datetime.datetime.now()
+		currentDate = now.strftime("%Y%m%d")
+		backupDatabaseFileName = "printJobHistory-backup-"+currentDate+".db"
+		backupDatabaseFilePath = os.path.join(self._databasePath, backupDatabaseFileName)
+		if not os.path.exists(backupDatabaseFilePath):
+			shutil.copy(self._databaseFileLocation, backupDatabaseFilePath)
+			self._logger.info("Backup of printjobhistory database created '"+backupDatabaseFilePath+"'")
+		else:
+			self._logger.warn("Backup of printjobhistory database ('" + backupDatabaseFilePath + "') is already present. No backup created.")
+
+	def _upgradeFrom1To2(self):
+		# What is changed:
+		# - PrintJobModel: Add Column fileOrigin
+		# - FilamentModel: Several ColumnTypes were wrong
+
+
+		connection = sqlite3.connect(self._databaseFileLocation)
+		cursor = connection.cursor()
+
+		sql = """
+		PRAGMA foreign_keys=off;
+		BEGIN TRANSACTION;
+
+			ALTER TABLE 'pjh_printjobmodel' ADD 'fileOrigin' VARCHAR(255);
+
+			ALTER TABLE 'pjh_filamentmodel' RENAME TO 'pjh_filamentmodel_old';
+			CREATE TABLE "pjh_filamentmodel" (
+				"databaseId" INTEGER NOT NULL PRIMARY KEY, 	
+				"created" DATETIME NOT NULL, 
+				"printJob_id" INTEGER NOT NULL, 
+				"profileVendor" VARCHAR(255), 
+				"diameter" REAL, 
+				"density" REAL, 
+				"material" VARCHAR(255), 
+				"spoolName" VARCHAR(255), 
+				"spoolCost" VARCHAR(255), 
+				"spoolCostUnit" VARCHAR(255), 
+				"spoolWeight" REAL, 
+				"usedLength" REAL, 
+				"calculatedLength" REAL, 
+				"usedWeight" REAL, 
+				"usedCost" REAL, 
+				FOREIGN KEY ("printJob_id") REFERENCES "pjh_printjobmodel" ("databaseId") ON DELETE CASCADE);
+
+				INSERT INTO 'pjh_filamentmodel' (databaseId, created, printJob_id, profileVendor, diameter, density, material, spoolName, spoolCost, spoolCostUnit, spoolWeight, usedLength, calculatedLength, usedWeight, usedCost)
+				  SELECT databaseId, created, printJob_id, profileVendor, diameter, density, material, spoolName, spoolCost, spoolCostUnit, spoolWeight, usedLength, calculatedLength, usedWeight, usedCost
+				  FROM 'pjh_filamentmodel_old';
+				  
+				DROP TABLE 'pjh_filamentmodel_old';
+				
+				UPDATE 'pjh_pluginmetadatamodel' SET value=2 WHERE key='databaseSchemeVersion';
+		COMMIT;
+		PRAGMA foreign_keys=on;
+		"""
+		cursor.executescript(sql)
+
+		connection.close()
+
+		pass
+
+
+
 	def _createDatabaseTables(self):
 		self._database.connect(reuse_if_open=True)
 		self._database.drop_tables(MODELS)
@@ -78,6 +144,7 @@ class DatabaseManager(object):
 	def initDatabase(self, databasePath, sendErrorMessageToClient):
 		self._logger.info("Init DatabaseManager")
 		self.sendErrorMessageToClient = sendErrorMessageToClient
+		self._databasePath = databasePath
 		self._databaseFileLocation = os.path.join(databasePath, "printJobHistory.db")
 
 		self._logger.info("Creating database in: " + str(self._databaseFileLocation))
@@ -143,7 +210,7 @@ class DatabaseManager(object):
 				transaction.rollback()
 				self._logger.exception("Could not insert printJob into database:" + str(e))
 
-				self.sendErrorMessageToClient("DatabaseManager", "Could not insert the printjob into the database. See OctoPrint.log for details!")
+				self.sendErrorMessageToClient("PJH-DatabaseManager", "Could not insert the printjob into the database. See OctoPrint.log for details!")
 			pass
 
 		return databaseId
@@ -168,7 +235,7 @@ class DatabaseManager(object):
 				# to rollback().
 				transaction.rollback()
 				self._logger.exception("Could not update printJob into database:" + str(e))
-				self.sendErrorMessageToClient("DatabaseManager", "Could not update the printjob ('"+ printJobModel.fileName +"') into the database. See OctoPrint.log for details!")
+				self.sendErrorMessageToClient("PJH-DatabaseManager", "Could not update the printjob ('"+ printJobModel.fileName +"') into the database. See OctoPrint.log for details!")
 			pass
 
 	def countPrintJobsByQuery(self, tableQuery):
@@ -223,8 +290,6 @@ class DatabaseManager(object):
 		return PrintJobModel.get_by_id(databaseId)
 
 	def deletePrintJob(self, databaseId):
-
-
 		with self._database.atomic() as transaction:  # Opens new transaction.
 			try:
 				# first delete relations
@@ -239,5 +304,5 @@ class DatabaseManager(object):
 				transaction.rollback()
 				self._logger.exception("Could not delete printJob from database:" + str(e))
 
-				self.sendErrorMessageToClient("DatabaseManager", "Could not update the printjob ('"+ str(databaseId) +"') into the database. See OctoPrint.log for details!")
+				self.sendErrorMessageToClient("PJH-DatabaseManager", "Could not update the printjob ('"+ str(databaseId) +"') into the database. See OctoPrint.log for details!")
 			pass

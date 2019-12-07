@@ -10,6 +10,7 @@ from peewee import CharField, Model, DecimalField, FloatField, DateField, DateTi
 class PrintJobModel(BaseModel):
 
 	userName = CharField(null=True)
+	fileOrigin = CharField(null=True)	#new since db-scheme2
 	fileName = CharField(null=True)
 	filePathName = CharField(null=True)
 	fileSize = IntegerField(null=True)
@@ -57,6 +58,8 @@ class PrintJobModel(BaseModel):
 		pass
 
 	def getTemperatureModels(self):
+		if self.allTemperatures == None:
+			self.allTemperatures = []
 		return self.allTemperatures
 
 	def getTemperaturesFromAssoziation(self):

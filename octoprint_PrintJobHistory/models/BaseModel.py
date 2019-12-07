@@ -17,7 +17,7 @@ def make_table_name(model_class):
 class BaseModel(Model):
 
 	databaseId = AutoField()
-	created = DateTimeField(default=datetime.datetime.now())
+	created = DateTimeField(default=datetime.datetime.now)
 
 	class Meta:
 		table_function = make_table_name

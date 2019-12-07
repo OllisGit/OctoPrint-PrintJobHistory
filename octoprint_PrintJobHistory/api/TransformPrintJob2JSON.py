@@ -20,10 +20,10 @@ def transformPrintJobModel(job):
 	allFilaments = job.loadFilamentFromAssoziation()
 	if allFilaments != None:
 		filamentDict = allFilaments.__data__
-		filamentDict["usedLength"] = StringUtils.formatSave("{:.02f}", filamentDict["usedLength"], "")
-		filamentDict["usedWeight"] = StringUtils.formatSave("{:.02f}", filamentDict["usedWeight"], "")
-		filamentDict["usedCost"] = StringUtils.formatSave("{:.02f}", filamentDict["usedCost"], "")
-		filamentDict["calculatedLength"] = StringUtils.formatSave("{:.02f}", filamentDict["calculatedLength"], "")
+		filamentDict["usedLength"] = StringUtils.formatFloatSave("{:.02f}", filamentDict["usedLength"], "")
+		filamentDict["usedWeight"] = StringUtils.formatFloatSave("{:.02f}", filamentDict["usedWeight"], "")
+		filamentDict["usedCost"] = StringUtils.formatFloatSave("{:.02f}", filamentDict["usedCost"], "")
+		filamentDict["calculatedLength"] = StringUtils.formatFloatSave("{:.02f}", filamentDict["calculatedLength"], "")
 		jobAsDict['filamentModel'] = filamentDict
 
 	allTemperatures = job.getTemperaturesFromAssoziation()

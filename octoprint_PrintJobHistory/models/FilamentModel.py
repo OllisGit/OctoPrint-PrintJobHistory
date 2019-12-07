@@ -14,10 +14,10 @@ class FilamentModel(BaseModel):
 	diameter = FloatField(null=True)
 	density = FloatField(null=True)
 	material = CharField(null=True)
-	spoolName = DateTimeField(null=True)
-	spoolCost = DateTimeField(null=True)
+	spoolName = CharField(null=True)	#datetime 2 char
+	spoolCost = CharField(null=True)	#datetime 2 char
 	spoolCostUnit = CharField(null=True)
-	spoolWeight = CharField(null=True)
+	spoolWeight = FloatField(null=True)	#char 2 float
 	usedLength = FloatField(null=True)
 	calculatedLength = FloatField(null=True)
 	usedWeight = FloatField(null=True)

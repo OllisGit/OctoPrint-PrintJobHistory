@@ -120,12 +120,11 @@ def compactTimeDeltaFormatter(tdelta, inputtype='timedelta'):
 	return result
 
 
-def formatSave(pattern, value, defaultString):
-	if (value == None):
+def formatFloatSave(pattern, value, defaultString):
+	if (value == None or not isinstance(value, float)):
 		return defaultString
 	floatValue = float(value)
 	return pattern.format(floatValue)
-
 
 # bla = unicode('1')
 #

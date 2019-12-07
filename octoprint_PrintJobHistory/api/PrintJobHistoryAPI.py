@@ -65,15 +65,16 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 	def _updatePrintJobFromJson(self, printJobModel,  jsonData):
 
-		printJobModel.userName = self._getValueFromDictOrNone("userName", jsonData)
+		# some attributes shouldn't be changed via the UI (API)
+		# printJobModel.userName = self._getValueFromDictOrNone("userName", jsonData)
+		# printJobModel.printStartDateTime = datetime.strptime(jsonData["printStartDateTimeFormatted"], "%d.%m.%Y %H:%M")
+		# printJobModel.printEndDateTime = datetime.strptime(jsonData["printEndDateTimeFormatted"], "%d.%m.%Y %H:%M")
+		# printJobModel.printStatusResult = self._getValueFromDictOrNone("printStatusResult", jsonData)
+		# printJobModel.fileName = self._getValueFromDictOrNone("fileName", jsonData)
+		# printJobModel.filePathName = self._getValueFromDictOrNone("filePathName", jsonData)
+		# printJobModel.fileSize = self._getValueFromDictOrNone("fileSize", jsonData)
 
-		printJobModel.printStartDateTime = datetime.strptime(jsonData["printStartDateTimeFormatted"], "%d.%m.%Y %H:%M")
-		printJobModel.printEndDateTime = datetime.strptime(jsonData["printEndDateTimeFormatted"], "%d.%m.%Y %H:%M")
-
-		printJobModel.printStatusResult = self._getValueFromDictOrNone("printStatusResult", jsonData)
-		printJobModel.fileName = self._getValueFromDictOrNone("fileName", jsonData)
-		printJobModel.filePathName = self._getValueFromDictOrNone("filePathName", jsonData)
-		printJobModel.fileSize = self._getValueFromDictOrNone("fileSize", jsonData)
+		# changable...
 		printJobModel.noteText = self._getValueFromDictOrNone("noteText", jsonData)
 		printJobModel.noteDeltaFormat = json.dumps(self._getValueFromDictOrNone("noteDeltaFormat", jsonData))
 		printJobModel.noteHtml = self._getValueFromDictOrNone("noteHtml", jsonData)
@@ -88,32 +89,9 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		filamentModel.usedWeight = self._getValueFromDictOrNone("usedWeight", jsonData)
 		filamentModel.usedCost = self._getValueFromDictOrNone("usedCost", jsonData)
 
-		# filamentModel = FilamentModel()
-		# filamentModel.profileVendor = self._getValueFromDictOrNone("profileVendor", jsonData)
-		# filamentModel.diameter = self._getValueFromDictOrNone("diameter", jsonData)
-		# filamentModel.density = self._getValueFromDictOrNone("density", jsonData)
-		# filamentModel.material = self._getValueFromDictOrNone("material", jsonData)
-		# filamentModel.spoolName = self._getValueFromDictOrNone("spoolName", jsonData)
-		# filamentModel.spoolCost = self._getValueFromDictOrNone("spoolCost", jsonData)
-		# filamentModel.spoolCostUnit = self._getValueFromDictOrNone("spoolCostUnit", jsonData)
-		# filamentModel.spoolWeight = self._getValueFromDictOrNone("spoolWeight", jsonData)
-		# filamentModel.usedLength = self._getValueFromDictOrNone("usedLength", jsonData)
-		# filamentModel.usedCost = self._getValueFromDictOrNone("usedCost", jsonData)
-		# filamentModel.calculatedLength = self._getValueFromDictOrNone("calculatedLength", jsonData)
-		# filamentModel.printjob_id = printJobModel.databaseId
-		# printJobModel.filamentModel = filamentModel
-
 		# temperatureModel = TemperatureModel
 
 		return printJobModel
-
-	# <editor-fold desc="CSV-Stuff">
-
-
-
-	# </editor-fold>
-
-
 
 	def _getValueFromDictOrNone(self, key, values):
 		if key in values:

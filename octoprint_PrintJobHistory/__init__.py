@@ -31,6 +31,8 @@ class PrintJobHistoryPlugin(
 
 
 	def initialize(self):
+		self._preHeatPluginImplementation = None
+		self._preHeatPluginImplementationState = None
 		self._filamentManagerPluginImplementation = None
 		self._filamentManagerPluginImplementationState = None
 		self._displayLayerProgressPluginImplementation = None
@@ -76,22 +78,74 @@ class PrintJobHistoryPlugin(
 									title= title,
 									message=message))
 
-	def _checkForMissingPluginInfos(self):
-		missingMessage = ""
+	def _checkForMissingPluginInfos(self, sendToClient=False):
 
-		if self._filamentManagerPluginImplementation == None:
-			missingMessage = missingMessage + "<li>FilamentManager (<b>" + self._filamentManagerPluginImplementationState + "</b>)</li>"
+		self._displayLayerProgressPluginImplementationState = "enabled"
+		self._preHeatPluginImplementationState = "enabled"
+		self._filamentManagerPluginImplementationState = "enabled"
+		self._ultimakerFormatPluginImplementationState = "enabled"
 
-		if self._displayLayerProgressPluginImplementation == None:
-			missingMessage = missingMessage + "<li>DisplayLayerProgress (<b>" + self._displayLayerProgressPluginImplementationState + "</b>)</li>"
+		if "preheat" in self._plugin_manager.plugins:
+			plugin = self._plugin_manager.plugins["preheat"]
+			if plugin != None and plugin.enabled == True:
+				self._preHeatPluginImplementation = plugin.implementation
+			else:
+				self._preHeatPluginImplementationState = "disabled"
+		else:
+			self._preHeatPluginImplementationState = "missing"
 
-		if self._ultimakerFormatPluginImplementation == None:
-			missingMessage = missingMessage + "<li>UltimakerFormatPackage (<b>" + self._ultimakerFormatPluginImplementationState + "</b>)</li>"
+		if "filamentmanager" in self._plugin_manager.plugins:
+			plugin = self._plugin_manager.plugins["filamentmanager"]
+			if plugin != None and plugin.enabled == True:
+				self._filamentManagerPluginImplementation = plugin.implementation
+			else:
+				self._filamentManagerPluginImplementationState = "disabled"
+		else:
+			self._filamentManagerPluginImplementationState = "missing"
 
-		if missingMessage != "":
-			missingMessage = "<ul>" + missingMessage + "</ul>"
-			self._sendDataToClient(dict(action="missingPlugin",
-									    message=missingMessage))
+		if "DisplayLayerProgress" in self._plugin_manager.plugins:
+			plugin = self._plugin_manager.plugins["DisplayLayerProgress"]
+			if plugin != None and plugin.enabled == True:
+				self._displayLayerProgressPluginImplementation = plugin.implementation
+			else:
+				self._displayLayerProgressPluginImplementationState = "disabled"
+		else:
+			self._displayLayerProgressPluginImplementationState = "missing"
+
+		if "UltimakerFormatPackage" in self._plugin_manager.plugins:
+			plugin = self._plugin_manager.plugins["UltimakerFormatPackage"]
+			if plugin != None and plugin.enabled == True:
+				self._ultimakerFormatPluginImplementation = plugin.implementation
+			else:
+				self._ultimakerFormatPluginImplementationState = "disabled"
+		else:
+			self._ultimakerFormatPluginImplementationState = "missing"
+
+		self._logger.info("Plugin-State: "
+						  "PreHeat=" + self._preHeatPluginImplementationState + " "
+						  "DisplayLayerProgress=" + self._displayLayerProgressPluginImplementationState + " "
+						  "filamentmanager=" + self._filamentManagerPluginImplementationState + " "
+						  "ultimakerformat=" + self._ultimakerFormatPluginImplementationState)
+
+		if sendToClient == True:
+			missingMessage = ""
+
+			if self._preHeatPluginImplementation == None:
+				missingMessage = missingMessage + "<li>PreHeat (<b>" + self._preHeatPluginImplementationState + "</b>)</li>"
+
+			if self._filamentManagerPluginImplementation == None:
+				missingMessage = missingMessage + "<li>FilamentManager (<b>" + self._filamentManagerPluginImplementationState + "</b>)</li>"
+
+			if self._displayLayerProgressPluginImplementation == None:
+				missingMessage = missingMessage + "<li>DisplayLayerProgress (<b>" + self._displayLayerProgressPluginImplementationState + "</b>)</li>"
+
+			if self._ultimakerFormatPluginImplementation == None:
+				missingMessage = missingMessage + "<li>UltimakerFormatPackage (<b>" + self._ultimakerFormatPluginImplementationState + "</b>)</li>"
+
+			if missingMessage != "":
+				missingMessage = "<ul>" + missingMessage + "</ul>"
+				self._sendDataToClient(dict(action="missingPlugin",
+											message=missingMessage))
 
 
 	# Grabs all informations for the filament attributes
@@ -147,34 +201,60 @@ class PrintJobHistoryPlugin(
 	def _updatePrintJobModelWithLayerHeightInfos(self, payload):
 		totalLayers = payload["totalLayer"]
 		currentLayer = payload["currentLayer"]
-		self._currentPrintJobModel.printedLayers = currentLayer + "/" + totalLayers
+		self._currentPrintJobModel.printedLayers = currentLayer + " / " + totalLayers
 
 		totalHeightWithExtrusion = payload["totalHeightWithExtrusion"]
 		currentHeight = payload["currentHeight"]
-		self._currentPrintJobModel.printedHeight = currentHeight + "/" + totalHeightWithExtrusion
+		self._currentPrintJobModel.printedHeight = currentHeight + " / " + totalHeightWithExtrusion
 
 	def _createPrintJobModel(self, payload):
 		self._currentPrintJobModel = PrintJobModel()
 		self._currentPrintJobModel.printStartDateTime = datetime.datetime.now()
-		self._currentPrintJobModel.fileName = payload["filename"]
+
+		self._currentPrintJobModel.fileOrigin = payload["origin"]
+		self._currentPrintJobModel.fileName = payload["name"]
 		self._currentPrintJobModel.filePathName = payload["path"]
+
+		# self._file_manager.path_on_disk()
 		if "owner" in payload:
 			self._currentPrintJobModel.userName = payload["owner"]
 		else:
 			self._currentPrintJobModel.userName = "John Doe"
 		self._currentPrintJobModel.fileSize = payload["size"]
-		currentTemps = self._printer.get_current_temperatures(),
-		if (len(currentTemps) > 0):
-			bedTemp = currentTemps[0]["bed"]["target"]
-			tool0Temp = currentTemps[0]["tool0"]["target"]
 
+		tempFound = False
+		tempTool = 0
+		tempBed = 0
+
+		if self._preHeatPluginImplementation != None:
+			path_on_disk = octoprint.server.fileManager.path_on_disk(self._currentPrintJobModel.fileOrigin, self._currentPrintJobModel.filePathName)
+
+			preHeatTemperature = self._preHeatPluginImplementation.read_temperatures_from_file(path_on_disk)
+			if preHeatTemperature != None:
+				if "bed" in preHeatTemperature:
+					tempBed = preHeatTemperature["bed"]
+					tempFound = True
+				if "tool0" in preHeatTemperature:
+					tempTool = preHeatTemperature["tool0"]
+					tempFound = True
+			pass
+
+		else:
+			currentTemps = self._printer.get_current_temperatures()
+			if (len(currentTemps) > 0):
+				tempBed = currentTemps[0]["bed"]["target"]
+				tempTool = currentTemps[0]["tool0"]["target"]
+				tempFound = True
+
+		if (tempFound == True):
 			tempModel = TemperatureModel()
 			tempModel.sensorName = "bed"
-			tempModel.sensorValue = bedTemp
+			tempModel.sensorValue = tempBed
 			self._currentPrintJobModel.addTemperatureModel(tempModel)
+
 			tempModel = TemperatureModel()
 			tempModel.sensorName = "tool0"
-			tempModel.sensorValue = tool0Temp
+			tempModel.sensorValue = tempTool
 			self._currentPrintJobModel.addTemperatureModel(tempModel)
 
 	def _printJobFinished(self, printStatus, payload):
@@ -219,47 +299,14 @@ class PrintJobHistoryPlugin(
 
 	def on_after_startup(self):
 		# check if needed plugins were available
-		self._displayLayerProgressPluginImplementationState = "enabled"
-		self._filamentManagerPluginImplementationState = "enabled"
-		self._ultimakerFormatPluginImplementationState = "enabled"
-
-		if "filamentmanager" in self._plugin_manager.plugins:
-			plugin = self._plugin_manager.plugins["filamentmanager"]
-			if plugin != None and plugin.enabled == True:
-				self._filamentManagerPluginImplementation = plugin.implementation
-			else:
-				self._filamentManagerPluginImplementationState = "disabled"
-		else:
-			self._filamentManagerPluginImplementationState = "missing"
-
-		if "DisplayLayerProgress" in self._plugin_manager.plugins:
-			plugin = self._plugin_manager.plugins["DisplayLayerProgress"]
-			if plugin != None and plugin.enabled == True:
-				self._displayLayerProgressPluginImplementation = plugin.implementation
-			else:
-				self._displayLayerProgressPluginImplementationState = "disabled"
-		else:
-			self._displayLayerProgressPluginImplementationState = "missing"
-
-		if "UltimakerFormatPackage" in self._plugin_manager.plugins:
-			plugin = self._plugin_manager.plugins["UltimakerFormatPackage"]
-			if plugin != None and plugin.enabled == True:
-				self._ultimakerFormatPluginImplementation = plugin.implementation
-			else:
-				self._ultimakerFormatPluginImplementationState = "disabled"
-		else:
-			self._ultimakerFormatPluginImplementationState = "missing"
-
-
-
-		self._logger.info("Plugin-State: DisplayLayerProgress=" + self._displayLayerProgressPluginImplementationState + " filamentmanager=" + self._filamentManagerPluginImplementationState + " ultimakerformat=" + self._ultimakerFormatPluginImplementationState)
+		self._checkForMissingPluginInfos()
 
 	def on_event(self, event, payload):
 		# WebBroswer opened
 		if Events.CLIENT_OPENED == event:
 			# Check if all needed Plugins are available, if not modale dialog to User
 			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_PLUGIN_DEPENDENCY_CHECK]):
-				self._checkForMissingPluginInfos()
+				self._checkForMissingPluginInfos(True)
 
 			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT]):
 				printJobId = self._settings.get_int([SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT_JOB_ID])
