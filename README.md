@@ -44,11 +44,12 @@ should include the following features:
 - [x] List all printjobs
 - [x] Edit single printjob
 - [x] Capture/Upload Image
-- [x] Export all printjobs as CSV
 - [x] Filter history table (only print result)
 - [x] Sort history table (printdate, filename)
 - [x] Capture image after print
 - [x] Take Thumbnail from [UltimakerFormatPackage-Plugin](https://plugins.octoprint.org/plugins/UltimakerFormatPackage/)
+- [x] Export all printjobs as CSV
+- [ ] Import printjobs from CSV
 
 ### Not included
 - No report diagramms
