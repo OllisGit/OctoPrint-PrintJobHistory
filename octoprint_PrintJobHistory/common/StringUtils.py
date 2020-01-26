@@ -1,6 +1,7 @@
 # coding=utf-8
 from __future__ import absolute_import
 
+
 import re
 
 # see https://www.safaribooksonline.com/library/view/python-cookbook-2nd/0596007973/ch01s19.html
@@ -14,16 +15,66 @@ def multiple_replace(text, adict):
 
 # see https://stackoverflow.com/questions/4048651/python-function-to-convert-seconds-into-minutes-hours-and-days/4048773
 def secondsToText(secs):
-    days = secs // 86400
-    hours = (secs - days * 86400) // 3600
-    minutes = (secs - days * 86400 - hours * 3600) // 60
-    seconds = secs - days * 86400 - hours * 3600 - minutes * 60
+	result = ""
+	days = secs // 86400
+	hours = (secs - days * 86400) // 3600
+	minutes = (secs - days * 86400 - hours * 3600) // 60
+	seconds = secs - days * 86400 - hours * 3600 - minutes * 60
+	if (days > 0):
+		result = "{}d".format(days) + "{}h".format(hours) + "{}m".format(minutes) + "{}s".format(seconds)
+	elif (hours > 0):
+		result = "{}h".format(hours) + "{}m".format(minutes) + "{}s".format(seconds)
+	elif (minutes > 0):
+		result = "{}m".format(minutes) + "{}s".format(seconds)
+	elif (seconds > 0):
+		result = "{}s".format(seconds)
+    # result = ("{}d".format(days) if days else "") + \
+    #          ("{}h".format(hours) if hours else "") + \
+    #          ("{}m".format(minutes) if not days and minutes else "") + \
+    #          ("{}s".format(seconds) if not days and not hours and seconds else "0s")
+	return result
 
-    result = ("{}d".format(days) if days else "") + \
-             ("{}h".format(hours) if hours else "") + \
-             ("{}m".format(minutes) if not days and minutes else "") + \
-             ("{}s".format(seconds) if not days and not hours and seconds else "")
-    return result
+dayPattern = re.compile("([0-9]*)d([0-9]*)h([0-9]*)m([0-9]*)s")
+hourPattern = re.compile("([0-9]*)h([0-9]*)m([0-9]*)s")
+minutePattern = re.compile("([0-9]*)m([0-9]*)s")
+secondPattern = re.compile("([0-9]*)s")
+
+def durationToSeconds(duration):
+	result = None
+
+	matchedDay = dayPattern.match(duration)
+	matchedHour = hourPattern.match(duration)
+	matchedMinute = minutePattern.match(duration)
+	matchedSecond = secondPattern.match(duration)
+	if (matchedDay):
+		day = int(matchedDay.group(1))
+		hour = int(matchedDay.group(2))
+		minute = int(matchedDay.group(3))
+		second = int(matchedDay.group(4))
+		result = day * 24 * 60 * 60
+		result += hour * 60 * 60
+		result += minute * 60
+		result += second
+		pass
+	elif (matchedHour):
+		hour = int(matchedHour.group(1))
+		minute = int(matchedHour.group(2))
+		second = int(matchedHour.group(3))
+		result = hour * 60 * 60
+		result += minute * 60
+		result += second
+		pass
+	elif (matchedMinute):
+		minute = int(matchedMinute.group(1))
+		second = int(matchedMinute.group(2))
+		result = minute * 60
+		result += second
+		pass
+	elif (matchedSecond):
+		second = int(matchedSecond.group(1))
+		result = second
+		pass
+	return result
 
 
 from string import Formatter
@@ -152,3 +203,48 @@ duration = end_datetime_object - start_datetime_object
 print(compactTimeDeltaFormatter(duration))
 print(formatTimeDelta(duration))
 """
+
+# import os
+# import fnmatch
+# import json
+# from datetime import datetime
+# path = "/Users/o0632/Library/Application Support/OctoPrint/uploads"
+# pattern = ".metadata.json"
+# # lookup recursive
+# for dirpath, dirnames, filenames in os.walk(path):
+#
+#     if not filenames:
+#         continue
+#
+#     pythonic_files = fnmatch.filter(filenames, pattern)
+#     if pythonic_files:
+#         for file in pythonic_files:
+# 			fullFilename = '{}/{}'.format(dirpath, file)
+# 			filename = fullFilename[len(path):len(fullFilename)]
+# 			print (filename)
+# 			with open(fullFilename) as json_file:
+# 				jsonObject = json.load(json_file)
+#
+# 				for filename in jsonObject:
+# 					print("processing: "+filename)
+# 					printtimeFloat = 0.0
+# 					startPrintDateTime = None
+# 					successBoolean = False
+# 					if ("history" in jsonObject[filename]):
+# 						historyList = jsonObject[filename]["history"]
+# 						for historyEntry in historyList:
+# 							timestampFloat = historyEntry["timestamp"]
+# 							startPrintDateTime = datetime.fromtimestamp(timestampFloat)
+# 							if ("printTime" in historyEntry):
+# 								printtimeFloat = historyEntry["printTime"]  # kann auch nicht vorhanden sein
+# 							successBoolean = historyEntry["success"]
+# 							pass
+#
+# 					# not needed statisticsDict = jsonObject[filename]["statistics"]
+#
+# 					analyticsDict = jsonObject[filename]["analysis"]
+# 					estimatedPrintTimeFloat = analyticsDict["estimatedPrintTime"]
+# 					filamentLengthFloat = analyticsDict["filament"]["tool0"]["length"]
+# 					pass
+# 				pass
+# 			pass

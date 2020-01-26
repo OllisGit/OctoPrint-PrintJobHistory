@@ -17,51 +17,11 @@ from octoprint_PrintJobHistory.common import StringUtils
 from octoprint_PrintJobHistory.common.SettingsKeys import SettingsKeys
 
 from octoprint_PrintJobHistory.CameraManager import CameraManager
-
+from octoprint_PrintJobHistory.common import CSVExportImporter
 
 
 class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
-	# Converts the Model to JSON
-	# def _convertPrintJobHistoryModelsToDict(self, allJobsModels):
-	# 	result = []
-	# 	for job in allJobsModels:
-	# 		# jobAsDict = job.__dict__
-	# 		jobAsDict = job.__data__
-	#
-	# 		jobAsDict["printStartDateTimeFormatted"] =  job.printStartDateTime.strftime('%d.%m.%Y %H:%M')
-	# 		jobAsDict["printEndDateTimeFormatted"] =  job.printEndDateTime.strftime('%d.%m.%Y %H:%M')
-	# 		# # Calculate duration
-	# 		# duration = job.printEndDateTime - job.printStartDateTime
-	# 		duration = job.duration
-	# 		durationFormatted = StringUtils.secondsToText(duration)
-	# 		jobAsDict["durationFormatted"] =  durationFormatted
-	#
-	# 		allFilements = job.getFilamentFromAssoziation()
-	# 		if  allFilements != None:
-	# 			filamentDict = allFilements.__data__
-	# 			filamentDict["usedLength"] = StringUtils.formatSave("{:.02f}", filamentDict["usedLength"], "")
-	# 			filamentDict["usedWeight"] = StringUtils.formatSave("{:.02f}", filamentDict["usedWeight"], "")
-	# 			filamentDict["usedCost"] = StringUtils.formatSave("{:.02f}", filamentDict["usedCost"], "")
-	# 			filamentDict["calculatedLength"] = StringUtils.formatSave("{:.02f}", filamentDict["calculatedLength"], "")
-	# 			jobAsDict['filamentModel'] = filamentDict
-	#
-	# 		allTemperatures = job.getTemperaturesFromAssoziation()
-	# 		if not allTemperatures == None and len(allTemperatures) > 0:
-	# 			allTempsAsList = list()
-	#
-	# 			for temp in allTemperatures:
-	# 				tempAsDict = dict()
-	# 				tempAsDict["sensorName"] = temp.sensorName
-	# 				tempAsDict["sensorValue"] = temp.sensorValue
-	# 				allTempsAsList.append(tempAsDict)
-	#
-	# 			jobAsDict["temperatureModels"] = allTempsAsList
-	#
-	# 		jobAsDict["snapshotFilename"] = CameraManager.buildSnapshotFilename(job.printStartDateTime)
-	#
-	# 		result.append(jobAsDict)
-	# 	return result
 
 	def _updatePrintJobFromJson(self, printJobModel,  jsonData):
 
@@ -84,8 +44,8 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		filamentModel = printJobModel.loadFilamentFromAssoziation()
 		filamentModel.spoolName = self._getValueFromDictOrNone("spoolName", jsonData)
 		filamentModel.material = self._getValueFromDictOrNone("material", jsonData)
-		filamentModel.usedLength = self._getValueFromDictOrNone("usedLength", jsonData)
-		filamentModel.calculatedLength = self._getValueFromDictOrNone("calculatedLength", jsonData)
+		filamentModel.usedLength = self._convertM2MM(self._getValueFromDictOrNone("usedLength", jsonData))
+		filamentModel.calculatedLength = self._convertM2MM(self._getValueFromDictOrNone("calculatedLength", jsonData))
 		filamentModel.usedWeight = self._getValueFromDictOrNone("usedWeight", jsonData)
 		filamentModel.usedCost = self._getValueFromDictOrNone("usedCost", jsonData)
 
@@ -98,7 +58,15 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 			return values[key]
 		return None
 
+	#  convert m to mm
+	def _convertM2MM(self, value):
+		if (value == None or value == ""):
+			return 0.0
+		floatValue = float(value)
+		return floatValue * 1000.0
+
 ################################################### APIs
+
 
 
 	#######################################################################################   DEACTIVATE PLUGIN CHECK
@@ -124,15 +92,6 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 								"totalItemCount": totalItemCount,
 								"allPrintJobs": allJobsAsDict
 							})
-
-	#######################################################################################   LOAD ALL JOBS
-	@octoprint.plugin.BlueprintPlugin.route("/loadPrintJobHistory", methods=["GET"])
-	def get_printjobhistory(self):
-		allJobsModels = self._databaseManager.loadAllPrintJobs()
-		# allJobsAsDict = self._convertPrintJobHistoryModelsToDict(allJobsModels)
-		allJobsAsDict = TransformPrintJob2JSON.transformAllPrintJobModels(allJobsModels)
-
-		return flask.jsonify(allJobsAsDict)
 
 	#######################################################################################   DELETE JOB
 	@octoprint.plugin.BlueprintPlugin.route("/removePrintJob/<int:databaseId>", methods=["DELETE"])
@@ -176,7 +135,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		input_upload_path = input_name + "." + self._settings.global_get(["server", "uploads", "pathSuffix"])
 
 		if input_upload_path in flask.request.values:
-			# file to restore was uploaded
+			# file was uploaded
 			sourceLocation = flask.request.values[input_upload_path]
 			targetLocation = self._cameraManager.buildSnapshotFilenameLocation(snapshotFilename, False)
 			os.rename(sourceLocation, targetLocation)
@@ -235,8 +194,8 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 			# allJobsDict = self._convertPrintJobHistoryEntitiesToDict(allJobsEntities)
 			allJobsDict = TransformPrintJob2JSON.transformAllPrintJobModels(allJobsModels)
 
-			# csvContent = self._convertPrintJobHistoryEntitiesToCSV(allJobsDict)
-			csvContent = Transform2CSV.transform2CSV(allJobsDict)
+			# csvContent = Transform2CSV.transform2CSV(allJobsDict)
+			csvContent = CSVExportImporter.transform2CSV(allJobsDict)
 
 			response = flask.make_response(csvContent)
 			response.headers["Content-type"] = "text/csv"

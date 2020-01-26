@@ -1,0 +1,13 @@
+
+
+# Print Job History Plugin
+User;Result;Start Date;End Date;Duration;File Name;File Path;File Size;Layers;Note;Temperatures;Spool Name;Material;Diameter;Used Length;Calculated Length;Used Weight;Used Filament Cost
+
+# Print History Plugin
+File name; Timestamp; Success;Print time;Filament length; Filament volumne;
+
+#MetaData
+File Name; timestamp; success; printtime; filament length; filament volumne
+
+
+Filename

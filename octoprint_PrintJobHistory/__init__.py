@@ -1,12 +1,19 @@
 # coding=utf-8
 from __future__ import absolute_import
 
+import threading
+
 import octoprint.plugin
 from octoprint.events import Events
 
 import datetime
 import math
+import flask
+import os
+import shutil
+import tempfile
 
+from octoprint_PrintJobHistory.common import CSVExportImporter
 from octoprint_PrintJobHistory.models.FilamentModel import FilamentModel
 from octoprint_PrintJobHistory.models.PrintJobModel import PrintJobModel
 from octoprint_PrintJobHistory.models.TemperatureModel import TemperatureModel
@@ -72,6 +79,11 @@ class PrintJobHistoryPlugin(
 	def _sendDataToClient(self, payloadDict):
 		self._plugin_manager.send_plugin_message(self._identifier,
 												 payloadDict)
+
+	def _sendCSVUploadResultToClient(self, message, errorCollection):
+		self._sendDataToClient(dict(action="csvImportResult",
+									errorCollection=errorCollection,
+									message=message))
 
 	def _sendErrorMessageToClient(self, title, message):
 		self._sendDataToClient(dict(action="errorPopUp",
@@ -152,7 +164,8 @@ class PrintJobHistoryPlugin(
 	def _createAndAssignFilamentModel(self, printJob, payload):
 		filemanentModel  = FilamentModel()
 
-		fileData = self._file_manager.get_metadata(payload["origin"], payload["file"])
+		fileData = self._file_manager.get_metadata(payload["origin"], payload["path"])
+
 		filamentLength = None
 		if "analysis" in fileData:
 			if "filament" in fileData["analysis"]:
@@ -241,9 +254,9 @@ class PrintJobHistoryPlugin(
 
 		else:
 			currentTemps = self._printer.get_current_temperatures()
-			if (len(currentTemps) > 0):
-				tempBed = currentTemps[0]["bed"]["target"]
-				tempTool = currentTemps[0]["tool0"]["target"]
+			if ( currentTemps != None and  "bed" in currentTemps and "tool0" in currentTemps ):
+				tempBed = currentTemps["bed"]["target"]
+				tempTool = currentTemps["tool0"]["target"]
 				tempFound = True
 
 		if (tempFound == True):
@@ -297,6 +310,48 @@ class PrintJobHistoryPlugin(
 
 	######################################################################################### Hooks and public functions
 
+
+
+	#######################################################################################   UPLOAD CSV FILE (in Thread)
+	def _processCSVUpload(self, path, _sendCSVUploadResultToClient, logger):
+		errorCollection = list()
+		CSVExportImporter.importCSV(path, errorCollection, logger)
+
+		_sendCSVUploadResultToClient("my message", errorCollection)
+		pass
+
+
+	@octoprint.plugin.BlueprintPlugin.route("/importCSV", methods=["POST"])
+	def post_csvUpload(self):
+		input_name = "file"
+		input_upload_path = input_name + "." + self._settings.global_get(["server", "uploads", "pathSuffix"])
+
+		if input_upload_path in flask.request.values:
+			# file was uploaded
+			sourceLocation = flask.request.values[input_upload_path]
+
+			# because we process in seperate thread we need to create our own temp file, the uploaded temp fiel will be deleted after this request-call
+			archive = tempfile.NamedTemporaryFile(delete=False)
+			archive.close()
+			shutil.copy(sourceLocation, archive.name)
+			sourceLocation = archive.name
+
+
+			thread = threading.Thread(target=self._processCSVUpload,
+									  args=(sourceLocation, self._sendCSVUploadResultToClient, self._logger))
+			thread.daemon = True
+			thread.start()
+
+			# targetLocation = self._cameraManager.buildSnapshotFilenameLocation(snapshotFilename, False)
+			# os.rename(sourceLocation, targetLocation)
+			pass
+		else:
+			return flask.make_response("Invalid request, neither a file nor a path of a file to restore provided", 400)
+
+
+		return flask.jsonify(started=True)
+
+	#######################################################################################   HOOKs
 	def on_after_startup(self):
 		# check if needed plugins were available
 		self._checkForMissingPluginInfos()

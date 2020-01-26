@@ -27,6 +27,7 @@ class PrintJobModel(BaseModel):
 	allFilaments = None
 	allTemperatures = None
 
+
 	# Because I don't know how to add relation-models to peewee I use a temp-array
 	def addFilamentModel(self, filamentModel):
 		if self.allFilaments == None:

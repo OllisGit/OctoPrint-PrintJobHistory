@@ -37,12 +37,12 @@ $(function() {
 		this.printedLayers = ko.observable();
 		this.printedHeight = ko.observable();
 		this.temperatureBed = ko.observable();
-		this.temperatureNozzel = ko.observable();
+		this.temperatureNozzle = ko.observable();
 
-		this.profileVendor = ko.observable();
 		this.diameter = ko.observable();
 		this.density = ko.observable();
 		this.material = ko.observable();
+        this.spoolVendor = ko.observable();
 		this.spoolName = ko.observable();
 		this.spoolCost = ko.observable();
 		this.spoolCostUnit = ko.observable();
@@ -93,18 +93,18 @@ $(function() {
         // Just grab the first value
         if (tempDataArray != null && tempDataArray.length >=2) {
             this.temperatureBed(tempDataArray[0].sensorValue);
-            this.temperatureNozzel(tempDataArray[1].sensorValue);
+            this.temperatureNozzle(tempDataArray[1].sensorValue);
         } else {
             this.temperatureBed(updateData.temperatureBed);
-            this.temperatureNozzel(updateData.temperatureNozzel);
+            this.temperatureNozzle(updateData.temperatureNozzle);
         }
 
         //Filament
         if (updateData.filamentModel != null){
-            this.profileVendor(updateData.filamentModel.profileVendor);
             this.diameter(updateData.filamentModel.diameter);
             this.density(updateData.filamentModel.density);
             this.material(updateData.filamentModel.material);
+            this.spoolVendor(updateData.filamentModel.profileVendor);
             this.spoolName(updateData.filamentModel.spoolName);
             this.spoolCost(updateData.filamentModel.spoolCost);
             this.spoolCostUnit(updateData.filamentModel.spoolCostUnit);
@@ -116,10 +116,10 @@ $(function() {
             this.usedWeight( updateData.filamentModel.usedWeight );
             this.usedCost( updateData.filamentModel.usedCost );
         } else {
-            this.profileVendor(updateData.profileVendor);
             this.diameter(updateData.diameter);
             this.density(updateData.density);
             this.material(updateData.material);
+            this.spoolVendor(updateData.spoolVendor);
             this.spoolName(updateData.spoolName);
             this.spoolCost(updateData.spoolCost);
             this.spoolCostUnit(updateData.spoolCostUnit);
@@ -134,6 +134,30 @@ $(function() {
 
 		this.snapshotFilename(updateData.snapshotFilename);
     };
+
+
+    var TableAttributeVisibility = function (){
+        this.status = ko.observable(true);
+        this.user = ko.observable(true);
+        this.date = ko.observable(true);
+        this.startDateTime = ko.observable(true);
+        this.endDateTime = ko.observable(true);
+        this.duration = ko.observable(true);
+        this.file = ko.observable(true);
+        this.fileName = ko.observable(true);
+        this.fileSize = ko.observable(true);
+        this.tempBed = ko.observable(true);
+        this.tempTool = ko.observable(true);
+        this.height = ko.observable(true);
+        this.layer = ko.observable(true);
+        this.usage = ko.observable(true);
+        this.material = ko.observable(true);
+        this.spoolVendor = ko.observable(true);
+        this.spool = ko.observable(true);
+        this.usedLength = ko.observable(true);
+        this.note = ko.observable(true);
+        this.image = ko.observable(true);
+    }
 
 
     ////////////////////////////////////////////////////////////////////////////// VIEW MODEL
@@ -153,7 +177,7 @@ $(function() {
                 "fileName" : "Legolas.gcode",
                 "fileSize" : "134KB",
                 "temperatureBed" : "50C",
-                "temperatureNozzel" : "200C",
+                "temperatureNozzle" : "200C",
                 "printedHeight" : "23mm / 23mm",
                 "printedLayers" : "149 / 149",
                 "spoolName" : "myspool",
@@ -179,7 +203,7 @@ $(function() {
                 "fileName" : "Benchy3D.gcode",
                 "fileSize" : "324KB",
                 "temperatureBed" : "60C",
-                "temperatureNozzel" : "220C",
+                "temperatureNozzle" : "220C",
 
                 "printedHeight" : "13mm / 143mm",
                 "printedLayers" : "3 / 68",
@@ -220,6 +244,11 @@ $(function() {
         self.printJobToShowAfterStartup = null;
         self.missingPluginDialogMessage = null;
 
+        //self.tableAttributeVisibility = ko.observable();
+        self.tableAttributeVisibility = new TableAttributeVisibility();
+
+        self.csvFileUploadName = ko.observable();
+        self.csvImportInProgress = ko.observable(false);
         ////////////////////////////////////////////////////// Knockout model-binding/observer
 
 
@@ -235,6 +264,47 @@ $(function() {
 
         self.downloadDatabaseUrl = ko.observable();
 
+
+        self.csvImportUploadButton = $("#settings-pjh-importcsv-upload");
+        self.csvImportUploadData = undefined;
+        self.csvImportUploadButton.fileupload({
+            dataType: "json",
+            maxNumberOfFiles: 1,
+            autoUpload: false,
+            headers: OctoPrint.getRequestHeaders(),
+            add: function(e, data) {
+                if (data.files.length === 0) {
+                    // no files? ignore
+                    return false;
+                }
+
+                self.csvFileUploadName(data.files[0].name);
+                self.csvImportUploadData = data;
+            },
+            done: function(e, data) {
+                debugger
+                self.csvFileUploadName(undefined);
+                self.csvImportUploadData = undefined;
+            },
+            error: function(response, data, errorMessage){
+                debugger
+                self.csvImportInProgress(false);
+                statusCode = response.status;       // e.g. 400
+                statusText = response.statusText;   // e.g. BAD REQUEST
+                responseText = response.responseText; // e.g. Invalid request
+            }
+        });
+
+        self.performCSVImportFromUpload = function() {
+            if (self.csvImportUploadData === undefined) return;
+
+            self.csvImportInProgress(true);
+            self.csvImportUploadData.submit();
+        };
+
+
+
+
         ///////////////////////////////////////////////////// END: SETTINGS
 
         ///////////////////////////////////////////////////// START: OctoPrint Hooks
@@ -245,6 +315,7 @@ $(function() {
             self.printJobEditDialog.init(self.apiClient, self.settingsViewModel.settings.webcam);
             self.pluginCheckDialog.init(self.apiClient, self.pluginSettings);
 
+            initTableVisibilities();
         }
 
         self.onAfterBinding = function() {
@@ -294,6 +365,15 @@ $(function() {
                 }
                 return;
             }
+
+            if ("csvImportResult" == data.action){
+                debugger
+                self.csvImportInProgress(false);
+
+                alert(data);
+                return;
+            }
+            self.csvImportInProgress(false);
             if ("errorPopUp" == data.action){
                 new PNotify({
                     title: 'ERROR:' + data.title,
@@ -345,6 +425,46 @@ $(function() {
 
 
         //////////// TABLE BEHAVIOR
+        initTableVisibilities = function(){
+            // load all settings from browser storage
+            if (!Modernizr.localstorage) {
+                // damn!!!
+                return false;
+            }
+
+            assignVisibility = function(attributeName){
+                var storageKey = "pjh.table.visible." + attributeName;
+                if (localStorage[storageKey] == null){
+                    localStorage[storageKey] = true
+                } else {
+                    self.tableAttributeVisibility[attributeName]( "true" == localStorage[storageKey]);
+                }
+                self.tableAttributeVisibility[attributeName].subscribe(function(newValue){
+                    localStorage[storageKey] = newValue;
+                });
+            }
+
+            assignVisibility("status");
+            assignVisibility("user");
+            assignVisibility("date");
+            assignVisibility("startDateTime");
+            assignVisibility("endDateTime");
+            assignVisibility("duration");
+            assignVisibility("file");
+            assignVisibility("fileName");
+            assignVisibility("fileSize");
+            assignVisibility("tempBed");
+            assignVisibility("tempTool");
+            assignVisibility("height");
+            assignVisibility("layer");
+            assignVisibility("usage");
+            assignVisibility("material");
+            assignVisibility("spoolVendor");
+            assignVisibility("spool");
+            assignVisibility("usedLength");
+            assignVisibility("note");
+            assignVisibility("image");
+        }
 
         loadJobFunction = function(tableQuery, observableTableModel, observableTotalItemCount){
             // api-call

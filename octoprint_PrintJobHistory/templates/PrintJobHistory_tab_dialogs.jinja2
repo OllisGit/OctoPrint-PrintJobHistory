@@ -86,7 +86,7 @@
                             <div class="row">
                                 <div class="span4"><b>Start</b> <span data-bind="text: printJobForEditing().printStartDateTimeFormatted" /></div>
                                 <div class="span3"><b>Height</b> <span data-bind="text: printJobForEditing().printedHeight" ></span>mm</div>
-                                <div class="span2"><b>Nozzel</b> <span data-bind="text: printJobForEditing().temperatureNozzel" ></span>°C</div>
+                                <div class="span2"><b>Nozzle</b> <span data-bind="text: printJobForEditing().temperatureNozzle" ></span>°C</div>
                                 <div class="span3"></div>
                             </div>
                             <div class="row">
@@ -115,6 +115,12 @@
                                     <label class="control-label">Spool *</label>
                                     <div class="controls">
                                         <input type="text" class="input-large" data-bind="value: printJobForEditing().spoolName" />
+                                    </div>
+                                </div>
+                                <div class="control-group no-bottom-gap">
+                                    <label class="control-label">Spool Vendor*</label>
+                                    <div class="controls">
+                                        <input type="text" class="input-large" data-bind="value: printJobForEditing().spoolVendor" />
                                     </div>
                                 </div>
                                 <div class="control-group no-bottom-gap">

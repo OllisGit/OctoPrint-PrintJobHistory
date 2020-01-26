@@ -20,10 +20,12 @@ def transformPrintJobModel(job):
 	allFilaments = job.loadFilamentFromAssoziation()
 	if allFilaments != None:
 		filamentDict = allFilaments.__data__
-		filamentDict["usedLength"] = StringUtils.formatFloatSave("{:.02f}", filamentDict["usedLength"], "")
 		filamentDict["usedWeight"] = StringUtils.formatFloatSave("{:.02f}", filamentDict["usedWeight"], "")
 		filamentDict["usedCost"] = StringUtils.formatFloatSave("{:.02f}", filamentDict["usedCost"], "")
-		filamentDict["calculatedLength"] = StringUtils.formatFloatSave("{:.02f}", filamentDict["calculatedLength"], "")
+
+		filamentDict["usedLength"] = StringUtils.formatFloatSave("{:.02f}", _convertMM2M(filamentDict["usedLength"]), "")
+		filamentDict["calculatedLength"] = StringUtils.formatFloatSave("{:.02f}", _convertMM2M(filamentDict["calculatedLength"]), "")
+
 		jobAsDict['filamentModel'] = filamentDict
 
 	allTemperatures = job.getTemperaturesFromAssoziation()
@@ -40,8 +42,8 @@ def transformPrintJobModel(job):
 
 	jobAsDict["snapshotFilename"] = CameraManager.buildSnapshotFilename(job.printStartDateTime)
 	# remove timedelta
-	del jobAsDict["printStartDateTime"]
-	del jobAsDict["printEndDateTime"]
+	# del jobAsDict["printStartDateTime"]
+	# del jobAsDict["printEndDateTime"]
 	del jobAsDict["created"]
 	del jobAsDict["filamentModel"]["created"]
 
@@ -55,6 +57,13 @@ def transformAllPrintJobModels(allJobsModels):
 		result.append(jobAsDict)
 
 	return result
+
+#  convert mm to m
+def _convertMM2M(value):
+	if (value == None or not isinstance(value, float)):
+		return ""
+	floatValue = float(value)
+	return floatValue / 1000.0
 
 
 

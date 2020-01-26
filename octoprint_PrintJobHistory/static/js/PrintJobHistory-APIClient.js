@@ -86,20 +86,6 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
         });
     }
 
-    // @DEPRECATED load all PrintJob-Items
-    this.callLoadPrintHistoryJobs = function (responseHandler){
-        $.ajax({
-            //url: API_BASEURL + "plugin/"+PLUGIN_ID+"/loadPrintJobHistory",
-            url: this.baseUrl + "plugin/"+this.pluginId+"/loadPrintJobHistory",
-            type: "GET"
-        }).done(function( data ){
-            responseHandler(data)
-            //shoud be done by the server to make sure the server is informed countdownDialog.modal('hide');
-            //countdownDialog.modal('hide');
-            //countdownCircle = null;
-        });
-    }
-
     // remove PrintJob-Item
     this.callUpdatePrintJob = function (databaseId, printJobItem, responseHandler){
         jsonPayload = ko.toJSON(printJobItem)

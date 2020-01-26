@@ -4,12 +4,13 @@ from __future__ import absolute_import
 import csv
 import StringIO
 
+
 def transform2CSV(allJobsDict):
 
 	result = None
 	si = StringIO.StringIO()
 
-	headers = ['User', 'Result', 'Start Date', 'End Date', 'Duration', 'File Name', 'File Path', 'File Size', 'Layers', 'Note', 'Temperatures', 'Spool Name', 'Material', 'Diameter', 'Used Length', 'Calculated Length', 'Used Weight', 'Used Filament Cost']
+ 	headers = ['User', 'Print result', 'Start Datetime', 'End Datetime', 'Duration', 'File Name', 'File Path', 'File Size', 'Layers', 'Note', 'Temperatures', 'Spool Name', 'Material', 'Diameter', 'Used Length', 'Calculated Length', 'Used Weight', 'Used Filament Cost']
 
 	writer = csv.writer(si, quoting=csv.QUOTE_ALL)
 	writer.writerow(headers)
@@ -36,16 +37,30 @@ def _convertPrintJobHistoryEntityToList(jobAsDict):
 		adjustedValue = adjustedValue.replace('\n', ' ').replace('\r', '')
 		result.append(adjustedValue)
 	tempValue = str()
-	for tempValues in jobAsDict["temperatureModels"]:
-		sensorName = tempValues["sensorName"]
-		sensorValue = str(tempValues["sensorValue"])
-		tempValue = " " + tempValue + sensorName + ":" + sensorValue
+	if ("temperatureModels" not in jobAsDict):
+		tempValue = ""
+	else:
+		for tempValues in jobAsDict["temperatureModels"]:
+			sensorName = tempValues["sensorName"]
+			sensorValue = str(tempValues["sensorValue"])
+			tempValue = " " + tempValue + sensorName + ":" + sensorValue
 	result.append(tempValue)
 
-	filamentAsDict = jobAsDict["filamentModel"]
-	fields = ['spoolName', 'material', 'diameter', 'usedLength', 'calculatedLength', 'usedWeight', 'usedCost']
-	for field in fields:
-		value = filamentAsDict[field]
-		result.append(value if value is not None else '-')
+	if ("filamentModel" not in jobAsDict):
+		result.append("")
+		result.append("")
+		result.append("")
+		result.append("")
+		result.append("")
+		result.append("")
+		result.append("")
+	else:
+		filamentAsDict = jobAsDict["filamentModel"]
+		fields = ['spoolName', 'material', 'diameter', 'usedLength', 'calculatedLength', 'usedWeight', 'usedCost']
+		for field in fields:
+			value = filamentAsDict[field]
+			if ("usedLength" == field or "calculatedLength"):
+				pass
+			result.append(value if value is not None else '-')
 
 	return result
