@@ -12,8 +12,8 @@ import os
 from datetime import datetime
 
 from octoprint_PrintJobHistory import PrintJobModel, CameraManager
-from octoprint_PrintJobHistory.api import Transform2CSV, TransformPrintJob2JSON
-from octoprint_PrintJobHistory.common import StringUtils
+from octoprint_PrintJobHistory.api import TransformPrintJob2JSON
+
 from octoprint_PrintJobHistory.common.SettingsKeys import SettingsKeys
 
 from octoprint_PrintJobHistory.CameraManager import CameraManager

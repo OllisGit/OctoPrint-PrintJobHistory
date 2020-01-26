@@ -66,29 +66,58 @@
                 </div>
                 <div class="control-group">
                     <div class="controls">
-                        <span><b>Metadata.json</b>: OctoPrint use metadata.json files (location: upload-(sub)folders) to store all past print jobs. Export it as <a href="#" data-bind="attr: {href: $root.exportUrl('CSV'), css: {disabled: !$root.exportUrl('CSV')}}">CSV-File</a></span>
+                        <span><b>TODO Metadata.json</b>: OctoPrint use metadata.json files (location: upload-(sub)folders) to store all past print jobs. Export it as <a href="#" data-bind="attr: {href: $root.exportUrl('CSV'), css: {disabled: !$root.exportUrl('CSV')}}">CSV-File</a></span>
                     </div>
                 </div>
                 <div class="control-group">
                     <div class="controls">
-                        <span><b>PrintHistory-Plugin</b>: Export all data from plugin as <a href="#" data-bind="attr: {href: $root.exportUrl('CSV'), css: {disabled: !$root.exportUrl('CSV')}}">CSV-File</a></span>
+                        <span><b>TODO PrintHistory-Plugin</b>: Export all data from plugin as <a href="#" data-bind="attr: {href: $root.exportUrl('CSV'), css: {disabled: !$root.exportUrl('CSV')}}">CSV-File</a></span>
                     </div>
                 </div>
                 <h3>Import</h3>
                 <div class="control-group">
                     <div class="controls">
-
-
-                        KEINE AENDERUNG DER FILLAMENT WERTE BEIM IMPORT
-                        <span>Import a CSV-File to the printjob hstory database. The CSV data will be added to the current data. Before importing a backup file of the database will be created. See storage folder.</span>
-                        <div>The format should looks like this:</div>
-                        <code>
-                            h1;h2;h3;h4
-                        </code>
+                        <div>
+                            Import a CSV-File to the printjob history database. The CSV data will be added to the current database. If you use FilamentManager-Plugin, these values were not touched.
+                        </div>
+                        <div>
+                            HINT: Before importing a backup file of the database will be automatically created. See storage folder.
+                        </div>
                         <br>
-                        <code>
-                            c1;c2;c3;c4
-                        </code>
+                        <div>
+                            Format:
+                            <ul>
+                                <li>CSV-Delimiter is a comma</li>
+                                <li>You need a header row and value rows</li>
+                                <li>The order of the column doesn't matter</li>
+                                <li>Use allowed header names for importing values (see below). Other column names will be skipped</li>
+                                <li>You need some mandatory columns</li>
+                            </ul>
+                            Mandatory column names:
+                            <ul>
+                                <li><code>Print result [success canceled failed]</code></li>
+                                <li><code>File Name</code></li>
+                                <li><code>Start Datetime [dd.mm.yyyy hh:mm]</code></li>
+                                <li><code>Duration</code></li>
+                            </ul>
+                            <br>
+                            Other column names:
+                            <ul>
+                                <li><code>User</code></li>
+                                <li><code>End Datetime [dd.mm.yyyy hh:mm]</code></li>
+                                <li><code>File Path</code></li>
+                                <li><code>File Size [bytes]</code></li>
+                                <li><code>Note</code></li>
+                                <li><code>Spool Name</code></li>
+                                <li><code>Material</code></li>
+                                <li><code>Density [g/cm3]</code></li>
+                                <li><code>Used Length [mm]</code></li>
+                                <li><code>Calculated Length [mm]</code></li>
+                                <li><code>Used Weight [g]</code></li>
+                                <li><code>Used Filament Cost</code></li>
+                            </ul>
+
+                        </div>
                         <br>
                         <div class="input-prepend">
                             <span class="btn fileinput-button">

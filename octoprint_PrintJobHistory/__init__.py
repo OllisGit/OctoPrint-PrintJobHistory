@@ -315,7 +315,8 @@ class PrintJobHistoryPlugin(
 	#######################################################################################   UPLOAD CSV FILE (in Thread)
 	def _processCSVUpload(self, path, _sendCSVUploadResultToClient, logger):
 		errorCollection = list()
-		CSVExportImporter.importCSV(path, errorCollection, logger)
+		resultOfPrintJobs = CSVExportImporter.importCSV(path, errorCollection, logger)
+		#TODO do something usefull
 
 		_sendCSVUploadResultToClient("my message", errorCollection)
 		pass
