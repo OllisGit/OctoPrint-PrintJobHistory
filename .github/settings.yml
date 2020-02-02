@@ -48,12 +48,19 @@ labels:
   - name: "type: question"
     description: "Further information is requested"
     color: d876e3
+  - name: "status: analysing"
+    color: d3d847
   - name: "status: inProgress"
     description: "I am working on it"
     color: 5319e7
+  - name: "status: inNextRelease"
+    description: "Will be implemented/fixed in next release"
+    color: 4ae857
   - name: "status: waitingForFeedback"
     description: "Wating for Customers feedback"
     color: bfdadc
+  - name: "status: waitingForTestFeedback"
+    color: 006b75
   - name: "status: wontfix"
     description: "I don't wont to fix this"
     color: fbca04
