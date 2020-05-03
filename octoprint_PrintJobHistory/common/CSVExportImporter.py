@@ -1,4 +1,5 @@
-import StringIO
+import io
+from io import StringIO
 import csv
 import datetime
 import os
@@ -50,6 +51,7 @@ class CSVColumn:
 		if isinstance(columnValue, float):
 			pass
 		columnValue = str(columnValue)
+		# columnValue = columnValue.encode("utf-8")
 		return columnValue
 
 	def parseAndAssignFieldValue(self, fieldValue, printJobModel, errorCollection, lineNumber):
@@ -67,17 +69,17 @@ class CSVColumn:
 class DefaultCSVFormattorParser:
 
 	def formatValue(self, printJob, fieldName):
-		if fieldName not in printJob:
+		if (hasattr(printJob, fieldName) == False):
 			return "-"
-		valueToFormat = printJob[fieldName]
+		valueToFormat = getattr(printJob, fieldName)
 
 		adjustedValue = valueToFormat if valueToFormat is not None else '-'
-		if (type(adjustedValue) is int or type(adjustedValue) is float):
+		if (type(adjustedValue) is int or type(adjustedValue) is float or type(adjustedValue) is str or type(adjustedValue) is unicode):
 			adjustedValue = str(adjustedValue)
-		adjustedValue = adjustedValue.encode("utf-8")
-
-		adjustedValue = adjustedValue.replace('\n', ' ').replace('\r', '')
-
+			adjustedValue = adjustedValue.replace('\n', ' ').replace('\r', '')
+		else:
+			# print("BOOOOOOMMMMM!!!!!  "+str(type(adjustedValue)))
+			adjustedValue = "#"		# workaround to identify not correct mapped values
 		return adjustedValue
 
 	def parseAndAssignFieldValue(self, fieldLabel, fieldName, fieldValue, printJobModel, errorCollection, lineNumber):
@@ -89,14 +91,13 @@ class DefaultCSVFormattorParser:
 class PrintStatusCSVFormattorParser:
 
 	def formatValue(self, printJob, fieldName):
-		if fieldName not in printJob:
+		if (hasattr(printJob, fieldName) == False):
 			return "-"
-		valueToFormat = printJob[fieldName]
+		valueToFormat = getattr(printJob, fieldName)
 
 		adjustedValue = valueToFormat if valueToFormat is not None else '-'
 		if (type(adjustedValue) is int or type(adjustedValue) is float):
 			adjustedValue = str(adjustedValue)
-		adjustedValue = adjustedValue.encode("utf-8")
 
 		adjustedValue = adjustedValue.replace('\n', ' ').replace('\r', '')
 
@@ -124,9 +125,10 @@ class PrintStatusCSVFormattorParser:
 class DateTimeCSVFormattorParser:
 
 	def formatValue(self, printJob, fieldName):
-		if fieldName not in printJob:
+		if (hasattr(printJob, fieldName) == False):
 			return "-"
-		valueToFormat = printJob[fieldName]
+		valueToFormat = getattr(printJob, fieldName)
+
 		if valueToFormat is None or "" == valueToFormat:
 			return "-"
 		adjustedValue = valueToFormat.strftime(FORMAT_DATETIME)
@@ -151,7 +153,10 @@ class DateTimeCSVFormattorParser:
 class DurationCSVFormattorParser:
 
 	def formatValue(self, printJob, fieldName):
-		valueToFormat = printJob[fieldName]
+		if (hasattr(printJob, fieldName) == False):
+			return "-"
+		valueToFormat = getattr(printJob, fieldName)
+
 		if valueToFormat is None or "" == valueToFormat:
 			return "-"
 		adjustedValue = StringUtils.secondsToText(valueToFormat)
@@ -182,16 +187,21 @@ class TemperaturCSVFormattorParser:
 	tempPattern = re.compile("bed:([0-9]*\.?[0-9]*) tool[0-9]:([0-9]*\.?[0-9]*)")
 
 	def formatValue(self, printJob, fieldName):
-		if fieldName not in printJob:
+		if (hasattr(printJob, fieldName) == False):
 			return "-"
-		valueToFormat = printJob[fieldName]
-		if valueToFormat is None or "" == valueToFormat:
+
+		valueToFormat = getattr(printJob, fieldName)
+
+		if (valueToFormat == None):
+			valueToFormat = printJob.temperatures
+
+		if valueToFormat is None:
 			return "-"
 
 		tempValue = ""
 		for tempValues in valueToFormat:
-			sensorName = tempValues["sensorName"]
-			sensorValue = str(tempValues["sensorValue"])
+			sensorName = tempValues.sensorName
+			sensorValue = str(tempValues.sensorValue)
 			tempValue = tempValue + sensorName + ":" + sensorValue + " "
 		return tempValue
 
@@ -223,21 +233,40 @@ class TemperaturCSVFormattorParser:
 class FilamentCSVFormattorParser:
 
 	def formatValue(self, printJob, fieldNames):
-		if fieldNames[0] not in printJob:
-			return "-"
-		filamentModel = printJob[fieldNames[0]]
 
-		if fieldNames[1] not in filamentModel:
+		if (hasattr(printJob, fieldNames[0]) == False):
 			return "-"
-		valueToFormat = filamentModel[fieldNames[1]]
+		allFilamentModels = getattr(printJob, fieldNames[0])
+		if (allFilamentModels is None):
+			allFilamentModels = printJob.filaments
+
+		if (allFilamentModels is None or len(allFilamentModels) == 0):
+			return "-"
+		# only support for one model
+		filamentModel = allFilamentModels[0]
+		if (hasattr(filamentModel, fieldNames[1]) == False):
+			return "-"
+		valueToFormat = getattr(filamentModel, fieldNames[1])
 
 		# append unit to value
 		if ("usedCost" == fieldNames[1] and valueToFormat != None and valueToFormat != ""):
-			valueToFormat += filamentModel["spoolCostUnit"].encode("utf-8")
+			if (hasattr(filamentModel, "spoolCostUnit") == True and filamentModel.spoolCostUnit != None):
+				valueToFormat = StringUtils.formatFloatSave(StringUtils.FLOAT_DEFAULT_FORMAT, valueToFormat, "-")
+				if (valueToFormat != "-"):
+					if (isinstance(filamentModel.spoolCostUnit, str)):
+						valueToFormat = valueToFormat + filamentModel.spoolCostUnit
+					else:
+						valueToFormat = valueToFormat + filamentModel.spoolCostUnit.encode("utf-8")
+
+		if ("usedLength" == fieldNames[1] or
+			"calculatedLength" == fieldNames[1] or
+			"usedWeight" == fieldNames[1]):
+
+			if (valueToFormat != None and valueToFormat != "" and valueToFormat != "-"):
+				valueToFormat = StringUtils.formatFloatSave(StringUtils.FLOAT_DEFAULT_FORMAT, valueToFormat, "-")
 
 		if valueToFormat is None or "" == valueToFormat:
 			return "-"
-		# Format spec filament values
 
 		return valueToFormat
 
@@ -324,16 +353,16 @@ ALL_COLUMNS = {
 	COLUMN_FILE_SIZE: CSVColumn("fileSize", COLUMN_FILE_SIZE, "", DefaultCSVFormattorParser()),
 	COLUMN_LAYERS: CSVColumn("printedLayers", COLUMN_LAYERS, "", DefaultCSVFormattorParser()),
 	COLUMN_NOTE: CSVColumn("noteText", COLUMN_NOTE, "", DefaultCSVFormattorParser()),
-	COLUMN_TEMPERATURES: CSVColumn("temperatureModels", COLUMN_TEMPERATURES, "", TemperaturCSVFormattorParser()),
-	COLUMN_SPOOL_VENDOR: CSVColumn(["filamentModel", "profileVendor"], COLUMN_SPOOL_VENDOR, "", FilamentCSVFormattorParser()),
-	COLUMN_SPOOL_NAME: CSVColumn(["filamentModel", "spoolName"], COLUMN_SPOOL_NAME, "", FilamentCSVFormattorParser()),
-	COLUMN_MATERIAL: CSVColumn(["filamentModel", "material"], COLUMN_MATERIAL, "", FilamentCSVFormattorParser()),
-	COLUMN_DIAMETER: CSVColumn(["filamentModel", "diameter"], COLUMN_DIAMETER, "", FilamentCSVFormattorParser()),
-	COLUMN_DENSITY: CSVColumn(["filamentModel", "density"], COLUMN_DENSITY, "", FilamentCSVFormattorParser()),
-	COLUMN_USED_LENGTH: CSVColumn(["filamentModel", "usedLength"], COLUMN_USED_LENGTH, "", FilamentCSVFormattorParser()),
-	COLUMN_CALCULATED_LENGTH: CSVColumn(["filamentModel", "calculatedLength"], COLUMN_CALCULATED_LENGTH, "", FilamentCSVFormattorParser()),
-	COLUMN_USED_WEIGHT: CSVColumn(["filamentModel", "usedWeight"], COLUMN_USED_WEIGHT, "", FilamentCSVFormattorParser()),
-	COLUMN_USED_FILAMENT_COSTS: CSVColumn(["filamentModel", "usedCost"], COLUMN_USED_FILAMENT_COSTS, "", FilamentCSVFormattorParser()),
+	COLUMN_TEMPERATURES: CSVColumn("allTemperatures", COLUMN_TEMPERATURES, "", TemperaturCSVFormattorParser()),
+	COLUMN_SPOOL_VENDOR: CSVColumn(["allFilaments", "profileVendor"], COLUMN_SPOOL_VENDOR, "", FilamentCSVFormattorParser()),
+	COLUMN_SPOOL_NAME: CSVColumn(["allFilaments", "spoolName"], COLUMN_SPOOL_NAME, "", FilamentCSVFormattorParser()),
+	COLUMN_MATERIAL: CSVColumn(["allFilaments", "material"], COLUMN_MATERIAL, "", FilamentCSVFormattorParser()),
+	COLUMN_DIAMETER: CSVColumn(["allFilaments", "diameter"], COLUMN_DIAMETER, "", FilamentCSVFormattorParser()),
+	COLUMN_DENSITY: CSVColumn(["allFilaments", "density"], COLUMN_DENSITY, "", FilamentCSVFormattorParser()),
+	COLUMN_USED_LENGTH: CSVColumn(["allFilaments", "usedLength"], COLUMN_USED_LENGTH, "", FilamentCSVFormattorParser()),
+	COLUMN_CALCULATED_LENGTH: CSVColumn(["allFilaments", "calculatedLength"], COLUMN_CALCULATED_LENGTH, "", FilamentCSVFormattorParser()),
+	COLUMN_USED_WEIGHT: CSVColumn(["allFilaments", "usedWeight"], COLUMN_USED_WEIGHT, "", FilamentCSVFormattorParser()),
+	COLUMN_USED_FILAMENT_COSTS: CSVColumn(["allFilaments", "usedCost"], COLUMN_USED_FILAMENT_COSTS, "", FilamentCSVFormattorParser()),
 }
 
 
@@ -342,29 +371,37 @@ ALL_COLUMNS = {
 
 def transform2CSV(allJobsDict):
 	result = None
-	si = StringIO.StringIO()	#TODO maybe a bad idea to use a internal memory based string, needs to be switched to response stream
+	si = StringIO()	#TODO maybe a bad idea to use a internal memory based string, needs to be switched to response stream
+	# si = io.BytesIO()
 
 	writer = csv.writer(si, quoting=csv.QUOTE_ALL)
 	#  Write HEADER
 	headerList = list()
+	csvLine = ""
 	for columnKey in ALL_COLUMNS_SORTED:
 		csvColumn = ALL_COLUMNS[columnKey]
-		headerList.append(csvColumn.columnLabel)
-	writer.writerow(headerList)
+		label = '"' + csvColumn.columnLabel + '"'
+		headerList.append(label)
 
-	# Write CSV
+	csvLine =  "," .join(headerList) + "\n"
+	# writer.writerow(headerList)
+	print(csvLine)
+	yield csvLine
 
+	# Write CSV-Content
 	for job in allJobsDict:
 		csvRow = list()
 		for columnKey in ALL_COLUMNS_SORTED:
 			# print(columnKey)
 			csvColumn = ALL_COLUMNS[columnKey]
-
-			csvRow.append(csvColumn.getCSV(job))
-		writer.writerow(csvRow)
-	result = si.getvalue()
-
-	return result
+			csvColumnValue = '"' + csvColumn.getCSV(job)  + '"'
+			csvRow.append(csvColumnValue)
+		csvLine = ",".join(csvRow) + "\n"
+		print(csvLine)
+		yield csvLine
+		# writer.writerow(csvRow)
+	# result = si.getvalue()
+	# return result
 
 
 ########################################################################################################## -> IMPORT CSV
@@ -374,9 +411,14 @@ mandatoryFieldNames = [
 	ALL_COLUMNS[COLUMN_START_DATETIME].columnLabel,
 	ALL_COLUMNS[COLUMN_DURATION].columnLabel,
 ]
+
+# mandatoryFieldAvaiable = list()
+
 columnOrderInFile = dict()
 
-def importCSV(csvFile4Import, errorCollection, logger):
+
+def parseCSV(csvFile4Import, errorCollection, logger):
+
 	result = list()	# List with printJobModels
 	lineNumber = 0
 	try:
@@ -387,17 +429,23 @@ def importCSV(csvFile4Import, errorCollection, logger):
 				lineNumber += 1
 				if lineNumber == 1:
 					# createColumnOrderFromHeader(row)
-					mandatoryFieldCount = 0
+					# mandatoryFieldCount = 0
+					mandatoryFieldAvaiable = list()
 					columnIndex = 0
 					for column in row:
 						column = column.strip()
 						if column in ALL_COLUMNS:
 							columnOrderInFile[columnIndex] = ALL_COLUMNS[column]
 							if column in mandatoryFieldNames:
-								mandatoryFieldCount += 1
+								mandatoryFieldAvaiable.append(column)
+								# mandatoryFieldCount += 1
 						columnIndex += 1
-					if mandatoryFieldCount <> len(mandatoryFieldNames):
-						errorCollection.append("Mandatory column is missing!")
+					if len(mandatoryFieldAvaiable) != len(mandatoryFieldNames):
+					# if mandatoryFieldCount != len(mandatoryFieldNames):
+						# identify missing files
+						# mandatoryFieldMissing = mandatoryFieldNames - mandatoryFieldAvaiable
+						mandatoryFieldMissing = list( set(mandatoryFieldNames) - set(mandatoryFieldAvaiable) )
+						errorCollection.append("Mandatory column is missing! <br/><b>'" + "".join(mandatoryFieldMissing) + "'</b><br/>")
 						break
 				else:
 					printJobModel = PrintJobModel()
@@ -422,11 +470,10 @@ def importCSV(csvFile4Import, errorCollection, logger):
 		logger.error(errorMessage)
 	finally:
 		logger.info("Removing uploded csv temp-file")
-		# TODO uncomment
-		# try:
-		# 	os.remove(csvFile4Import)
-		# except Exception:
-		# 	pass
+		try:
+			os.remove(csvFile4Import)
+		except Exception:
+			pass
 
 	print("Processed "+str(lineNumber))
 

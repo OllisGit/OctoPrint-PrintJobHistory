@@ -21,10 +21,12 @@ def transformPrintJobModel(job):
 	if allFilaments != None:
 		filamentDict = allFilaments.__data__
 		filamentDict["usedWeight"] = StringUtils.formatFloatSave("{:.02f}", filamentDict["usedWeight"], "")
-		filamentDict["usedCost"] = StringUtils.formatFloatSave("{:.02f}", filamentDict["usedCost"], "")
 
-		filamentDict["usedLength"] = StringUtils.formatFloatSave("{:.02f}", _convertMM2M(filamentDict["usedLength"]), "")
-		filamentDict["calculatedLength"] = StringUtils.formatFloatSave("{:.02f}", _convertMM2M(filamentDict["calculatedLength"]), "")
+		filamentDict["usedLengthFormatted"] = StringUtils.formatFloatSave("{:.02f}", _convertMM2M(filamentDict["usedLength"]), "")
+		filamentDict["calculatedLengthFormatted"] = StringUtils.formatFloatSave("{:.02f}", _convertMM2M(filamentDict["calculatedLength"]), "")
+
+		filamentDict["usedCost"] = StringUtils.formatFloatSave("{:.02f}", filamentDict["usedCost"], "")
+		filamentDict["spoolVendor"] = filamentDict["profileVendor"]
 
 		jobAsDict['filamentModel'] = filamentDict
 
@@ -41,9 +43,9 @@ def transformPrintJobModel(job):
 		jobAsDict["temperatureModels"] = allTempsAsList
 
 	jobAsDict["snapshotFilename"] = CameraManager.buildSnapshotFilename(job.printStartDateTime)
-	# remove timedelta
-	# del jobAsDict["printStartDateTime"]
-	# del jobAsDict["printEndDateTime"]
+	# remove timedelta object, because could not transfered to client
+	del jobAsDict["printStartDateTime"]
+	del jobAsDict["printEndDateTime"]
 	del jobAsDict["created"]
 	del jobAsDict["filamentModel"]["created"]
 

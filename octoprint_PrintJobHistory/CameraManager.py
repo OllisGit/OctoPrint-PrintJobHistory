@@ -10,7 +10,7 @@ from PIL import ImageFile
 
 import logging
 import os.path
-import StringIO
+from io import StringIO
 
 
 class CameraManager(object):
@@ -80,7 +80,8 @@ class CameraManager(object):
 			os.remove(imageLocation)
 		self._logger.info("Snapshot '" + imageLocation + "' deleted")
 
-	def takeSnapshot(self, snapshotFilename):
+	def takeSnapshot(self, snapshotFilename, sendErrorMessageToClientFunction):
+
 		if str(snapshotFilename).endswith(".jpg"):
 			snapshotFilename = self._snapshotStoragePath + "/" +snapshotFilename
 		else:
@@ -99,46 +100,50 @@ class CameraManager(object):
 		flipH = self._globalSettings.global_get(["webcam", "flipH"])
 		flipV = self._globalSettings.global_get(["webcam", "flipV"])
 
-		response = requests.get(snapshotUrl, verify=not True,timeout=float(120))
-		if response.status_code == requests.codes.ok:
-			self._logger.info("Process snapshot image")
-			with i_open(snapshotFilename, 'wb') as snapshot_file:
-				for chunk in response.iter_content(1024):
-					if chunk:
-						snapshot_file.write(chunk)
+		try:
+			response = requests.get(snapshotUrl, verify=not True,timeout=float(60))
+			if response.status_code == requests.codes.ok:
+				self._logger.info("Process snapshot image")
+				with i_open(snapshotFilename, 'wb') as snapshot_file:
+					for chunk in response.iter_content(1024):
+						if chunk:
+							snapshot_file.write(chunk)
 
-			# adjust orientation
-			if flipH or flipV or rotate:
-				image = Image.open(snapshotFilename)
-				if flipH:
-					image = image.transpose(Image.FLIP_LEFT_RIGHT)
-				if flipV:
-					image = image.transpose(Image.FLIP_TOP_BOTTOM)
-				if rotate:
-					# image = image.transpose(Image.ROTATE_270)
-					image = image.transpose(Image.ROTATE_90)
-				# output = StringIO.StringIO()
-				image.save(snapshotFilename, format="JPEG")
-				self._logger.info("Image stored to '" + snapshotFilename + "'")
-				# data = output.getvalue()
-				# output.close()
+				# adjust orientation
+				if flipH or flipV or rotate:
+					image = Image.open(snapshotFilename)
+					if flipH:
+						image = image.transpose(Image.FLIP_LEFT_RIGHT)
+					if flipV:
+						image = image.transpose(Image.FLIP_TOP_BOTTOM)
+					if rotate:
+						# image = image.transpose(Image.ROTATE_270)
+						image = image.transpose(Image.ROTATE_90)
+					# output = StringIO.StringIO()
+					image.save(snapshotFilename, format="JPEG")
+					self._logger.info("Image stored to '" + snapshotFilename + "'")
+					# data = output.getvalue()
+					# output.close()
 
-			# without this I get errors during load (happens in resize, where the image is actually loaded)
-			ImageFile.LOAD_TRUNCATED_IMAGES = True
+				# without this I get errors during load (happens in resize, where the image is actually loaded)
+				ImageFile.LOAD_TRUNCATED_IMAGES = True
 
-			############################################## create a snapshot of the image
-			# TODO not used at the moment
-			# basewidth = 50
-			# img = Image.open(snapshotFilename)
-			# wpercent = (basewidth / float(img.size[0]))
-			# hsize = int((float(img.size[1]) * float(wpercent)))
-			# img = img.resize((basewidth, hsize), Image.ANTIALIAS)
-			# img.save(snapshotThumbnailFilename, "JPEG")
-		else:
-			self._logger.error("Invalid response code from snapshot-url. Code:" + str(response.status_code))
+				############################################## create a snapshot of the image
+				# TODO not used at the moment
+				# basewidth = 50
+				# img = Image.open(snapshotFilename)
+				# wpercent = (basewidth / float(img.size[0]))
+				# hsize = int((float(img.size[1]) * float(wpercent)))
+				# img = img.resize((basewidth, hsize), Image.ANTIALIAS)
+				# img.save(snapshotThumbnailFilename, "JPEG")
+			else:
+				self._logger.error("Invalid response code from snapshot-url. Code:" + str(response.status_code))
+		except (Exception) as error:
+			sendErrorMessageToClientFunction("Take Snapshot", "Unable to get snapshot from URL: " + snapshotUrl)
+			self._logger.error(error)
 
-	def takeSnapshotAsync(self, snapshotFilename):
-		thread = threading.Thread(name='TakeSnapshot', target=self.takeSnapshot, args=(snapshotFilename,))
+	def takeSnapshotAsync(self, snapshotFilename, sendErrorMessageToClientFunction):
+		thread = threading.Thread(name='TakeSnapshot', target=self.takeSnapshot, args=(snapshotFilename, sendErrorMessageToClientFunction,))
 		thread.daemon = True
 		thread.start()
 

@@ -1,6 +1,10 @@
 # coding=utf-8
 from __future__ import absolute_import
 
+import shutil
+import tempfile
+import threading
+
 import octoprint.plugin
 from flask import jsonify, request, make_response, Response, send_file
 import flask
@@ -10,14 +14,18 @@ import json
 import os
 
 from datetime import datetime
+from datetime import timedelta
 
-from octoprint_PrintJobHistory import PrintJobModel, CameraManager
+from werkzeug.datastructures import Headers
+
+from octoprint_PrintJobHistory import PrintJobModel, TemperatureModel, FilamentModel
 from octoprint_PrintJobHistory.api import TransformPrintJob2JSON
 
 from octoprint_PrintJobHistory.common.SettingsKeys import SettingsKeys
 
 from octoprint_PrintJobHistory.CameraManager import CameraManager
 from octoprint_PrintJobHistory.common import CSVExportImporter
+
 
 
 class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
@@ -42,10 +50,11 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		printJobModel.printedHeight = self._getValueFromDictOrNone("printedHeight", jsonData)
 
 		filamentModel = printJobModel.loadFilamentFromAssoziation()
+		filamentModel.profileVendor = self._getValueFromDictOrNone("spoolVendor", jsonData)
 		filamentModel.spoolName = self._getValueFromDictOrNone("spoolName", jsonData)
 		filamentModel.material = self._getValueFromDictOrNone("material", jsonData)
-		filamentModel.usedLength = self._convertM2MM(self._getValueFromDictOrNone("usedLength", jsonData))
-		filamentModel.calculatedLength = self._convertM2MM(self._getValueFromDictOrNone("calculatedLength", jsonData))
+		filamentModel.usedLength = self._convertM2MM(self._getValueFromDictOrNone("usedLengthFormatted", jsonData))
+		filamentModel.calculatedLength = self._convertM2MM(self._getValueFromDictOrNone("calculatedLengthFormatted", jsonData))
 		filamentModel.usedWeight = self._getValueFromDictOrNone("usedWeight", jsonData)
 		filamentModel.usedCost = self._getValueFromDictOrNone("usedCost", jsonData)
 
@@ -64,6 +73,48 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 			return 0.0
 		floatValue = float(value)
 		return floatValue * 1000.0
+
+
+	def _sendCSVUploadResultToClient(self, message, errorCollection):
+		self._sendDataToClient(dict(action="csvImportResult",
+									errorCollection=errorCollection,
+									message=message))
+
+	def _createSamplePrintModel(self):
+		p1 = PrintJobModel()
+		p1.userName = "Olli"
+		p1.printStatusResult = "success"
+		p1.printStartDateTime = datetime.now()
+		p1.printEndDateTime = datetime.now() + timedelta(minutes=123)
+		p1.duration = (p1.printEndDateTime - p1.printStartDateTime).total_seconds()
+		p1.fileName = "OllisBenchy.gcode"
+		p1.filePathName = "/_archive/OllisBenchy.gcode"
+		p1.fileSize = 123456
+		p1.printedLayers = "45 / 45"
+		p1.noteText = "Geiles Teil!!"
+
+		t1 = TemperatureModel()
+		t1.sensorName = "bed"
+		t1.sensorValue = "53"
+		p1.addTemperatureModel(t1)
+		t2 = TemperatureModel()
+		t2.sensorName = "tool0"
+		t2.sensorValue = "210"
+		p1.addTemperatureModel(t2)
+
+		f1 = FilamentModel()
+		f1.spoolName = "My best spool"
+		f1.material = "PLA"
+		f1.diameter = 1.75
+		f1.density = 1.24
+		f1.usedLength = 1345.0
+		f1.calculatedLength = 1456.0
+		f1.usedWeight = 321.0
+		f1.usedCost = 1.34
+		f1.spoolCostUnit = "€"
+		p1.addFilamentModel(f1)
+
+		return p1
 
 ################################################### APIs
 
@@ -166,7 +217,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		})
 
 
-	#######################################################################################   DOWNLOAD DATABASE
+	#######################################################################################   DOWNLOAD DATABASE-FILE
 	@octoprint.plugin.BlueprintPlugin.route("/downloadDatabase", methods=["GET"])
 	def download_database(self):
 		return send_file(self._databaseManager.getDatabaseFileLocation(),
@@ -179,38 +230,139 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 	@octoprint.plugin.BlueprintPlugin.route("/deleteDatabase", methods=["DELETE"])
 	def delete_database(self):
 
-		self._databaseManager.recreateDatabase()
+		self._databaseManager.reCreateDatabase()
 
 		return flask.jsonify({
 			"result": "success"
 		})
 
-
+	#######################################################################################   EXPORT DATABASE
 	@octoprint.plugin.BlueprintPlugin.route("/exportPrintJobHistory/<string:exportType>", methods=["GET"])
 	def exportPrintJobHistoryData(self, exportType):
 
 		if exportType == "CSV":
 			allJobsModels = self._databaseManager.loadAllPrintJobs()
 			# allJobsDict = self._convertPrintJobHistoryEntitiesToDict(allJobsEntities)
-			allJobsDict = TransformPrintJob2JSON.transformAllPrintJobModels(allJobsModels)
+			# allJobsDict = TransformPrintJob2JSON.transformAllPrintJobModels(allJobsModels)
 
 			# csvContent = Transform2CSV.transform2CSV(allJobsDict)
-			csvContent = CSVExportImporter.transform2CSV(allJobsDict)
+			# csvContent = CSVExportImporter.transform2CSV(allJobsDict)
+			# response = flask.make_response(csvContent)
 
-			response = flask.make_response(csvContent)
-			response.headers["Content-type"] = "text/csv"
-			response.headers["Content-Disposition"] = "attachment; filename=OctoprintPrintJobHistory.csv" # TODO add timestamp
+			# response.headers["Content-type"] = "text/csv"
+			# response.headers["Content-Disposition"] = "attachment; filename=OctoprintPrintJobHistory.csv" # TODO add timestamp
+			# return response
 
+			return Response(CSVExportImporter.transform2CSV(allJobsModels),
+							mimetype='text/csv',
+							headers={'Content-Disposition': 'attachment; filename=OctoprintPrintJobHistory.csv'}) # TODO add timestamp
 
-			return response
 		else:
 			print("BOOOMM not supported type")
 
 		pass
 
+	@octoprint.plugin.BlueprintPlugin.route("/sampleCSV", methods=["GET"])
+	def get_sampleCSV(self):
+
+		allJobsModels = list()
+
+		printModel = self._createSamplePrintModel()
+		allJobsModels.append(printModel)
+
+		# allJobsModels = self._databaseManager.loadAllPrintJobs()
+		# allJobsDict = TransformPrintJob2JSON.transformAllPrintJobModels(allJobsModels)
+		# csvContent = Transform2CSV.transform2CSV(allJobsDict)
+		# csvContent = CSVExportImporter.transform2CSV(allJobsModels)
+
+		#filename = "PrintJobHistory-SAMPLE.csv"
+
+		# response = flask.make_response(CSVExportImporter.transform2CSV(allJobsModels))
+		# response.headers["Content-type"] = "text/csv"
+		# response.headers[
+		# 	"Content-Disposition"] = "attachment; filename=PrintJobHistory-SAMPLE.csv"  # TODO add timestamp
+		#
+		# return response
+
+		return Response(CSVExportImporter.transform2CSV(allJobsModels),
+						mimetype='text/csv',
+						headers={'Content-Disposition': 'attachment; filename=PrintJobHistory-SAMPLE.csv'})
 
 
 
+	######################################################################################   UPLOAD CSV FILE (in Thread)
+
+	def _processCSVUploadAsync(self, path, importCSVMode, databaseManager, sendCSVUploadResultToClient, logger):
+		errorCollection = list()
+
+		# - parsing
+		# - backup
+		# - append or replace
+
+		resultOfPrintJobs = CSVExportImporter.parseCSV(path, errorCollection, logger)
+
+		if (len(resultOfPrintJobs) > 0):
+			# we could import some jobs
+			# TODO info to user: about how many parsed
+
+			# - backup
+			databaseManager.backupDatabaseFile()
+			# TODO info to user: backup done
+			# - import mode append/replace
+			if (SettingsKeys.KEY_IMPORTCSV_MODE_REPLACE == importCSVMode):
+				# delete old database and init a clean database
+				databaseManager.reCreateDatabase()
+
+			# TODO info to user: import mode
+
+			# - insert all printjobs in database
+			for printJob in resultOfPrintJobs:
+				# TODO info to user: insert printJob number
+
+				print(printJob)
+
+			pass
+		else:
+			errorCollection.append("Nothing to import")
+
+		sendCSVUploadResultToClient("CSV-Import result", errorCollection)
+		pass
+
+
+	@octoprint.plugin.BlueprintPlugin.route("/importCSV", methods=["POST"])
+	def post_csvUpload(self):
+
+		input_name = "file"
+		input_upload_path = input_name + "." + self._settings.global_get(["server", "uploads", "pathSuffix"])
+
+		if input_upload_path in flask.request.values:
+			# file was uploaded
+			sourceLocation = flask.request.values[input_upload_path]
+
+			# because we process in seperate thread we need to create our own temp file, the uploaded temp file will be deleted after this request-call
+			archive = tempfile.NamedTemporaryFile(delete=False)
+			archive.close()
+			shutil.copy(sourceLocation, archive.name)
+			sourceLocation = archive.name
+
+
+			thread = threading.Thread(target=self._processCSVUploadAsync,
+									  args=(sourceLocation,
+											self._settings.get([SettingsKeys.SETTINGS_KEY_IMPORT_CSV_MODE]),
+											self._databaseManager,
+											self._sendCSVUploadResultToClient,
+											self._logger))
+			thread.daemon = True
+			thread.start()
+
+			# targetLocation = self._cameraManager.buildSnapshotFilenameLocation(snapshotFilename, False)
+			# os.rename(sourceLocation, targetLocation)
+			pass
+		else:
+			return flask.make_response("Invalid request, neither a file nor a path of a file to restore provided", 400)
+
+
+		return flask.jsonify(started=True)
 
 
 

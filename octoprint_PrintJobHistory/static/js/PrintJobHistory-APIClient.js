@@ -38,6 +38,11 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
         return _addApiKeyIfNecessary("./plugin/" + this.pluginId + "/downloadDatabase");
     }
 
+
+    this.getSampleCSVUrl = function(){
+        return _addApiKeyIfNecessary("./plugin/" + this.pluginId + "/sampleCSV");
+    }
+
     this.getExportUrl = function(exportType){
         return _addApiKeyIfNecessary("./plugin/" + this.pluginId + "/exportPrintJobHistory/" + exportType);
     }

@@ -3,6 +3,8 @@
 
     <div class="row-fluid">
         <div class="span3">
+            Total: <span data-bind="text: printJobHistoryTableHelper.totalItemCount">Anzahl</span>
+            per Page:
             <select class="input-mini text-right"
                     data-bind="options: printJobHistoryTableHelper.pageSizeOptions,
                                value: printJobHistoryTableHelper.selectedPageSize">
@@ -37,165 +39,167 @@
         </div>
     </div>
 
-
-<div class="dropdown pull-right tabdrop">
-    <a class="dropdown-toggle" data-toggle="dropdown" href="#">
-        <i class="icon-table"></i>
-        <b class="caret"></b>
-    </a>
-    <ul class="dropdown-menu">
-        <li>
-            <div>Attribute visibility</div>
-            <div class="row">
-                <div class="span3" style="margin-bottom:-10px">
-                    <div class="control-group">
-                        <div class="controls">
-                            <label class="checkbox" style="margin-left:10px">
-                                <input type="checkbox" data-bind="checked: tableAttributeVisibility.status"> Status
-                            </label>
+    <!-- START: COLUMN VISIBILITY    -->
+    <div class="dropdown pull-right tabdrop">
+        <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+            <i class="icon-table"></i>
+            <b class="caret"></b>
+        </a>
+        <ul class="dropdown-menu">
+            <li>
+                <div>Attribute visibility</div>
+                <div class="row">
+                    <div class="span3" style="margin-bottom:-10px">
+                        <div class="control-group">
+                            <div class="controls">
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.status"> Status
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="span3" style="margin-bottom:-10px">
-                    <div class="control-group">
-                        <div class="controls">
-                            <label class="checkbox" style="margin-left:10px">
-                                <input type="checkbox" data-bind="checked: tableAttributeVisibility.user"> User
-                            </label>
+                <div class="row">
+                    <div class="span3" style="margin-bottom:-10px">
+                        <div class="control-group">
+                            <div class="controls">
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.user"> User
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="span3" style="margin-bottom:-10px">
-                    <div class="control-group">
-                        <div class="controls">
-                            <label class="checkbox" style="margin-left:10px">
-                                <input type="checkbox" data-bind="checked: tableAttributeVisibility.date"> Date
-                            </label>
+                <div class="row">
+                    <div class="span3" style="margin-bottom:-10px">
+                        <div class="control-group">
+                            <div class="controls">
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.date"> Date
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="row-fluid">
-                <span class="span1">
-                </span>
-                <span class="span11">
-                    <div class="control-group">
-                        <div class="controls">
-                            <label class="checkbox" style="margin-left:10px">
-                                <input type="checkbox" data-bind="checked: tableAttributeVisibility.startDateTime"> Starttime
-                            </label>
-                            <label class="checkbox" style="margin-left:10px">
-                                <input type="checkbox" data-bind="checked: tableAttributeVisibility.endDateTime"> Endtime
-                            </label>
-                            <label class="checkbox" style="margin-left:10px">
-                                <input type="checkbox" data-bind="checked: tableAttributeVisibility.duration"> Duration
-                            </label>
+                <div class="row-fluid">
+                    <span class="span1">
+                    </span>
+                    <span class="span11">
+                        <div class="control-group">
+                            <div class="controls">
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.startDateTime"> Starttime
+                                </label>
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.endDateTime"> Endtime
+                                </label>
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.duration"> Duration
+                                </label>
+                            </div>
                         </div>
-                    </div>
-                </span>
-            </div>
-            <div class="row">
-                <div class="span3" style="margin-bottom:-10px">
-                    <div class="control-group">
-                        <div class="controls">
-                            <label class="checkbox" style="margin-left:10px">
-                                <input type="checkbox" data-bind="checked: tableAttributeVisibility.file"> File
-                            </label>
+                    </span>
+                </div>
+                <div class="row">
+                    <div class="span3" style="margin-bottom:-10px">
+                        <div class="control-group">
+                            <div class="controls">
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.file"> File
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="row-fluid">
-                <span class="span1">
-                </span>
-                <span class="span11">
-                    <div class="control-group">
-                        <div class="controls">
-                            <label class="checkbox" style="margin-left:10px">
-                                <input type="checkbox" data-bind="checked: tableAttributeVisibility.fileName"> Filename
-                            </label>
-                            <label class="checkbox" style="margin-left:10px">
-                                <input type="checkbox" data-bind="checked: tableAttributeVisibility.fileSize"> Filesize
-                            </label>
-                            <label class="checkbox" style="margin-left:10px">
-                                <input type="checkbox" data-bind="checked: tableAttributeVisibility.tempBed"> Bed Temperature
-                            </label>
-                            <label class="checkbox" style="margin-left:10px">
-                                <input type="checkbox" data-bind="checked: tableAttributeVisibility.tempTool"> Tool Temperature
-                            </label>
-                            <label class="checkbox" style="margin-left:10px">
-                                <input type="checkbox" data-bind="checked: tableAttributeVisibility.height"> Height
-                            </label>
-                            <label class="checkbox" style="margin-left:10px">
-                                <input type="checkbox" data-bind="checked: tableAttributeVisibility.layer"> Layer
-                            </label>
+                <div class="row-fluid">
+                    <span class="span1">
+                    </span>
+                    <span class="span11">
+                        <div class="control-group">
+                            <div class="controls">
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.fileName"> Filename
+                                </label>
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.fileSize"> Filesize
+                                </label>
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.tempBed"> Bed Temperature
+                                </label>
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.tempTool"> Tool Temperature
+                                </label>
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.height"> Height
+                                </label>
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.layer"> Layer
+                                </label>
+                            </div>
                         </div>
-                    </div>
-                </span>
-            </div>
-            <div class="row">
-                <div class="span3" style="margin-bottom:-10px">
-                    <div class="control-group">
-                        <div class="controls">
-                            <label class="checkbox" style="margin-left:10px">
-                                <input type="checkbox" data-bind="checked: tableAttributeVisibility.usage"> Usage
-                            </label>
+                    </span>
+                </div>
+                <div class="row">
+                    <div class="span3" style="margin-bottom:-10px">
+                        <div class="control-group">
+                            <div class="controls">
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.usage"> Usage
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="row-fluid">
-                <span class="span1">
-                </span>
-                <span class="span11">
-                    <div class="control-group">
-                        <div class="controls">
-                            <label class="checkbox" style="margin-left:10px">
-                                <input type="checkbox" data-bind="checked: tableAttributeVisibility.material"> Material
-                            </label>
-                            <label class="checkbox" style="margin-left:10px">
-                                <input type="checkbox" data-bind="checked: tableAttributeVisibility.spoolVendor"> Spool Vendor
-                            </label>
-                            <label class="checkbox" style="margin-left:10px">
-                                <input type="checkbox" data-bind="checked: tableAttributeVisibility.spool"> Spool Name
-                            </label>
-                            <label class="checkbox" style="margin-left:10px">
-                                <input type="checkbox" data-bind="checked: tableAttributeVisibility.usedLength"> Length
-                            </label>
+                <div class="row-fluid">
+                    <span class="span1">
+                    </span>
+                    <span class="span11">
+                        <div class="control-group">
+                            <div class="controls">
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.material"> Material
+                                </label>
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.spoolVendor"> Spool Vendor
+                                </label>
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.spool"> Spool Name
+                                </label>
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.usedLength"> Length
+                                </label>
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.usedWeight"> Weight
+                                </label>
+                            </div>
                         </div>
-                    </div>
-                </span>
-            </div>
-            <div class="row">
-                <div class="span3" style="margin-bottom:-10px">
-                    <div class="control-group">
-                        <div class="controls">
-                            <label class="checkbox" style="margin-left:10px">
-                                <input type="checkbox" data-bind="checked: tableAttributeVisibility.note"> Note
-                            </label>
+                    </span>
+                </div>
+                <div class="row">
+                    <div class="span3" style="margin-bottom:-10px">
+                        <div class="control-group">
+                            <div class="controls">
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.note"> Note
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="row">
-                <div class="span3" style="margin-bottom:-10px">
-                    <div class="control-group">
-                        <div class="controls">
-                            <label class="checkbox" style="margin-left:10px">
-                                <input type="checkbox" data-bind="checked: tableAttributeVisibility.image"> Image
-                            </label>
+                <div class="row">
+                    <div class="span3" style="margin-bottom:-10px">
+                        <div class="control-group">
+                            <div class="controls">
+                                <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.image"> Image
+                                </label>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
-        </li>
-    </ul>
-</div>
-
+            </li>
+        </ul>
+    </div>
 
 
     <div class="pagination pagination-mini pagination-centered" style="margin:0px">
@@ -226,11 +230,11 @@
                 <th style="width: 13%" data-bind="visible: tableAttributeVisibility.usage">Usage</th>
                 <th style="width: 16%" data-bind="visible: tableAttributeVisibility.note">Note</th>
                 <th style="width: 16%" data-bind="visible: tableAttributeVisibility.image">Image</th>
-                <th style="width: 9%"></th>
+<!--                <th style="width: 9%"></th>-->
             </tr>
         </thead>
         <tbody data-bind="foreach: printJobHistoryTableHelper.paginatedItems" >
-            <tr data-bind="click: function() { $root.showPrintJobDetailsDialogAction($data); }">
+            <tr  style="cursor: pointer;"   data-bind="click: function() { $root.showPrintJobDetailsDialogAction($data); }">
                 <!--<td style="text-align: center;"><span data-bind="css: {'icon-ok-sign' : success() == 1, 'icon-exclamation-sign' : success() == 0}, style: { color: success() == 1 ? 'green' : 'red' }"></span></td>-->
                 <td data-bind="visible: $root.tableAttributeVisibility.status" style="text-align: center;"><span data-bind="css: {'icon-ok-sign' : printStatusResult() == 'success', 'icon-exclamation-sign' : printStatusResult() != 'success'}, style: { color: printStatusResult() == 'success' ? 'green' : 'red' }"></span></td>
                 <td data-bind="visible: $root.tableAttributeVisibility.user"><span data-bind="text: userName, attr: { title: userName }"></span></td>
@@ -256,7 +260,8 @@
                     <span ><span data-bind="visible: $root.tableAttributeVisibility.spoolVendor, text: spoolVendor, attr: { title: spoolVendor }"></span></span>
                     <span ><span data-bind="visible: $root.tableAttributeVisibility.spool, text: spoolName, attr: { title: spoolName }"></span></span>
                     <div class="additionalInfo">
-                        <div data-bind="visible: $root.tableAttributeVisibility.usedLength" >Length: <span data-bind="text: usedLength, attr: { title: usedLength }"></span>m / <span data-bind="text: calculatedLength, attr: { title: calculatedLength }"></span>m</div>
+                        <div data-bind="visible: $root.tableAttributeVisibility.usedLength" >Length: <span data-bind="text: usedLengthFormatted, attr: { title: usedLengthFormatted }"></span>m / <span data-bind="text: calculatedLengthFormatted, attr: { title: calculatedLengthFormatted }"></span>m</div>
+                        <div data-bind="visible: $root.tableAttributeVisibility.usedWeight" ><span data-bind="text: usedWeight, attr: { title: usedWeight }"></span><span data-bind="visible: usedWeight().length > 0">g</span></div>
                         <!-- TODO weight and cost infos
                         <div data-bind="visible: note"><span data-bind="text: filamentWeight, attr: { title: filamentWeight }"></span></div>
                         <div data-bind="visible: note"><span data-bind="text: filamentCost, attr: { title: filamentCost }"></span></div>
@@ -274,15 +279,18 @@
 <!--                    <img src="http://localhost:5000/plugin/PrintJobHistory/printJobSnapshot/2019-10-11-15-33" >-->
                     <img data-bind="attr: {src: $root.snapshotUrl( $data)}" >
                 </td>
-                <td>
-                    <div class="btn-group action-buttons" >
-<!--                        <div class="btn btn-mini" data-bind="click: function() { $root.showPrintJobDetailsDialogAction($data); }" title="{{ _('Additional data') }}"><i class="icon-pencil"></i></div>-->
-                        <div class="btn btn-mini" data-bind="click: $root.removePrintJobAction" title="Remove Printjob from History"><i class="icon-trash"></i></div>
-                    </div>
-                </td>
+<!--                <td>-->
+<!--                    <div class="btn-group action-buttons" >-->
+<!--&lt;!&ndash;                        <div class="btn btn-mini" data-bind="click: function() { $root.showPrintJobDetailsDialogAction($data); }" title="{{ _('Additional data') }}"><i class="icon-pencil"></i></div>&ndash;&gt;-->
+<!--                        <div class="btn btn-mini" data-bind="click: $root.removePrintJobAction" title="Remove Printjob from History"><i class="icon-trash"></i></div>-->
+<!--                    </div>-->
+<!--                </td>-->
             </tr>
         </tbody>
     </table>
+
+
+
 
     <div class="pagination pagination-mini pagination-centered" style="margin:0px">
         <ul>

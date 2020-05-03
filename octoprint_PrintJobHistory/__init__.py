@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 
 import threading
+import time
 
 import octoprint.plugin
 from octoprint.events import Events
@@ -33,7 +34,7 @@ class PrintJobHistoryPlugin(
                             octoprint.plugin.TemplatePlugin,
 							octoprint.plugin.StartupPlugin,
 							octoprint.plugin.EventHandlerPlugin,
-							#octoprint.plugin.SimpleApiPlugin
+							octoprint.plugin.SimpleApiPlugin
 							):
 
 
@@ -46,8 +47,6 @@ class PrintJobHistoryPlugin(
 		self._displayLayerProgressPluginImplementationState = None
 		self._ultimakerFormatPluginImplementation = None
 		self._ultimakerFormatPluginImplementationState = None
-
-
 
 		pluginDataBaseFolder = self.get_plugin_data_folder()
 
@@ -65,6 +64,7 @@ class PrintJobHistoryPlugin(
 
 		self._cameraManager.initCamera(pluginDataBaseFolder, pluginBaseFolder, self._settings)
 
+		# Init values for initial settings view-page
 		self._settings.set( [SettingsKeys.SETTINGS_KEY_DATABASE_PATH], self._databaseManager.getDatabaseFileLocation())
 		self._settings.set( [SettingsKeys.SETTINGS_KEY_SNAPSHOT_PATH], self._cameraManager.getSnapshotFileLocation())
 		self._settings.save()
@@ -75,15 +75,12 @@ class PrintJobHistoryPlugin(
 		self.alreadyCanceled = False
 
 		self._logger.info("Done initializing")
+
 	################################################################################################## private functions
 	def _sendDataToClient(self, payloadDict):
 		self._plugin_manager.send_plugin_message(self._identifier,
 												 payloadDict)
 
-	def _sendCSVUploadResultToClient(self, message, errorCollection):
-		self._sendDataToClient(dict(action="csvImportResult",
-									errorCollection=errorCollection,
-									message=message))
 
 	def _sendErrorMessageToClient(self, title, message):
 		self._sendDataToClient(dict(action="errorPopUp",
@@ -92,46 +89,22 @@ class PrintJobHistoryPlugin(
 
 	def _checkForMissingPluginInfos(self, sendToClient=False):
 
-		self._displayLayerProgressPluginImplementationState = "enabled"
-		self._preHeatPluginImplementationState = "enabled"
-		self._filamentManagerPluginImplementationState = "enabled"
-		self._ultimakerFormatPluginImplementationState = "enabled"
+		pluginInfo = self._getPluginInformation("preheat")
+		self._preHeatPluginImplementationState = pluginInfo[0]
+		self._preHeatPluginImplementation = pluginInfo[1]
 
-		if "preheat" in self._plugin_manager.plugins:
-			plugin = self._plugin_manager.plugins["preheat"]
-			if plugin != None and plugin.enabled == True:
-				self._preHeatPluginImplementation = plugin.implementation
-			else:
-				self._preHeatPluginImplementationState = "disabled"
-		else:
-			self._preHeatPluginImplementationState = "missing"
+		pluginInfo = self._getPluginInformation("filamentmanager")
+		self._filamentManagerPluginImplementationState  = pluginInfo[0]
+		self._filamentManagerPluginImplementation = pluginInfo[1]
 
-		if "filamentmanager" in self._plugin_manager.plugins:
-			plugin = self._plugin_manager.plugins["filamentmanager"]
-			if plugin != None and plugin.enabled == True:
-				self._filamentManagerPluginImplementation = plugin.implementation
-			else:
-				self._filamentManagerPluginImplementationState = "disabled"
-		else:
-			self._filamentManagerPluginImplementationState = "missing"
+		pluginInfo = self._getPluginInformation("DisplayLayerProgress")
+		self._displayLayerProgressPluginImplementationState  = pluginInfo[0]
+		self._displayLayerProgressPluginImplementation = pluginInfo[1]
 
-		if "DisplayLayerProgress" in self._plugin_manager.plugins:
-			plugin = self._plugin_manager.plugins["DisplayLayerProgress"]
-			if plugin != None and plugin.enabled == True:
-				self._displayLayerProgressPluginImplementation = plugin.implementation
-			else:
-				self._displayLayerProgressPluginImplementationState = "disabled"
-		else:
-			self._displayLayerProgressPluginImplementationState = "missing"
+		pluginInfo = self._getPluginInformation("UltimakerFormatPackage")
+		self._ultimakerFormatPluginImplementationState  = pluginInfo[0]
+		self._ultimakerFormatPluginImplementation = pluginInfo[1]
 
-		if "UltimakerFormatPackage" in self._plugin_manager.plugins:
-			plugin = self._plugin_manager.plugins["UltimakerFormatPackage"]
-			if plugin != None and plugin.enabled == True:
-				self._ultimakerFormatPluginImplementation = plugin.implementation
-			else:
-				self._ultimakerFormatPluginImplementationState = "disabled"
-		else:
-			self._ultimakerFormatPluginImplementationState = "missing"
 
 		self._logger.info("Plugin-State: "
 						  "PreHeat=" + self._preHeatPluginImplementationState + " "
@@ -158,6 +131,37 @@ class PrintJobHistoryPlugin(
 				missingMessage = "<ul>" + missingMessage + "</ul>"
 				self._sendDataToClient(dict(action="missingPlugin",
 											message=missingMessage))
+
+
+	# get the plugin with status information
+	# [0] == status-string
+	# [1] == implementaiton of the plugin
+	def _getPluginInformation(self, pluginKey):
+
+		status = None
+		implementation = None
+
+		if pluginKey in self._plugin_manager.plugins:
+			plugin = self._plugin_manager.plugins[pluginKey]
+			if plugin != None:
+				if (plugin.enabled == True):
+					status = "enabled"
+					# for OP 1.4.x we need to check agains "icompatible"-attribute
+					if (hasattr(plugin, 'incompatible') ):
+						if (plugin.incompatible == False):
+							implementation = plugin.implementation
+						else:
+							status = "incompatible"
+					else:
+						# OP 1.3.x
+						implementation = plugin.implementation
+					pass
+				else:
+					status = "disabled"
+		else:
+			status = "missing"
+
+		return [status, implementation]
 
 
 	# Grabs all informations for the filament attributes
@@ -251,106 +255,187 @@ class PrintJobHistoryPlugin(
 					tempTool = preHeatTemperature["tool0"]
 					tempFound = True
 			pass
-
 		else:
-			currentTemps = self._printer.get_current_temperatures()
-			if ( currentTemps != None and  "bed" in currentTemps and "tool0" in currentTemps ):
-				tempBed = currentTemps["bed"]["target"]
-				tempTool = currentTemps["tool0"]["target"]
-				tempFound = True
+			# because temperature is 0 at the beginning, we need to wait a couple of seconds (maybe 3)
+			self._readAndAssignCurrentTemperatureDelayed(self._currentPrintJobModel)
 
 		if (tempFound == True):
-			tempModel = TemperatureModel()
-			tempModel.sensorName = "bed"
-			tempModel.sensorValue = tempBed
-			self._currentPrintJobModel.addTemperatureModel(tempModel)
+			self._addTemperatureToPrintModel(self._currentPrintJobModel, tempBed, tempTool)
 
-			tempModel = TemperatureModel()
-			tempModel.sensorName = "tool0"
-			tempModel.sensorValue = tempTool
-			self._currentPrintJobModel.addTemperatureModel(tempModel)
 
+
+	def _readCurrentTemeratureAsync(self, printer, printJobModel, addTemperatureToPrintModel):
+		time.sleep(10)
+		currentTemps = printer.get_current_temperatures()
+		if (currentTemps != None and "bed" in currentTemps and "tool0" in currentTemps):
+			tempBed = currentTemps["bed"]["target"]
+			tempTool = currentTemps["tool0"]["target"]
+			addTemperatureToPrintModel(printJobModel, tempBed, tempTool)
+
+
+	def _readAndAssignCurrentTemperatureDelayed(self, printJobModel):
+		thread = threading.Thread(name='ReadCurrentTemperature',
+								  target=self._readCurrentTemeratureAsync,
+								  args=(self._printer, printJobModel, self._addTemperatureToPrintModel,))
+		thread.daemon = True
+		thread.start()
+		pass
+
+
+	def _addTemperatureToPrintModel(self, printJobModel, bedTemp, toolTemp):
+		tempModel = TemperatureModel()
+		tempModel.sensorName = "bed"
+		tempModel.sensorValue = bedTemp
+		printJobModel.addTemperatureModel(tempModel)
+
+		tempModel = TemperatureModel()
+		tempModel.sensorName = "tool0"
+		tempModel.sensorValue = toolTemp
+		printJobModel.addTemperatureModel(tempModel)
+
+	#### print job finished
 	def _printJobFinished(self, printStatus, payload):
 		self._currentPrintJobModel.printEndDateTime = datetime.datetime.now()
 		self._currentPrintJobModel.duration = (self._currentPrintJobModel.printEndDateTime - self._currentPrintJobModel.printStartDateTime).total_seconds()
 		self._currentPrintJobModel.printStatusResult = printStatus
 
-		if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT]):
-			self._cameraManager.takeSnapshotAsync(CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime))
-
-		if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_ULTIMAKER_THUMBNAIL_AFTER_PRINT]):
-			# check if available
-			if (not self._ultimakerFormatPluginImplementation == None):
-				self._cameraManager.takeUltimakerPackageThumbnailAsync(CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime), self._currentPrintJobModel.fileName)
-			else:
-				self._logger.error("UltimakerPackageFormat Thumbnail enabled, but Plugin not available! Activate Plugin-Depenedency check")
-
-
-		# FilamentInformations e.g. length
-		self._createAndAssignFilamentModel(self._currentPrintJobModel, payload)
-
-		# store everything in the database
-		databaseId = self._databaseManager.insertPrintJob(self._currentPrintJobModel)
-
-		printJobItem = None
-		if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT]):
-			self._settings.set_int([SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT_JOB_ID], databaseId)
-			self._settings.save()
-
-			# inform client to show job edit dialog
-			printJobModel = self._databaseManager.loadPrintJob(databaseId)
-			printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel)
-
-		# inform client for a reload
-		payload = {
-			"action": "printFinished",
-			"printJobItem": printJobItem
-		}
-		self._sendDataToClient(payload)
-
-	######################################################################################### Hooks and public functions
-
-
-
-	#######################################################################################   UPLOAD CSV FILE (in Thread)
-	def _processCSVUpload(self, path, _sendCSVUploadResultToClient, logger):
-		errorCollection = list()
-		resultOfPrintJobs = CSVExportImporter.importCSV(path, errorCollection, logger)
-		#TODO do something usefull
-
-		_sendCSVUploadResultToClient("my message", errorCollection)
-		pass
-
-
-	@octoprint.plugin.BlueprintPlugin.route("/importCSV", methods=["POST"])
-	def post_csvUpload(self):
-		input_name = "file"
-		input_upload_path = input_name + "." + self._settings.global_get(["server", "uploads", "pathSuffix"])
-
-		if input_upload_path in flask.request.values:
-			# file was uploaded
-			sourceLocation = flask.request.values[input_upload_path]
-
-			# because we process in seperate thread we need to create our own temp file, the uploaded temp fiel will be deleted after this request-call
-			archive = tempfile.NamedTemporaryFile(delete=False)
-			archive.close()
-			shutil.copy(sourceLocation, archive.name)
-			sourceLocation = archive.name
-
-
-			thread = threading.Thread(target=self._processCSVUpload,
-									  args=(sourceLocation, self._sendCSVUploadResultToClient, self._logger))
-			thread.daemon = True
-			thread.start()
-
-			# targetLocation = self._cameraManager.buildSnapshotFilenameLocation(snapshotFilename, False)
-			# os.rename(sourceLocation, targetLocation)
-			pass
+		captureMode = self._settings.get([SettingsKeys.SETTINGS_KEY_CAPTURE_PRINTJOBHISTORY_MODE])
+		captureThePrint = False
+		if (captureMode == SettingsKeys.KEY_CAPTURE_PRINTJOBHISTORY_MODE_ALWAYS):
+			captureThePrint = True
 		else:
-			return flask.make_response("Invalid request, neither a file nor a path of a file to restore provided", 400)
+			# check status is neccessary
+			if (printStatus == "success"):
+				captureThePrint = True
+
+		self._logger.info("Print result:" + printStatus + ", CaptureMode:"+captureMode)
+		# capture the print
+		if (captureThePrint == True):
+			self._logger.info("Start capturing print job")
+			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT]):
+				self._cameraManager.takeSnapshotAsync(
+														CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime),
+														self._sendErrorMessageToClient
+													 )
+
+			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_ULTIMAKER_THUMBNAIL_AFTER_PRINT]):
+				# check if available
+				if (not self._ultimakerFormatPluginImplementation == None):
+					self._cameraManager.takeUltimakerPackageThumbnailAsync(CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime), self._currentPrintJobModel.fileName)
+				else:
+					self._logger.error("UltimakerPackageFormat Thumbnail enabled, but Plugin not available! Activate Plugin-Depenedency check")
 
 
-		return flask.jsonify(started=True)
+			# FilamentInformations e.g. length
+			self._createAndAssignFilamentModel(self._currentPrintJobModel, payload)
+
+			# store everything in the database
+			databaseId = self._databaseManager.insertPrintJob(self._currentPrintJobModel)
+
+			printJobItem = None
+			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT]):
+
+				self._settings.set_int([SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT_JOB_ID], databaseId)
+				self._settings.save()
+
+				# inform client to show job edit dialog
+				printJobModel = self._databaseManager.loadPrintJob(databaseId)
+
+				# check the correct status (redundent code, see event client_open)
+				printJobItem = None
+				showDisplayAfterPrintMode = self._settings.get(
+					[SettingsKeys.SETTINGS_KEY_SHOWPRINTJOBDIALOGAFTERPRINT_MODE])
+				printJobModelStatus = printJobModel.printStatusResult
+
+				if (showDisplayAfterPrintMode == SettingsKeys.KEY_SHOWPRINTJOBDIALOGAFTERPRINT_MODE_SUCCESSFUL):
+					# show only when succesfull
+					if ("success" == printJobModelStatus):
+						printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel)
+				else:
+					# always
+					printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel)
+
+			# inform client for a reload
+			payload = {
+				"action": "printFinished",
+				"printJobItem": printJobItem	# if present then the editor dialog is shown
+			}
+			self._sendDataToClient(payload)
+		else:
+			self._logger.info("Not captured")
+
+	# #######################################################################################   UPLOAD CSV FILE (in Thread)
+	# def _processCSVUploadAsync(self, path, importCSVMode, databaseManager, sendCSVUploadResultToClient, logger):
+	# 	errorCollection = list()
+	#
+	# 	# - parsing
+	# 	# - backup
+	# 	# - append or replace
+	#
+	# 	resultOfPrintJobs = CSVExportImporter.parseCSV(path, errorCollection, logger)
+	#
+	# 	if (len(resultOfPrintJobs) > 0):
+	# 		# we could import some jobs
+	# 		# TODO info to user: about how many parsed
+	#
+	# 		# - backup
+	# 		databaseManager.backupDatabaseFile()
+	# 		# TODO info to user: backup done
+	# 		# - import mode append/replace
+	# 		if (SettingsKeys.KEY_IMPORTCSV_MODE_REPLACE == importCSVMode):
+	# 			# delete old database and init a clean database
+	# 			databaseManager.reCreateDatabase()
+	#
+	# 		# TODO info to user: import mode
+	#
+	# 		# - insert all printjobs in database
+	# 		for printJob in resultOfPrintJobs:
+	# 			# TODO info to user: insert printJob number
+	#
+	# 			print(printJob)
+	#
+	# 		pass
+	# 	else:
+	# 		errorCollection.append("Nothing to import")
+	#
+	# 	sendCSVUploadResultToClient("Import result", errorCollection)
+	# 	pass
+	#
+	#
+	# @octoprint.plugin.BlueprintPlugin.route("/importCSV", methods=["POST"])
+	# def post_csvUpload(self):
+	#
+	# 	input_name = "file"
+	# 	input_upload_path = input_name + "." + self._settings.global_get(["server", "uploads", "pathSuffix"])
+	#
+	# 	if input_upload_path in flask.request.values:
+	# 		# file was uploaded
+	# 		sourceLocation = flask.request.values[input_upload_path]
+	#
+	# 		# because we process in seperate thread we need to create our own temp file, the uploaded temp file will be deleted after this request-call
+	# 		archive = tempfile.NamedTemporaryFile(delete=False)
+	# 		archive.close()
+	# 		shutil.copy(sourceLocation, archive.name)
+	# 		sourceLocation = archive.name
+	#
+	#
+	# 		thread = threading.Thread(target=self._processCSVUploadAsync,
+	# 								  args=(sourceLocation,
+	# 										self._settings.get([SettingsKeys.SETTINGS_KEY_IMPORT_CSV_MODE]),
+	# 										self._databaseManager,
+	# 										self._sendCSVUploadResultToClient,
+	# 										self._logger))
+	# 		thread.daemon = True
+	# 		thread.start()
+	#
+	# 		# targetLocation = self._cameraManager.buildSnapshotFilenameLocation(snapshotFilename, False)
+	# 		# os.rename(sourceLocation, targetLocation)
+	# 		pass
+	# 	else:
+	# 		return flask.make_response("Invalid request, neither a file nor a path of a file to restore provided", 400)
+	#
+	#
+	# 	return flask.jsonify(started=True)
 
 	#######################################################################################   HOOKs
 	def on_after_startup(self):
@@ -358,19 +443,42 @@ class PrintJobHistoryPlugin(
 		self._checkForMissingPluginInfos()
 
 	def on_event(self, event, payload):
-		# WebBroswer opened
+		# WebBrowser opened
 		if Events.CLIENT_OPENED == event:
+			# Send plugin storage information
+			## Storage
+			if (hasattr(self, "_databaseManager") == True):
+				databaseFileLocation = self._databaseManager.getDatabaseFileLocation()
+				snapshotFileLocation = self._cameraManager.getSnapshotFileLocation()
+
+				self._sendDataToClient(dict(action="updateStorageInformation",
+											databaseFileLocation = databaseFileLocation,
+											snapshotFileLocation = snapshotFileLocation
+											))
 			# Check if all needed Plugins are available, if not modale dialog to User
 			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_PLUGIN_DEPENDENCY_CHECK]):
 				self._checkForMissingPluginInfos(True)
 
+			# Show last Print-Dialog
 			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT]):
 				printJobId = self._settings.get_int([SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT_JOB_ID])
 				if (not printJobId == None):
 					try:
 						printJobModel = self._databaseManager.loadPrintJob(printJobId)
 
-						printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel)
+						# check the correct status
+						printJobItem = None
+						showDisplayAfterPrintMode = self._settings.get([SettingsKeys.SETTINGS_KEY_SHOWPRINTJOBDIALOGAFTERPRINT_MODE])
+						printJobModelStatus = printJobModel.printStatusResult
+
+						if (showDisplayAfterPrintMode == SettingsKeys.KEY_SHOWPRINTJOBDIALOGAFTERPRINT_MODE_SUCCESSFUL):
+							# show only when succesfull
+							if ("success"== printJobModelStatus):
+								printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel)
+						else:
+							# always
+							printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel)
+
 						payload = {
 							"action": "showPrintJobDialogAfterClientConnection",
 							"printJobItem": printJobItem
@@ -405,19 +513,41 @@ class PrintJobHistoryPlugin(
 	def on_api_get(self, request):
 		if len(request.values) != 0:
 			action = request.values["action"]
+
+			# deceide if you want the reset function in you settings dialog
+			if "isResetSettingsEnabled" == action:
+				return flask.jsonify(enabled="true")
+
+			if "resetSettings" == action:
+				self._settings.set([], self.get_settings_defaults())
+				self._settings.save()
+				return flask.jsonify(self.get_settings_defaults())
 		pass
 
 	##~~ SettingsPlugin mixin
 	def get_settings_defaults(self):
 		settings = dict()
+		## Genral
 		settings[SettingsKeys.SETTINGS_KEY_PLUGIN_DEPENDENCY_CHECK] = True
 		settings[SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT] = True
 		settings[SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT_JOB_ID] = None
+		settings[SettingsKeys.SETTINGS_KEY_SHOWPRINTJOBDIALOGAFTERPRINT_MODE] = SettingsKeys.KEY_SHOWPRINTJOBDIALOGAFTERPRINT_MODE_SUCCESSFUL
+		settings[SettingsKeys.SETTINGS_KEY_CAPTURE_PRINTJOBHISTORY_MODE] = SettingsKeys.KEY_CAPTURE_PRINTJOBHISTORY_MODE_SUCCESSFUL
+
+		## Camera
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT] = True
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_ULTIMAKER_THUMBNAIL_AFTER_PRINT] = True
 
-		settings[SettingsKeys.SETTINGS_KEY_DATABASE_PATH] = ""
-		settings[SettingsKeys.SETTINGS_KEY_SNAPSHOT_PATH] = ""
+		## Export / Import
+		settings[SettingsKeys.SETTINGS_KEY_IMPORT_CSV_MODE] = SettingsKeys.KEY_IMPORTCSV_MODE_APPEND
+
+		# ## Storage
+		# if (hasattr(self,"_databaseManager") == True):
+		# 	settings[SettingsKeys.SETTINGS_KEY_DATABASE_PATH] = self._databaseManager.getDatabaseFileLocation()
+		# 	settings[SettingsKeys.SETTINGS_KEY_SNAPSHOT_PATH] = self._cameraManager.getSnapshotFileLocation()
+		# else:
+		# 	settings[SettingsKeys.SETTINGS_KEY_DATABASE_PATH] = ""
+		# 	settings[SettingsKeys.SETTINGS_KEY_SNAPSHOT_PATH] = ""
 
 		return settings
 
@@ -444,7 +574,8 @@ class PrintJobHistoryPlugin(
 				"js/PrintJobHistory-EditJobDialog.js",
 				"js/PrintJobHistory-ComponentFactory.js",
 				"js/quill.min.js",
-				"js/TableItemHelper.js"],
+				"js/TableItemHelper.js",
+				"js/ResetSettingsUtilV2.js"],
 			css=["css/PrintJobHistory.css",
 				 "css/quill.snow.css"],
 			less=["less/PrintJobHistory.less"]
@@ -494,6 +625,7 @@ class PrintJobHistoryPlugin(
 # can be overwritten via __plugin_xyz__ control properties. See the documentation for that.
 # Name is used in the left Settings-Menue
 __plugin_name__ = "PrintJobHistory"
+__plugin_pythoncompat__ = ">=2.7,<4"
 
 def __plugin_load__():
 	global __plugin_implementation__

@@ -47,8 +47,8 @@ $(function() {
 		this.spoolCost = ko.observable();
 		this.spoolCostUnit = ko.observable();
 		this.spoolWeight = ko.observable();
-		this.usedLength = ko.observable();
-		this.calculatedLength = ko.observable();
+		this.usedLengthFormatted = ko.observable();
+		this.calculatedLengthFormatted = ko.observable();
 		this.usedWeight = ko.observable();
 		this.usedCost = ko.observable();
 
@@ -111,8 +111,8 @@ $(function() {
             this.spoolWeight(updateData.filamentModel.spoolWeight);
 //            this.usedLength( formatFilamentLength(updateData.filamentEntity.usedLength) );
 //            this.calculatedLength( formatFilamentLength(updateData.filamentEntity.calculatedLength) );
-            this.usedLength( updateData.filamentModel.usedLength );
-            this.calculatedLength( updateData.filamentModel.calculatedLength );
+            this.usedLengthFormatted( updateData.filamentModel.usedLengthFormatted );
+            this.calculatedLengthFormatted( updateData.filamentModel.calculatedLengthFormatted );
             this.usedWeight( updateData.filamentModel.usedWeight );
             this.usedCost( updateData.filamentModel.usedCost );
         } else {
@@ -126,8 +126,8 @@ $(function() {
             this.spoolWeight(updateData.spoolWeight);
 //            this.usedLength( formatFilamentLength(updateData.filamentEntity.usedLength) );
 //            this.calculatedLength( formatFilamentLength(updateData.filamentEntity.calculatedLength) );
-            this.usedLength( updateData.usedLength );
-            this.calculatedLength( updateData.calculatedLength );
+            this.usedLengthFormatted( updateData.usedLengthFormatted );
+            this.calculatedLengthFormatted( updateData.calculatedLengthFormatted );
             this.usedWeight( updateData.usedWeight );
             this.usedCost( updateData.usedCost );
         }
@@ -155,6 +155,7 @@ $(function() {
         this.spoolVendor = ko.observable(true);
         this.spool = ko.observable(true);
         this.usedLength = ko.observable(true);
+        this.usedWeight = ko.observable(true);
         this.note = ko.observable(true);
         this.image = ko.observable(true);
     }
@@ -184,8 +185,8 @@ $(function() {
                 "spoolCost" : "2,23",
                 "spoolCostUnit" : "Euro",
                 "material" : "PLA",
-                "usedLength" : "1m22mm",
-                "calculatedLength" : "12,5g",
+                "usedLengthFormatted" : "1m22mm",
+                "calculatedLengthFormatted" : "12,5g",
                 "usedWeight" : "12,5g",
                 "usedCost" : "0,003",
                 "noteText" : "Good output of Legolas",
@@ -211,8 +212,8 @@ $(function() {
                 "spoolCost" : "2,23",
                 "spoolCostUnit" : "Euro",
                 "material" : "ABS",
-                "usedLength" : "2m22mm",
-                "calculatedLength" : "312,6g",
+                "usedLengthFormatted" : "2m22mm",
+                "calculatedLengthFormatted" : "312,6g",
                 "usedWeight" : "312,6g",
                 "usedCost" : "1,34",
 
@@ -249,6 +250,9 @@ $(function() {
 
         self.csvFileUploadName = ko.observable();
         self.csvImportInProgress = ko.observable(false);
+
+        self.databaseFileLocation = ko.observable();
+        self.snapshotFileLocation = ko.observable();
         ////////////////////////////////////////////////////// Knockout model-binding/observer
 
 
@@ -282,12 +286,10 @@ $(function() {
                 self.csvImportUploadData = data;
             },
             done: function(e, data) {
-                debugger
                 self.csvFileUploadName(undefined);
                 self.csvImportUploadData = undefined;
             },
             error: function(response, data, errorMessage){
-                debugger
                 self.csvImportInProgress(false);
                 statusCode = response.status;       // e.g. 400
                 statusText = response.statusText;   // e.g. BAD REQUEST
@@ -302,8 +304,9 @@ $(function() {
             self.csvImportUploadData.submit();
         };
 
-
-
+        self.sampleCSVUrl = function(printJobItem){
+            return self.apiClient.getSampleCSVUrl();
+        }
 
         ///////////////////////////////////////////////////// END: SETTINGS
 
@@ -316,6 +319,11 @@ $(function() {
             self.pluginCheckDialog.init(self.apiClient, self.pluginSettings);
 
             initTableVisibilities();
+
+            // resetSettings-Stuff
+             new ResetSettingsUtilV2(self.pluginSettings).assignResetSettingsFeature(PLUGIN_ID, function(data){
+                // no additional reset function
+             });
         }
 
         self.onAfterBinding = function() {
@@ -336,6 +344,11 @@ $(function() {
 
             if (plugin != PLUGIN_ID) {
                 return;
+            }
+
+            if ("updateStorageInformation" == data.action){
+                self.databaseFileLocation(data.databaseFileLocation);
+                self.snapshotFileLocation(data.snapshotFileLocation);
             }
 
             if ("missingPlugin" == data.action){
@@ -367,10 +380,22 @@ $(function() {
             }
 
             if ("csvImportResult" == data.action){
-                debugger
                 self.csvImportInProgress(false);
 
-                alert(data);
+//                new PNotify({
+//                    title: 'Attention',
+//                    text: notifyMessage,
+//                    type: notfiyType,
+//                    hide: false
+//                    });
+                messageText = data.errorCollection.join(" <br> ")
+                new PNotify({
+                    title: data.message,
+                    text: messageText
+//                    type: notfiyType,
+//                    hide: false
+                    });
+
                 return;
             }
             self.csvImportInProgress(false);
@@ -462,6 +487,7 @@ $(function() {
             assignVisibility("spoolVendor");
             assignVisibility("spool");
             assignVisibility("usedLength");
+            assignVisibility("usedWeight");
             assignVisibility("note");
             assignVisibility("image");
         }
@@ -533,38 +559,6 @@ $(function() {
             }
         };
 
-        // helper.js
-        // listType, supportedSorting, supportedFilters, defaultSorting, defaultFilters, exclusiveFilters, defaultPageSize)
-//        self.printJobHistorylistHelper = new ItemListHelper(
-//            "printJobHistoryItems",
-//            // sorting stuff
-//            {
-//                "column1": function (a,b){
-//                    //some sort stuff
-//                    return 0;
-//                }
-//            },
-//            // filtering
-//            {
-//                "all": function(item){
-//                    return true;
-//                },
-//                "successful": function (item) {
-//                    return (item.success() == 1);
-//                },
-//                "failed": function (item) {
-//                    return (item.success() == 0);
-//                }
-//            },
-//            // defaultSorting
-//            "defaultSorting",
-//            // defaultFilter
-//            ["all"],
-//            // exclusiveFilter
-//            [["all", "successful", "failed"]],
-//            // pageSize
-//            10
-//        );
 
         self.snapshotUrl = function(printJobItem){
             return self.apiClient.getSnapshotUrl(printJobItem.snapshotFilename());

@@ -15,11 +15,16 @@
         <div class="tab-content">
             <!-- GENERAL - TAB -->
             <div class="tab-pane active" id="tab-pjh-General">
-
                 <div class="control-group">
                     <div class="controls">
-                        <label class="checkbox">
-                            <input type="checkbox" data-bind="checked: pluginSettings.pluginCheckActivated" > Activate Plugin dependency check
+                        <label class="">
+                            Capture print history:
+                                <label class="checkbox">
+                                    <input  style="margin-top:-4px" type="radio" name="capturePrintJobHistoryMode" value="always" data-bind="checked: pluginSettings.capturePrintJobHistoryMode"> always</span>
+                                </label>
+                                <label class="checkbox">
+                                        <input style="margin-top:-4px" type="radio" name="capturePrintJobHistoryMode" value="successful" data-bind="checked: pluginSettings.capturePrintJobHistoryMode"> only on successful prints
+                                </label>
                         </label>
                     </div>
                 </div>
@@ -27,6 +32,20 @@
                     <div class="controls">
                         <label class="checkbox">
                             <input type="checkbox" data-bind="checked: pluginSettings.showPrintJobDialogAfterPrint" > Show print job edit dialog after print
+                                <label class="radio">
+                                    <input type="radio" name="showPrintJobDialogAfterPrintMode" value="always" data-bind="checked: pluginSettings.showPrintJobDialogAfterPrintMode, enable: pluginSettings.showPrintJobDialogAfterPrint" > always
+                                </label>
+                                <label class="radio">
+                                        <input type="radio" name="showPrintJobDialogAfterPrintMode" value="successful" data-bind="checked: pluginSettings.showPrintJobDialogAfterPrintMode, enable: pluginSettings.showPrintJobDialogAfterPrint"> only on successful prints
+                                </label>
+
+                        </label>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <div class="controls">
+                        <label class="checkbox">
+                            <input type="checkbox" data-bind="checked: pluginSettings.pluginCheckActivated" > Activate Plugin dependency check
                         </label>
                     </div>
                 </div>
@@ -64,24 +83,64 @@
                         <span><b>Printjob History Database</b>: Export all data as <a href="#" data-bind="attr: {href: $root.exportUrl('CSV'), css: {disabled: !$root.exportUrl('CSV')}}">CSV-File</a></span>
                     </div>
                 </div>
-                <div class="control-group">
-                    <div class="controls">
-                        <span><b>TODO Metadata.json</b>: OctoPrint use metadata.json files (location: upload-(sub)folders) to store all past print jobs. Export it as <a href="#" data-bind="attr: {href: $root.exportUrl('CSV'), css: {disabled: !$root.exportUrl('CSV')}}">CSV-File</a></span>
-                    </div>
-                </div>
-                <div class="control-group">
-                    <div class="controls">
-                        <span><b>TODO PrintHistory-Plugin</b>: Export all data from plugin as <a href="#" data-bind="attr: {href: $root.exportUrl('CSV'), css: {disabled: !$root.exportUrl('CSV')}}">CSV-File</a></span>
-                    </div>
-                </div>
+<!--                <div class="control-group">-->
+<!--                    <div class="controls">-->
+<!--                        <span><b>TODO Metadata.json</b>: OctoPrint use metadata.json files (location: upload-(sub)folders) to store all past print jobs. Export it as <a href="#" data-bind="attr: {href: $root.exportUrl('CSV'), css: {disabled: !$root.exportUrl('CSV')}}">CSV-File</a></span>-->
+<!--                    </div>-->
+<!--                </div>-->
+<!--                <div class="control-group">-->
+<!--                    <div class="controls">-->
+<!--                        <span><b>TODO PrintHistory-Plugin</b>: Export all data from plugin as <a href="#" data-bind="attr: {href: $root.exportUrl('CSV'), css: {disabled: !$root.exportUrl('CSV')}}">CSV-File</a></span>-->
+<!--                    </div>-->
+<!--                </div>-->
                 <h3>Import</h3>
+
+                <div class="control-group">
+                    <div class="controls">
+                        <div class="row">
+                            Import a CSV-File to the printjob history database.
+                        </div>
+                        <br/>
+                        <div class="row">
+                            <div class="span6">
+                                <code>NOT TESTED, yet</code>
+                                <label class="radio">
+                                    <input type="radio" disabled="true" name="importCSVMode" value="replace" data-bind="checked: pluginSettings.importCSVMode"> Replace current database
+                                </label>
+                                <label class="radio">
+                                        <input type="radio" disabled="true" name="importCSVMode" value="append" data-bind="checked: pluginSettings.importCSVMode"> Append to database
+                                </label>
+                            </div>
+
+                            <div class="span6">
+                                <div class="input-prepend">
+                                    <span class="btn fileinput-button">
+                                        <span>Browse...</span>
+                                        <input disabled="true" id="settings-pjh-importcsv-upload"
+                                               type="file"
+                                               name="file"
+                                               data-url="/plugin/PrintJobHistory/importCSV"
+                                               accept=".csv">
+                                    </span>
+                                    <span class="add-on" data-bind="text: csvFileUploadName"></span>
+                                </div>
+                                <button disabled="true" class="btn btn-primary"
+                                        data-bind="enable: !csvImportInProgress(), click: performCSVImportFromUpload">
+                                    <i class="fa fa-spinner fa-spin"
+                                       data-bind="visible: csvImportInProgress"></i> Upload & import
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="control-group">
                     <div class="controls">
                         <div>
-                            Import a CSV-File to the printjob history database. The CSV data will be added to the current database. If you use FilamentManager-Plugin, these values were not touched.
+                            The CSV data will be added or totaly replaced to the current database. If you use FilamentManager-Plugin, these values were not touched.
                         </div>
                         <div>
-                            HINT: Before importing a backup file of the database will be automatically created. See storage folder.
+                            HINT: Before importing a backup file of the database will be automatically created. See Storage-Tab for more details.<!-- <a href="#tab-pjh-Storage" data-toggle="tab">storage folder</a>. -->
                         </div>
                         <br>
                         <div>
@@ -89,9 +148,8 @@
                             <ul>
                                 <li>CSV-Delimiter is a comma</li>
                                 <li>You need a header row and value rows</li>
-                                <li>The order of the column doesn't matter</li>
+                                <li>The order of the columns doesn't matter</li>
                                 <li>Use allowed header names for importing values (see below). Other column names will be skipped</li>
-                                <li>You need some mandatory columns</li>
                             </ul>
                             Mandatory column names:
                             <ul>
@@ -116,31 +174,34 @@
                                 <li><code>Used Weight [g]</code></li>
                                 <li><code>Used Filament Cost</code></li>
                             </ul>
+                        </div>
+                        <div>
+                            Download a <a href="#" data-bind="attr: {href: $root.sampleCSVUrl(), css: {disabled: !$root.sampleCSVUrl()}}">sample csv</a>
+                        </div>
 
-                        </div>
-                        <br>
-                        <div class="input-prepend">
-                            <span class="btn fileinput-button">
-                                <span>Browse...</span>
-                                <input id="settings-pjh-importcsv-upload"
-                                       type="file"
-                                       name="file"
-                                       data-url="/plugin/PrintJobHistory/importCSV"
-                                       accept=".csv">
-                            </span>
-                            <span class="add-on" data-bind="text: csvFileUploadName"></span>
-                        </div>
+
+<!--                        <div class="input-prepend">-->
+<!--                            <span class="btn fileinput-button">-->
+<!--                                <span>Browse...</span>-->
+<!--                                <input id="settings-pjh-importcsv-upload"-->
+<!--                                       type="file"-->
+<!--                                       name="file"-->
+<!--                                       data-url="/plugin/PrintJobHistory/importCSV"-->
+<!--                                       accept=".csv">-->
+<!--                            </span>-->
+<!--                            <span class="add-on" data-bind="text: csvFileUploadName"></span>-->
+<!--                        </div>-->
                     </div>
                 </div>
-                <div class="control-group">
-                    <div class="controls">
-                        <button class="btn btn-primary"
-                                data-bind="enable: !csvImportInProgress(), click: performCSVImportFromUpload">
-                            <i class="fa fa-spinner fa-spin"
-                               data-bind="visible: csvImportInProgress"></i> Upload & import
-                        </button>
-                    </div>
-                </div>
+<!--                <div class="control-group">-->
+<!--                    <div class="controls">-->
+<!--                        <button class="btn btn-primary"-->
+<!--                                data-bind="enable: !csvImportInProgress(), click: performCSVImportFromUpload">-->
+<!--                            <i class="fa fa-spinner fa-spin"-->
+<!--                               data-bind="visible: csvImportInProgress"></i> Upload & import-->
+<!--                        </button>-->
+<!--                    </div>-->
+<!--                </div>-->
 
 
             </div>
@@ -150,8 +211,8 @@
                     <label class="control-label">Database file location</label>
                     <div class="controls">
                         <div class="input-append">
-                            <input type="text" disabled class="input-xlarge text-right" data-bind="value: pluginSettings.databaseFileLocation"/>
-                            <a href="#" class="btn btn-danger" title="Delete Database" data-bind="click: deleteDatabaseAction"><i class="icon-trash"></i></a>
+                            <input type="text" disabled class="input-xlarge text-right" data-bind="value: databaseFileLocation"/>
+                            <a href="#" class="btn btn-danger" title="ReCreate Database" data-bind="click: deleteDatabaseAction"><i class="icon-trash"></i></a>
                             <a href="#" class="btn btn-primary" title="Download Database" data-bind="attr: {href: downloadDatabaseUrl}" target="_blank"><i class="icon-download"></i></a>
                         </div>
                     </div>
@@ -159,9 +220,18 @@
                 <div class="control-group">
                     <label class="control-label">Snapshot file location</label>
                     <div class="controls">
-                        <input type="text" disabled class="input-xlarge text-right" data-bind="value: pluginSettings.snapshotFileLocation"/>
+                        <input type="text" disabled class="input-xlarge text-right" data-bind="value: snapshotFileLocation"/>
                     </div>
                 </div>
+
+                <div class="control-group">
+                    <label class="control-label">Backupname</label>
+                    <div class="controls">
+                        e.g.<code>printJobHistory-backup-20191207-0924.db</code>
+                    </div>
+                </div>
+
+
             </div>
 <!--            &lt;!&ndash; DEBUGGING - TAB &ndash;&gt;-->
 <!--            <div class="tab-pane" id="tab-pjh-Debugging">-->

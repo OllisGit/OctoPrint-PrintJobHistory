@@ -67,17 +67,6 @@ class DatabaseManager(object):
 		pass
 
 
-	def _backupDatabaseFile(self):
-		now = datetime.datetime.now()
-		currentDate = now.strftime("%Y%m%d")
-		backupDatabaseFileName = "printJobHistory-backup-"+currentDate+".db"
-		backupDatabaseFilePath = os.path.join(self._databasePath, backupDatabaseFileName)
-		if not os.path.exists(backupDatabaseFilePath):
-			shutil.copy(self._databaseFileLocation, backupDatabaseFilePath)
-			self._logger.info("Backup of printjobhistory database created '"+backupDatabaseFilePath+"'")
-		else:
-			self._logger.warn("Backup of printjobhistory database ('" + backupDatabaseFilePath + "') is already present. No backup created.")
-
 	def _upgradeFrom1To2(self):
 		# What is changed:
 		# - PrintJobModel: Add Column fileOrigin
@@ -95,29 +84,29 @@ class DatabaseManager(object):
 
 			ALTER TABLE 'pjh_filamentmodel' RENAME TO 'pjh_filamentmodel_old';
 			CREATE TABLE "pjh_filamentmodel" (
-				"databaseId" INTEGER NOT NULL PRIMARY KEY, 	
-				"created" DATETIME NOT NULL, 
-				"printJob_id" INTEGER NOT NULL, 
-				"profileVendor" VARCHAR(255), 
-				"diameter" REAL, 
-				"density" REAL, 
-				"material" VARCHAR(255), 
-				"spoolName" VARCHAR(255), 
-				"spoolCost" VARCHAR(255), 
-				"spoolCostUnit" VARCHAR(255), 
-				"spoolWeight" REAL, 
-				"usedLength" REAL, 
-				"calculatedLength" REAL, 
-				"usedWeight" REAL, 
-				"usedCost" REAL, 
+				"databaseId" INTEGER NOT NULL PRIMARY KEY,
+				"created" DATETIME NOT NULL,
+				"printJob_id" INTEGER NOT NULL,
+				"profileVendor" VARCHAR(255),
+				"diameter" REAL,
+				"density" REAL,
+				"material" VARCHAR(255),
+				"spoolName" VARCHAR(255),
+				"spoolCost" VARCHAR(255),
+				"spoolCostUnit" VARCHAR(255),
+				"spoolWeight" REAL,
+				"usedLength" REAL,
+				"calculatedLength" REAL,
+				"usedWeight" REAL,
+				"usedCost" REAL,
 				FOREIGN KEY ("printJob_id") REFERENCES "pjh_printjobmodel" ("databaseId") ON DELETE CASCADE);
 
 				INSERT INTO 'pjh_filamentmodel' (databaseId, created, printJob_id, profileVendor, diameter, density, material, spoolName, spoolCost, spoolCostUnit, spoolWeight, usedLength, calculatedLength, usedWeight, usedCost)
 				  SELECT databaseId, created, printJob_id, profileVendor, diameter, density, material, spoolName, spoolCost, spoolCostUnit, spoolWeight, usedLength, calculatedLength, usedWeight, usedCost
 				  FROM 'pjh_filamentmodel_old';
-				  
+
 				DROP TABLE 'pjh_filamentmodel_old';
-				
+
 				UPDATE 'pjh_pluginmetadatamodel' SET value=2 WHERE key='databaseSchemeVersion';
 		COMMIT;
 		PRAGMA foreign_keys=on;
@@ -165,6 +154,18 @@ class DatabaseManager(object):
 
 		pass
 
+	def backupDatabaseFile(self):
+		now = datetime.datetime.now()
+		currentDate = now.strftime("%Y%m%d-HHMM")
+		backupDatabaseFileName = "printJobHistory-backup-"+currentDate+".db"
+		backupDatabaseFilePath = os.path.join(self._databasePath, backupDatabaseFileName)
+		if not os.path.exists(backupDatabaseFilePath):
+			shutil.copy(self._databaseFileLocation, backupDatabaseFilePath)
+			self._logger.info("Backup of printjobhistory database created '"+backupDatabaseFilePath+"'")
+		else:
+			self._logger.warn("Backup of printjobhistory database ('" + backupDatabaseFilePath + "') is already present. No backup created.")
+
+
 	def _createDatabase(self, forceCreateTables):
 		self._database = SqliteDatabase(self._databaseFileLocation)
 		DatabaseManager.db = self._database
@@ -183,7 +184,7 @@ class DatabaseManager(object):
 	def getDatabaseFileLocation(self):
 		return self._databaseFileLocation
 
-	def recreateDatabase(self):
+	def reCreateDatabase(self):
 		self._createDatabase(True)
 
 	def insertPrintJob(self, printJobModel):
