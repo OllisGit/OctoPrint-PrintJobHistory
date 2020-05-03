@@ -1,8 +1,8 @@
 # OctoPrint-PrintJobHistory
 
-# WORK IN PROGRESS!!!! 
+# WORK IN PROGRESS!!!!
 
-# Release Candidate 5 is out (last release candidate)!
+# Release Candidate 6 is out (Python 2/3 + OP1.4) (hopefully the last release candidate)!
 
 [![Version](https://img.shields.io/badge/dynamic/json.svg?color=brightgreen&label=version&url=https://api.github.com/repos/OllisGit/OctoPrint-PrintJobHistory/releases&query=$[0].name)]()
 [![Released](https://img.shields.io/badge/dynamic/json.svg?color=brightgreen&label=released&url=https://api.github.com/repos/OllisGit/OctoPrint-PrintJobHistory/releases&query=$[0].published_at)]()
@@ -10,19 +10,19 @@
 
 The OctoPrint-Plugin stores all print-job informations of a print in a database
 
-#### Current implementation for Plugin-Manager URL: 
+#### Current implementation for Plugin-Manager URL:
     https://github.com/OllisGit/OctoPrint-PrintJobHistory/releases/latest/download/master.zip
 
 #### Support my Efforts
 
 This plugin, as well as my [other plugins](https://github.com/OllisGit/) were developed in my spare time.
-If you like it, I would be thankful about a cup of coffee :) 
+If you like it, I would be thankful about a cup of coffee :)
 
 [![More coffee, more code](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2BJP2XFEKNG9J&source=url)
 
 
 ## Planning Release #1
- 
+
 should include the following features:
 
 ### Basic attributes to be captured:
@@ -46,6 +46,7 @@ should include the following features:
 - [x] Capture/Upload Image
 - [x] Filter history table (only print result)
 - [x] Sort history table (printdate, filename)
+- [x] Table column visibility
 - [x] Capture image after print
 - [x] Take Thumbnail from [UltimakerFormatPackage-Plugin](https://plugins.octoprint.org/plugins/UltimakerFormatPackage/)
 - [x] Export all printjobs as CSV
@@ -55,8 +56,7 @@ should include the following features:
 - No report diagramms
 - No fancy looking UI
 
-
-## Planning Release #2, ... 
+## Planning Release #2, ...
 ....to be done.... see:
 - Poll: "What is the next big thing?" https://github.com/OllisGit/OctoPrint-PrintJobHistory/issues/6
 - Planning Board: https://github.com/OllisGit/OctoPrint-PrintJobHistory/projects/1
@@ -71,7 +71,7 @@ should include the following features:
 ## Setup
 
 Plugin is in "working-mode" and not released in official OctoPrint Plugin-Repository.
-You need to install it manually using this URL: 
+You need to install it manually using this URL:
 
     https://github.com/OllisGit/OctoPrint-PrintJobHistory/releases/latest/download/master.zip
 
