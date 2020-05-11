@@ -168,7 +168,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 	@octoprint.plugin.BlueprintPlugin.route("/printJobSnapshot/<string:snapshotFilename>", methods=["GET"])
 	def get_snapshot(self, snapshotFilename):
 		absoluteFilename = self._cameraManager.buildSnapshotFilenameLocation(snapshotFilename)
-		return send_file(absoluteFilename, mimetype='image/jpg')
+		return send_file(absoluteFilename, mimetype='image/jpg', cache_timeout=1)
 
 	#######################################################################################   TAKE SNAPSHOT
 	@octoprint.plugin.BlueprintPlugin.route("/takeSnapshot/<string:snapshotFilename>", methods=["PUT"])

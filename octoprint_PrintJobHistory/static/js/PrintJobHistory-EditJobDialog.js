@@ -35,6 +35,7 @@ function PrintJobHistoryEditDialog(){
 
     self.webCamSettings = null;
 
+    // "Computed" field-binding
     self.webCamEnabled = ko.pureComputed(function(){
         if (self.webCamSettings.webcamEnabled != null){
             return self.webCamSettings.webcamEnabled();
@@ -42,9 +43,7 @@ function PrintJobHistoryEditDialog(){
             return self.webCamSettings.snapshotUrl() != null && self.webCamSettings.streamUrl();
         }
     });
-
-
-
+    // "Computed" field-binding
     self.webcamRatioClass = ko.pureComputed(function() {
         if (self.webCamSettings.streamRatio() == "4:3") {
             return "ratio43";
@@ -53,15 +52,13 @@ function PrintJobHistoryEditDialog(){
         }
     });
 
-
-
-
+    // Image functions
     function _setSnapshotImageSource(snapshotUrl){
         self.lastSnapshotImageSource = self.snapshotImage.attr("src")
         if (self.lastSnapshotImageSource="#"){
             self.lastSnapshotImageSource = snapshotUrl;
         }
-        self.snapshotImage.attr("src", snapshotUrl);
+        self.snapshotImage.attr("src", snapshotUrl+"?" + new Date().getTime()); // new Date == cache breaker
     }
 
     function _restoreSnapshotImageSource(){
@@ -155,6 +152,9 @@ function PrintJobHistoryEditDialog(){
 //        TODO Wieso this statt self????
         _setSnapshotImageSource(self.apiClient.getSnapshotUrl(printJobItemForEdit.snapshotFilename()));
 
+//        reset message
+        self.snapshotSuccessMessageSpan.hide();
+        self.snapshotErrorMessageSpan.hide();
         self.imageDisplayMode(IMAGEDISPLAYMODE_SNAPSHOTIMAGE);
 
         deltaFormat = JSON.parse(printJobItemForEdit.noteDeltaFormat());

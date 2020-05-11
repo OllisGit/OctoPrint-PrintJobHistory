@@ -4,17 +4,17 @@ function PrintJobHistoryPluginCheckDialog(){
 
     self = this;
 
-    this.apiClient = null;
-    this.pluginSettings = null;
+    self.apiClient = null;
+    myPluginSettings = null;
 
-    this.missingPluginsDialog = null;
-    this.missingPluginMessage = null;
-    this.confirmButton = null;
-    this.deactivatePluginCheck = ko.observable(false);
+    self.missingPluginsDialog = null;
+    self.missingPluginMessage = null;
+    self.confirmButton = null;
+    self.deactivatePluginCheck = ko.observable(false);
 
-    this.init = function(apiClient, pluginSettings){
+    self.init = function(apiClient, pluginSettings){
         self.apiClient = apiClient;
-        self.pluginSettings = pluginSettings
+        myPluginSettings = pluginSettings
         self.missingPluginsDialog = $("#dialog_printJobHistory_missingPlugins");
         self.missingPluginMessage = $("#missingPluginMessage");
         self.confirmButton = $("button.btn-confirm", self.missingPluginsDialog);
@@ -39,7 +39,7 @@ function PrintJobHistoryPluginCheckDialog(){
         self.confirmButton.bind("click", function() {
             disableCheck = self.deactivatePluginCheck();
             if (disableCheck == true) {
-                self.pluginSettings.pluginCheckActivated(false)
+                myPluginSettings.pluginCheckActivated(false)
                 self.apiClient.callDeactivatePluginCheck();
             }
             self.hideDialog();

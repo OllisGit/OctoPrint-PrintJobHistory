@@ -424,12 +424,18 @@ $(function() {
 
         ///////////////////////////////////////////////////// START: DIALOG Stuff
 
-
         self.showPrintJobDetailsDialogAction = function(selectedPrintJobItem) {
 
             self.printJobForEditing(new PrintJobItem(ko.mapping.toJS(selectedPrintJobItem)));
 
             self.printJobEditDialog.showDialog(self.printJobForEditing(), function(shouldTableReload){
+                // refresh snapshotImage
+                printJob = self.printJobForEditing();
+                var snapshotImageId = "#"+self.snapshotImageId(printJob);
+                var snapshotImage = $(snapshotImageId);
+                var snapshotUrl = snapshotImage.attr("src");
+                snapshotImage.attr("src", snapshotUrl+"?" + new Date().getTime()); // cache - break
+
                 if (shouldTableReload == true){
                     self.printJobHistoryTableHelper.reloadItems();
                 }
@@ -559,9 +565,12 @@ $(function() {
             }
         };
 
-
         self.snapshotUrl = function(printJobItem){
-            return self.apiClient.getSnapshotUrl(printJobItem.snapshotFilename());
+            return self.apiClient.getSnapshotUrl(printJobItem.snapshotFilename()) + "?" + new Date().getTime();
+        }
+
+        self.snapshotImageId = function(printJobItem){
+            return "pjh-imageid-" + printJobItem.databaseId();
         }
 
         self.removePrintJobAction = function(printJobItem) {

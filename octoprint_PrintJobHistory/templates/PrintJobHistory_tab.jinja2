@@ -277,7 +277,7 @@
                 <td data-bind="visible: $root.tableAttributeVisibility.image">
 <!--                    <img src="http://localhost:5000/plugin/PrintJobHistory/static/images/no-image-icon.png" >-->
 <!--                    <img src="http://localhost:5000/plugin/PrintJobHistory/printJobSnapshot/2019-10-11-15-33" >-->
-                    <img data-bind="attr: {src: $root.snapshotUrl( $data)}" >
+                    <img data-bind="attr: {src: $root.snapshotUrl( $data), id: $root.snapshotImageId( $data ) }" >
                 </td>
 <!--                <td>-->
 <!--                    <div class="btn-group action-buttons" >-->
