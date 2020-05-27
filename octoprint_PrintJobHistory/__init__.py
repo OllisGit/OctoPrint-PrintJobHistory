@@ -52,11 +52,9 @@ class PrintJobHistoryPlugin(
 
 		self._logger.info("Start initializing")
 		# DATABASE
-		self._databaseManager = DatabaseManager(self._logger)
-
+		sqlLoggingEnabled = self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_SQL_LOGGING_ENABLED])
+		self._databaseManager = DatabaseManager(self._logger, sqlLoggingEnabled)
 		self._databaseManager.initDatabase(pluginDataBaseFolder, self._sendErrorMessageToClient)
-		# databasePath = os.path.join(pluginDataBaseFolder, "printJobHistory.db")
-		# self._databaseManager.initDatabase(databasePath)
 
 		# CAMERA
 		self._cameraManager = CameraManager(self._logger)
@@ -104,7 +102,6 @@ class PrintJobHistoryPlugin(
 		pluginInfo = self._getPluginInformation("UltimakerFormatPackage")
 		self._ultimakerFormatPluginImplementationState  = pluginInfo[0]
 		self._ultimakerFormatPluginImplementation = pluginInfo[1]
-
 
 		self._logger.info("Plugin-State: "
 						  "PreHeat=" + self._preHeatPluginImplementationState + " "
@@ -300,6 +297,9 @@ class PrintJobHistoryPlugin(
 		self._currentPrintJobModel.printStatusResult = printStatus
 
 		captureMode = self._settings.get([SettingsKeys.SETTINGS_KEY_CAPTURE_PRINTJOBHISTORY_MODE])
+		if (captureMode == SettingsKeys.KEY_CAPTURE_PRINTJOBHISTORY_MODE_NONE):
+			return
+
 		captureThePrint = False
 		if (captureMode == SettingsKeys.KEY_CAPTURE_PRINTJOBHISTORY_MODE_ALWAYS):
 			captureThePrint = True
@@ -323,8 +323,7 @@ class PrintJobHistoryPlugin(
 				if (not self._ultimakerFormatPluginImplementation == None):
 					self._cameraManager.takeUltimakerPackageThumbnailAsync(CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime), self._currentPrintJobModel.fileName)
 				else:
-					self._logger.error("UltimakerPackageFormat Thumbnail enabled, but Plugin not available! Activate Plugin-Depenedency check")
-
+					self._logger.warn("UltimakerPackageFormat Thumbnail enabled, but Plugin not available! Activate Plugin-Depenedency check")
 
 			# FilamentInformations e.g. length
 			self._createAndAssignFilamentModel(self._currentPrintJobModel, payload)
@@ -362,82 +361,9 @@ class PrintJobHistoryPlugin(
 			}
 			self._sendDataToClient(payload)
 		else:
-			self._logger.info("Not captured")
+			self._logger.info("Snapshot not captured, because not activated")
 
-	# #######################################################################################   UPLOAD CSV FILE (in Thread)
-	# def _processCSVUploadAsync(self, path, importCSVMode, databaseManager, sendCSVUploadResultToClient, logger):
-	# 	errorCollection = list()
-	#
-	# 	# - parsing
-	# 	# - backup
-	# 	# - append or replace
-	#
-	# 	resultOfPrintJobs = CSVExportImporter.parseCSV(path, errorCollection, logger)
-	#
-	# 	if (len(resultOfPrintJobs) > 0):
-	# 		# we could import some jobs
-	# 		# TODO info to user: about how many parsed
-	#
-	# 		# - backup
-	# 		databaseManager.backupDatabaseFile()
-	# 		# TODO info to user: backup done
-	# 		# - import mode append/replace
-	# 		if (SettingsKeys.KEY_IMPORTCSV_MODE_REPLACE == importCSVMode):
-	# 			# delete old database and init a clean database
-	# 			databaseManager.reCreateDatabase()
-	#
-	# 		# TODO info to user: import mode
-	#
-	# 		# - insert all printjobs in database
-	# 		for printJob in resultOfPrintJobs:
-	# 			# TODO info to user: insert printJob number
-	#
-	# 			print(printJob)
-	#
-	# 		pass
-	# 	else:
-	# 		errorCollection.append("Nothing to import")
-	#
-	# 	sendCSVUploadResultToClient("Import result", errorCollection)
-	# 	pass
-	#
-	#
-	# @octoprint.plugin.BlueprintPlugin.route("/importCSV", methods=["POST"])
-	# def post_csvUpload(self):
-	#
-	# 	input_name = "file"
-	# 	input_upload_path = input_name + "." + self._settings.global_get(["server", "uploads", "pathSuffix"])
-	#
-	# 	if input_upload_path in flask.request.values:
-	# 		# file was uploaded
-	# 		sourceLocation = flask.request.values[input_upload_path]
-	#
-	# 		# because we process in seperate thread we need to create our own temp file, the uploaded temp file will be deleted after this request-call
-	# 		archive = tempfile.NamedTemporaryFile(delete=False)
-	# 		archive.close()
-	# 		shutil.copy(sourceLocation, archive.name)
-	# 		sourceLocation = archive.name
-	#
-	#
-	# 		thread = threading.Thread(target=self._processCSVUploadAsync,
-	# 								  args=(sourceLocation,
-	# 										self._settings.get([SettingsKeys.SETTINGS_KEY_IMPORT_CSV_MODE]),
-	# 										self._databaseManager,
-	# 										self._sendCSVUploadResultToClient,
-	# 										self._logger))
-	# 		thread.daemon = True
-	# 		thread.start()
-	#
-	# 		# targetLocation = self._cameraManager.buildSnapshotFilenameLocation(snapshotFilename, False)
-	# 		# os.rename(sourceLocation, targetLocation)
-	# 		pass
-	# 	else:
-	# 		return flask.make_response("Invalid request, neither a file nor a path of a file to restore provided", 400)
-	#
-	#
-	# 	return flask.jsonify(started=True)
-
-	#######################################################################################   HOOKs
+	#######################################################################################   OP - HOOKs
 	def on_after_startup(self):
 		# check if needed plugins were available
 		self._checkForMissingPluginInfos()
@@ -509,6 +435,9 @@ class PrintJobHistoryPlugin(
 		# default save function
 		octoprint.plugin.SettingsPlugin.on_settings_save(self, data)
 
+		sqlLoggingEnabled = self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_SQL_LOGGING_ENABLED])
+		self._databaseManager.showSQLLogging(sqlLoggingEnabled)
+
 	# to allow the frontend to trigger an GET call
 	def on_api_get(self, request):
 		if len(request.values) != 0:
@@ -541,6 +470,9 @@ class PrintJobHistoryPlugin(
 		## Export / Import
 		settings[SettingsKeys.SETTINGS_KEY_IMPORT_CSV_MODE] = SettingsKeys.KEY_IMPORTCSV_MODE_APPEND
 
+		## Debugging
+		settings[SettingsKeys.SETTINGS_KEY_SQL_LOGGING_ENABLED] = False
+
 		# ## Storage
 		# if (hasattr(self,"_databaseManager") == True):
 		# 	settings[SettingsKeys.SETTINGS_KEY_DATABASE_PATH] = self._databaseManager.getDatabaseFileLocation()
@@ -572,6 +504,7 @@ class PrintJobHistoryPlugin(
 				"js/PrintJobHistory-APIClient.js",
 				"js/PrintJobHistory-PluginCheckDialog.js",
 				"js/PrintJobHistory-EditJobDialog.js",
+				"js/PrintJobHistory-ImportDialog.js",
 				"js/PrintJobHistory-ComponentFactory.js",
 				"js/quill.min.js",
 				"js/TableItemHelper.js",
@@ -607,17 +540,17 @@ class PrintJobHistoryPlugin(
 		return [("POST", r"/upload/", 5 * 1024 * 1024)]	# size in bytes
 
 
-	# For Streaming I need a special ResponseHandler
-	def route_hook(self, server_routes, *args, **kwargs):
-		from octoprint.server.util.tornado import LargeResponseHandler, UrlProxyHandler, path_validation_factory
-		from octoprint.util import is_hidden_path
-
-		return [
-			# (r'myvideofeed', StreamHandler, dict(url=self._settings.global_get(["webcam", "snapshot"]),
-			# 									 as_attachment=True)),
-			(r"mysnapshot", UrlProxyHandler, dict(url=self._settings.global_get(["webcam", "snapshot"]),
-												 as_attachment=True))
-		]
+	# # For Streaming I need a special ResponseHandler
+	# def route_hook(self, server_routes, *args, **kwargs):
+	# 	from octoprint.server.util.tornado import LargeResponseHandler, UrlProxyHandler, path_validation_factory
+	# 	from octoprint.util import is_hidden_path
+	#
+	# 	return [
+	# 		# (r'myvideofeed', StreamHandler, dict(url=self._settings.global_get(["webcam", "snapshot"]),
+	# 		# 									 as_attachment=True)),
+	# 		(r"mysnapshot", UrlProxyHandler, dict(url=self._settings.global_get(["webcam", "snapshot"]),
+	# 											 as_attachment=True))
+	# 	]
 
 
 # If you want your plugin to be registered within OctoPrint under a different name than what you defined in setup.py
@@ -633,7 +566,7 @@ def __plugin_load__():
 
 	global __plugin_hooks__
 	__plugin_hooks__ = {
-		"octoprint.server.http.routes": __plugin_implementation__.route_hook,
+		# "octoprint.server.http.routes": __plugin_implementation__.route_hook,
 		"octoprint.server.http.bodysize": __plugin_implementation__.bodysize_hook,
 		"octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
 	}

@@ -6,11 +6,11 @@
 
 The OctoPrint-Plugin stores all print-job informations of a print in a local database.
 ```
-#########################################################################
+###########################################################################
 Note:
 Adding the plugin to the offical OctoPrint-Repository is requested.
-So, at the moment you need manuell install the plugin from the below URL
-#########################################################################
+So, at the moment you need to manuell install the plugin from the below URL
+###########################################################################
 ```
 #### Support my Efforts
 
