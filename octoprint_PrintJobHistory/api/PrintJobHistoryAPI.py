@@ -26,21 +26,13 @@ from octoprint_PrintJobHistory.common.SettingsKeys import SettingsKeys
 from octoprint_PrintJobHistory.CameraManager import CameraManager
 from octoprint_PrintJobHistory.common import CSVExportImporter
 
-
-
+#############################################################
+# Internal API for all Frontend communications
+#############################################################
 class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 
 	def _updatePrintJobFromJson(self, printJobModel,  jsonData):
-
-		# some attributes shouldn't be changed via the UI (API)
-		# printJobModel.userName = self._getValueFromDictOrNone("userName", jsonData)
-		# printJobModel.printStartDateTime = datetime.strptime(jsonData["printStartDateTimeFormatted"], "%d.%m.%Y %H:%M")
-		# printJobModel.printEndDateTime = datetime.strptime(jsonData["printEndDateTimeFormatted"], "%d.%m.%Y %H:%M")
-		# printJobModel.printStatusResult = self._getValueFromDictOrNone("printStatusResult", jsonData)
-		# printJobModel.fileName = self._getValueFromDictOrNone("fileName", jsonData)
-		# printJobModel.filePathName = self._getValueFromDictOrNone("filePathName", jsonData)
-		# printJobModel.fileSize = self._getValueFromDictOrNone("fileSize", jsonData)
 
 		# changable...
 		printJobModel.noteText = self._getValueFromDictOrNone("noteText", jsonData)
@@ -75,10 +67,16 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		return floatValue * 1000.0
 
 
-	def _sendCSVUploadResultToClient(self, message, errorCollection):
-		self._sendDataToClient(dict(action="csvImportResult",
-									errorCollection=errorCollection,
-									message=message))
+	def _sendCSVUploadStatusToClient(self, importStatus, currenLineNumber, backupFilePath, backupSnapshotFilePath, successMessages, errorCollection):
+		self._sendDataToClient(dict(action="csvImportStatus",
+									importStatus=importStatus,
+									currenLineNumber = currenLineNumber,
+									backupFilePath = backupFilePath,
+									backupSnapshotFilePath = backupSnapshotFilePath,
+									successMessages=successMessages,
+									errorCollection = errorCollection
+									)
+							   )
 
 	def _createSamplePrintModel(self):
 		p1 = PrintJobModel()
@@ -91,6 +89,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		p1.filePathName = "/_archive/OllisBenchy.gcode"
 		p1.fileSize = 123456
 		p1.printedLayers = "45 / 45"
+		p1.printedHeight = "0.4 / 23.8"
 		p1.noteText = "Geiles Teil!!"
 
 		t1 = TemperatureModel()
@@ -103,6 +102,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		p1.addTemperatureModel(t2)
 
 		f1 = FilamentModel()
+		f1.profileVendor = "OllisFactory"
 		f1.spoolName = "My best spool"
 		f1.material = "PLA"
 		f1.diameter = 1.75
@@ -111,13 +111,12 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		f1.calculatedLength = 1456.0
 		f1.usedWeight = 321.0
 		f1.usedCost = 1.34
-		f1.spoolCostUnit = "€"
+		f1.spoolCostUnit = "" # no cost-unit
 		p1.addFilamentModel(f1)
 
 		return p1
 
 ################################################### APIs
-
 
 
 	#######################################################################################   DEACTIVATE PLUGIN CHECK
@@ -173,7 +172,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 	#######################################################################################   TAKE SNAPSHOT
 	@octoprint.plugin.BlueprintPlugin.route("/takeSnapshot/<string:snapshotFilename>", methods=["PUT"])
 	def put_snapshot(self, snapshotFilename):
-		self._cameraManager.takeSnapshot(snapshotFilename)
+		self._cameraManager.takeSnapshot(snapshotFilename, self._sendErrorMessageToClient)
 		return flask.jsonify({
 			"snapshotFilename": snapshotFilename
 		})
@@ -202,16 +201,6 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 		self._cameraManager.deleteSnapshot(snapshotFilename)
 
-		# input_name = "file"
-		# input_upload_path = input_name + "." + self._settings.global_get(["server", "uploads", "pathSuffix"])
-		#
-		# if input_upload_path in flask.request.values:
-		# 	# file to restore was uploaded
-		# 	sourceLocation = flask.request.values[input_upload_path]
-		# 	targetLocation = self._cameraManager.buildSnapshotFilenameLocation(snapshotFilename)
-		# 	os.rename(sourceLocation, targetLocation)
-		# 	pass
-
 		return flask.jsonify({
 			"snapshotFilename": snapshotFilename
 		})
@@ -236,22 +225,12 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 			"result": "success"
 		})
 
-	#######################################################################################   EXPORT DATABASE
+	#######################################################################################   EXPORT DATABASE as CSV
 	@octoprint.plugin.BlueprintPlugin.route("/exportPrintJobHistory/<string:exportType>", methods=["GET"])
 	def exportPrintJobHistoryData(self, exportType):
 
 		if exportType == "CSV":
 			allJobsModels = self._databaseManager.loadAllPrintJobs()
-			# allJobsDict = self._convertPrintJobHistoryEntitiesToDict(allJobsEntities)
-			# allJobsDict = TransformPrintJob2JSON.transformAllPrintJobModels(allJobsModels)
-
-			# csvContent = Transform2CSV.transform2CSV(allJobsDict)
-			# csvContent = CSVExportImporter.transform2CSV(allJobsDict)
-			# response = flask.make_response(csvContent)
-
-			# response.headers["Content-type"] = "text/csv"
-			# response.headers["Content-Disposition"] = "attachment; filename=OctoprintPrintJobHistory.csv" # TODO add timestamp
-			# return response
 
 			return Response(CSVExportImporter.transform2CSV(allJobsModels),
 							mimetype='text/csv',
@@ -259,8 +238,8 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 		else:
 			print("BOOOMM not supported type")
-
 		pass
+
 
 	@octoprint.plugin.BlueprintPlugin.route("/sampleCSV", methods=["GET"])
 	def get_sampleCSV(self):
@@ -275,14 +254,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		# csvContent = Transform2CSV.transform2CSV(allJobsDict)
 		# csvContent = CSVExportImporter.transform2CSV(allJobsModels)
 
-		#filename = "PrintJobHistory-SAMPLE.csv"
 
-		# response = flask.make_response(CSVExportImporter.transform2CSV(allJobsModels))
-		# response.headers["Content-type"] = "text/csv"
-		# response.headers[
-		# 	"Content-Disposition"] = "attachment; filename=PrintJobHistory-SAMPLE.csv"  # TODO add timestamp
-		#
-		# return response
 
 		return Response(CSVExportImporter.transform2CSV(allJobsModels),
 						mimetype='text/csv',
@@ -292,40 +264,56 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 	######################################################################################   UPLOAD CSV FILE (in Thread)
 
-	def _processCSVUploadAsync(self, path, importCSVMode, databaseManager, sendCSVUploadResultToClient, logger):
+	def _processCSVUploadAsync(self, path, importCSVMode, databaseManager, cameraManager, backupFolder, sendCSVUploadStatusToClient, logger):
 		errorCollection = list()
 
 		# - parsing
 		# - backup
 		# - append or replace
 
-		resultOfPrintJobs = CSVExportImporter.parseCSV(path, errorCollection, logger)
+		def updateParsingStatus(lineNumber):
+			# importStatus, currenLineNumber, backupFilePath, backupSnapshotFilePath, successMessages, errorCollection
+			sendCSVUploadStatusToClient("running", lineNumber, "", "", "", errorCollection)
 
+
+		resultOfPrintJobs = CSVExportImporter.parseCSV(path, updateParsingStatus, errorCollection, logger)
+
+		importModeText = "append"
+		backupDatabaseFilePath = None
+		backupSnapshotFilePath = None
 		if (len(resultOfPrintJobs) > 0):
 			# we could import some jobs
-			# TODO info to user: about how many parsed
 
 			# - backup
-			databaseManager.backupDatabaseFile()
-			# TODO info to user: backup done
+			backupDatabaseFilePath = databaseManager.backupDatabaseFile(backupFolder)
+			backupSnapshotFilePath = cameraManager.backupAllSnapshots(backupFolder)
+
 			# - import mode append/replace
 			if (SettingsKeys.KEY_IMPORTCSV_MODE_REPLACE == importCSVMode):
 				# delete old database and init a clean database
 				databaseManager.reCreateDatabase()
+				cameraManager.reCreateSnapshotFolder()
 
-			# TODO info to user: import mode
+				importModeText = "fully replaced"
 
 			# - insert all printjobs in database
+			currentPrintJobNumber = 0
 			for printJob in resultOfPrintJobs:
-				# TODO info to user: insert printJob number
-
-				print(printJob)
-
+				currentPrintJobNumber = currentPrintJobNumber + 1
+				updateParsingStatus(currentPrintJobNumber)
+				databaseManager.insertPrintJob(printJob)
+				# print(printJob)
 			pass
 		else:
-			errorCollection.append("Nothing to import")
+			errorCollection.append("Nothing to import!")
 
-		sendCSVUploadResultToClient("CSV-Import result", errorCollection)
+		successMessage = ""
+		if (len(errorCollection) == 0):
+			successMessage = "All data is successful " + importModeText + " with '" + str(len(resultOfPrintJobs)) + "' print jobs."
+		else:
+			successMessage = "Some error(s) occurs! Maybe you need to manually rollback the database!"
+
+		sendCSVUploadStatusToClient("finished","", backupDatabaseFilePath, backupSnapshotFilePath, successMessage, errorCollection)
 		pass
 
 
@@ -336,6 +324,8 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		input_upload_path = input_name + "." + self._settings.global_get(["server", "uploads", "pathSuffix"])
 
 		if input_upload_path in flask.request.values:
+
+			importMode = flask.request.form["importCSVMode"]
 			# file was uploaded
 			sourceLocation = flask.request.values[input_upload_path]
 
@@ -348,9 +338,11 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 			thread = threading.Thread(target=self._processCSVUploadAsync,
 									  args=(sourceLocation,
-											self._settings.get([SettingsKeys.SETTINGS_KEY_IMPORT_CSV_MODE]),
+											importMode,
 											self._databaseManager,
-											self._sendCSVUploadResultToClient,
+											self._cameraManager,
+											self.get_plugin_data_folder(),
+											self._sendCSVUploadStatusToClient,
 											self._logger))
 			thread.daemon = True
 			thread.start()

@@ -1,7 +1,7 @@
 import logging
 
-from octoprint_PrintJobHistory.api import TransformPrintJob2JSON
-from octoprint_PrintJobHistory.common.CSVExportImporter import importCSV, transform2CSV
+# from octoprint_PrintJobHistory.api import TransformPrintJob2JSON
+# from octoprint_PrintJobHistory.common.CSVExportImporter import importCSV, transform2CSV
 
 ###################################
 # ## IMPORT
@@ -45,3 +45,22 @@ from octoprint_PrintJobHistory.common.CSVExportImporter import importCSV, transf
 # csvResult = transform2CSV(allJobsDict)
 #
 # print(csvResult)
+
+# from datetime import date
+# from datetime import datetime
+#
+# now = datetime.now()
+# # today = date.today()
+# print(now.strftime('%I:%M'))
+# pass
+
+# from octoprint.plugins.softwareupdate.version_checks import github_release
+#
+# result = github_release._is_current(dict(
+# 										local=dict(value="1.0.0rc6"),
+# 										remote=dict(value="1.0.0rc7")),
+# 									"python", force_base=False )
+# if (result):
+# 	print("Locale Version is newer or equal")
+# else:
+# 	print("Remote Version is newer, update available")

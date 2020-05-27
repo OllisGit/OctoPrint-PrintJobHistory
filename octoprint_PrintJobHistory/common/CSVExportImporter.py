@@ -21,6 +21,7 @@ COLUMN_FILE_NAME = "File Name"
 COLUMN_FILE_PATH = "File Path"
 COLUMN_FILE_SIZE = "File Size [bytes]"
 COLUMN_LAYERS = "Layers [current / total]"
+COLUMN_HEIGHT = "Height [current / total]"
 COLUMN_NOTE = "Note"
 COLUMN_TEMPERATURES = "Temperatures [bed:temp tool0:temp]"
 COLUMN_SPOOL_VENDOR = "Spool Vendor"
@@ -64,7 +65,6 @@ class CSVColumn:
 
 
 ############################################################################################## ALL FORMATTOR AND PARSERS
-
 
 class DefaultCSVFormattorParser:
 
@@ -310,16 +310,16 @@ class FilamentCSVFormattorParser:
 		elif (COLUMN_USED_FILAMENT_COSTS == fieldLabel):
 			costUnit = fieldValue[-1]
 			if (costUnit.isdigit()):
-				filemanentModel.spoolCost = float(fieldValue)
+				filemanentModel.usedCost = float(fieldValue)
 			else:
 				costValue = fieldValue[:-1]
-				filemanentModel.spoolCost = float(costValue)
+				filemanentModel.usedCost = float(costValue)
 				filemanentModel.spoolCostUnit = costUnit
 			pass
 		pass
 
 ######################################################################################################################
-
+## CSV HEADER-ORDER
 ALL_COLUMNS_SORTED = [
 	COLUMN_USER,
 	COLUMN_PRINT_RESULT,
@@ -330,8 +330,10 @@ ALL_COLUMNS_SORTED = [
 	COLUMN_FILE_PATH,
 	COLUMN_FILE_SIZE,
 	COLUMN_LAYERS,
+	COLUMN_HEIGHT,
 	COLUMN_NOTE,
 	COLUMN_TEMPERATURES,
+	COLUMN_SPOOL_VENDOR,
 	COLUMN_SPOOL_NAME,
 	COLUMN_MATERIAL,
 	COLUMN_DIAMETER,
@@ -342,6 +344,7 @@ ALL_COLUMNS_SORTED = [
 	COLUMN_USED_FILAMENT_COSTS
 ]
 
+## ALL COLUMNS WITH THERE PARSER/EXPORTER
 ALL_COLUMNS = {
 	COLUMN_USER: CSVColumn("userName", COLUMN_USER, "", DefaultCSVFormattorParser()),
 	COLUMN_PRINT_RESULT: CSVColumn("printStatusResult", COLUMN_PRINT_RESULT, "", PrintStatusCSVFormattorParser()),
@@ -352,6 +355,7 @@ ALL_COLUMNS = {
 	COLUMN_FILE_PATH: CSVColumn("filePathName", COLUMN_FILE_PATH, "", DefaultCSVFormattorParser()),
 	COLUMN_FILE_SIZE: CSVColumn("fileSize", COLUMN_FILE_SIZE, "", DefaultCSVFormattorParser()),
 	COLUMN_LAYERS: CSVColumn("printedLayers", COLUMN_LAYERS, "", DefaultCSVFormattorParser()),
+	COLUMN_HEIGHT: CSVColumn("printedHeight", COLUMN_HEIGHT, "", DefaultCSVFormattorParser()),
 	COLUMN_NOTE: CSVColumn("noteText", COLUMN_NOTE, "", DefaultCSVFormattorParser()),
 	COLUMN_TEMPERATURES: CSVColumn("allTemperatures", COLUMN_TEMPERATURES, "", TemperaturCSVFormattorParser()),
 	COLUMN_SPOOL_VENDOR: CSVColumn(["allFilaments", "profileVendor"], COLUMN_SPOOL_VENDOR, "", FilamentCSVFormattorParser()),
@@ -417,7 +421,7 @@ mandatoryFieldNames = [
 columnOrderInFile = dict()
 
 
-def parseCSV(csvFile4Import, errorCollection, logger):
+def parseCSV(csvFile4Import, updateParsingStatus, errorCollection, logger):
 
 	result = list()	# List with printJobModels
 	lineNumber = 0
@@ -427,6 +431,11 @@ def parseCSV(csvFile4Import, errorCollection, logger):
 			lineNumber = 0
 			for row in csv_reader:
 				lineNumber += 1
+
+				# import time
+				# time.sleep(1)
+				updateParsingStatus(str(lineNumber))
+
 				if lineNumber == 1:
 					# createColumnOrderFromHeader(row)
 					# mandatoryFieldCount = 0
@@ -465,7 +474,7 @@ def parseCSV(csvFile4Import, errorCollection, logger):
 						result.append(printJobModel)
 			pass
 	except Exception as e:
-		errorMessage = "Error during processing file '" + csvFile4Import + "' error '" + str(e) + "' line '" + str(lineNumber) + "'"
+		errorMessage = "CSV Parsing error. Line:'" + str(lineNumber) + "' Error:'" + str(e) + "' File:'" + csvFile4Import + "'"
 		errorCollection.append(errorMessage)
 		logger.error(errorMessage)
 	finally:
@@ -474,9 +483,4 @@ def parseCSV(csvFile4Import, errorCollection, logger):
 			os.remove(csvFile4Import)
 		except Exception:
 			pass
-
-	print("Processed "+str(lineNumber))
-
 	return result
-
-

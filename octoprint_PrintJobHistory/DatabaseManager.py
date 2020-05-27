@@ -16,7 +16,7 @@ from peewee import *
 
 
 FORCE_CREATE_TABLES = False
-SQL_LOGGING = True
+# SQL_LOGGING = True
 
 CURRENT_DATABASE_SCHEME_VERSION = 2
 
@@ -26,7 +26,8 @@ MODELS = [PluginMetaDataModel, PrintJobModel, FilamentModel, TemperatureModel]
 
 class DatabaseManager(object):
 
-	def __init__(self, parentLogger):
+	def __init__(self, parentLogger, sqlLoggingEnabled):
+		self.sqlLoggingEnabled = sqlLoggingEnabled
 		self._logger = logging.getLogger(parentLogger.name + "." + self.__class__.__name__)
 		self._sqlLogger = logging.getLogger(parentLogger.name + "." + self.__class__.__name__ + ".SQL")
 
@@ -42,7 +43,7 @@ class DatabaseManager(object):
 			schemeVersionFromDatabaseModel = PluginMetaDataModel.get(PluginMetaDataModel.key == PluginMetaDataModel.KEY_DATABASE_SCHEME_VERSION)
 			pass
 		except Exception as e:
-			errorMessage = e.message
+			errorMessage = str(e)
 			if errorMessage.startswith("no such table"):
 
 				self._logger.info("Create database-table, because didn't exists")
@@ -137,33 +138,49 @@ class DatabaseManager(object):
 		self._databaseFileLocation = os.path.join(databasePath, "printJobHistory.db")
 
 		self._logger.info("Creating database in: " + str(self._databaseFileLocation))
-		if SQL_LOGGING == True:
-			import logging
-			logger = logging.getLogger('peewee')
-			# we need only the single logger without parent
-			logger.parent = None
-			# logger.addHandler(logging.StreamHandler())
-			# activate SQL logging on PEEWEE side and on PLUGIN side
-			logger.setLevel(logging.DEBUG)
-			self._sqlLogger.setLevel(logging.DEBUG)
 
-			wrappedHandler = WrappedLoggingHandler(self._sqlLogger)
-			logger.addHandler(wrappedHandler)
+
+		import logging
+		logger = logging.getLogger('peewee')
+		# we need only the single logger without parent
+		logger.parent = None
+		# logger.addHandler(logging.StreamHandler())
+		# activate SQL logging on PEEWEE side and on PLUGIN side
+
+		# logger.setLevel(logging.DEBUG)
+		# self._sqlLogger.setLevel(logging.DEBUG)
+		self.showSQLLogging(self.sqlLoggingEnabled)
+
+		wrappedHandler = WrappedLoggingHandler(self._sqlLogger)
+		logger.addHandler(wrappedHandler)
 
 		self._createDatabase(FORCE_CREATE_TABLES)
 
 		pass
 
-	def backupDatabaseFile(self):
+	def showSQLLogging(self, enabled):
+		import logging
+		logger = logging.getLogger('peewee')
+
+		if (enabled):
+			logger.setLevel(logging.DEBUG)
+			self._sqlLogger.setLevel(logging.DEBUG)
+		else:
+			logger.setLevel(logging.ERROR)
+			self._sqlLogger.setLevel(logging.ERROR)
+
+
+	def backupDatabaseFile(self, backupFolder):
 		now = datetime.datetime.now()
-		currentDate = now.strftime("%Y%m%d-HHMM")
+		currentDate = now.strftime("%Y%m%d-%H%M")
 		backupDatabaseFileName = "printJobHistory-backup-"+currentDate+".db"
-		backupDatabaseFilePath = os.path.join(self._databasePath, backupDatabaseFileName)
+		backupDatabaseFilePath = os.path.join(backupFolder, backupDatabaseFileName)
 		if not os.path.exists(backupDatabaseFilePath):
 			shutil.copy(self._databaseFileLocation, backupDatabaseFilePath)
 			self._logger.info("Backup of printjobhistory database created '"+backupDatabaseFilePath+"'")
 		else:
 			self._logger.warn("Backup of printjobhistory database ('" + backupDatabaseFilePath + "') is already present. No backup created.")
+		return backupDatabaseFilePath
 
 
 	def _createDatabase(self, forceCreateTables):
@@ -178,13 +195,14 @@ class DatabaseManager(object):
 			# check, if we need an scheme upgrade
 			self._logger.info("Check if database-scheme upgrade needed.")
 			self._createOrUpgradeSchemeIfNecessary()
-		self._logger.info("Done DatabaseManager")
+		self._logger.info("Done DatabaseManager.createDatabase")
 
 
 	def getDatabaseFileLocation(self):
 		return self._databaseFileLocation
 
 	def reCreateDatabase(self):
+		self._logger.info("ReCreating Database")
 		self._createDatabase(True)
 
 	def insertPrintJob(self, printJobModel):

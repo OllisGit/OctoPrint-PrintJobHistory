@@ -180,6 +180,7 @@ def formatFloatSave(pattern, value, defaultString):
 	floatValue = float(value)
 	return pattern.format(floatValue)
 
+
 # bla = unicode('1')
 #
 # param = bla

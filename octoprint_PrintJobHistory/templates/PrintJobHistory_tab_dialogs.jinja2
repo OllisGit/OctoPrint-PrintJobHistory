@@ -4,7 +4,7 @@
     <!-- PluginDependencyCheck-Dialog -->
     <div id="dialog_printJobHistory_missingPlugins" class="modal hide fade">
         <div class="modal-header">
-            <h3 class="modal-title">Missing plugins</h3>
+            <h3 class="modal-title">Optional plugins</h3>
         </div>
         <div class="modal-body">
             To get the real power of the <b>Print Job History - Plugin</b> you need the following plugins installed/enabled:
@@ -25,12 +25,39 @@
         </div>
     </div>
 
+    <!-- CSV Import Status-Dialog -->
+    <div id="dialog_printJobHistory_csvImportStatus" class="modal hide fade">
+        <div class="modal-header">
+            <h3 class="modal-title">CSV Import-Status <i class="fa fa-spinner fa-spin" data-bind="visible: csvImportDialog.importInProgress"></i></h3>
+        </div>
+        <div class="modal-body">
+            <div>Status: <b data-bind="text: csvImportDialog.importStatus"></b></div>
+            <div data-bind="visible:csvImportDialog.currentLineNumber">Parsing/Importing line: <b data-bind="text: csvImportDialog.currentLineNumber"></b></div>
+            <br/>
+            <div data-bind="visible:csvImportDialog.successMessages"><b data-bind="html: csvImportDialog.successMessages"></b></div>
+            <br/>
+            <div data-bind="visible:csvImportDialog.errorMessages"><b style="color:red" data-bind="html: csvImportDialog.errorMessages"></b></div>
+            <br/>
+            <div data-bind="visible:csvImportDialog.backupFilePath">Backup Database: <b data-bind="html: csvImportDialog.backupFilePath"></b></div>
+            <br/>
+            <div data-bind="visible:csvImportDialog.backupSnapshotFilePath">Backup Snapshots: <b data-bind="html: csvImportDialog.backupSnapshotFilePath"></b></div>
+        </div>
+        <div class="modal-footer">
+            <div class="control-group">
+                <div class="controls">
+                    <button class="btn "  data-bind="disable: csvImportDialog.importInProgress, click: csvImportDialog.closeDialog" style="text-align:right">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <!-- PrintJobItem-Dialog -->
     <div id="dialog_printJobHistory_editPrintJobItem" class="modal hide fade large" >
         <div class="modal-header">
             <div class="row">
                 <div class="span9">
-                    <h4 class="modal-title" data-bind="text: printJobForEditing().fileName"></h4>
+                    <h4 class="modal-title"><span data-bind="text: printJobForEditing().fileName"></span>&nbsp;&nbsp;(<span data-bind="text:printJobForEditing().fileSize" ></span>)</h4>
                 </div>
                 <div class="span3">
                     <!-- Customize Field visiblity -->
@@ -187,8 +214,14 @@
                                             <i class="fa fa-spinner fa-spin" id="printJobHistory-captureInProgress" style="display: none;"></i>
                                             <i class="fa fa-camera"></i>
                                             <span id="printJobHistory-captureButtonText">Capture</span></button>
-                                            <button id="printJobHistory-cancelCaptureButton" style="display:none"
-                                                    data-bind="click: printJobEditDialog.cancelCaptureImage, visible: printJobEditDialog.imageDisplayMode()=='videoStream' || printJobEditDialog.imageDisplayMode()=='videoStreamWithShutter'" class="btn">Cancel</button>
+<!-- DEBUGGING OUTPUT  <span data-bind="text: printJobEditDialog.imageDisplayMode"></span>-->
+                                            <button id="printJobHistory-cancelCaptureButton"
+                                                    data-bind="click: printJobEditDialog.cancelCaptureImage,
+                                                                visible: printJobEditDialog.imageDisplayMode()=='videoStream'
+                                                                        || printJobEditDialog.imageDisplayMode()=='videoStreamLoading'
+                                                                        || printJobEditDialog.imageDisplayMode()=='videoStreamError'
+                                                                        || printJobEditDialog.imageDisplayMode()=='videoStreamWithShutter'"
+                                                    class="btn">Cancel</button>
                                     </span>
                                     <span class="span6 text-right">
                                         <button type="button" class="btn btn-danger" data-bind="click: printJobEditDialog.deleteImage" ><i class="fa fa-trash"></i>Delete Image</button>
@@ -277,7 +310,7 @@
                         <button type="button" class="btn btn-danger" data-bind="click: printJobEditDialog.deletePrintJobItem" >Delete Print Job</button>
                     </span>
                     <span class="span6 text-right">
-                        <button class="btn " data-bind="click: printJobEditDialog.abortPrintJobItem" style="text-align:right">Abort</button>
+                        <button class="btn " data-bind="click: printJobEditDialog.abortPrintJobItem" style="text-align:right">Close</button>
                         <button class="btn btn-primary" data-bind="click: printJobEditDialog.savePrintJobItem" style="text-align:right">Save</button>
                     </span>
                 </div>

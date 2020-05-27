@@ -133,7 +133,7 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
         $.ajax({
             url: this.baseUrl + "plugin/"+ this.pluginId +"/takeSnapshot/"+snapshotFilename,
             type: "PUT"
-        }).done(function( data ){
+        }).always(function( data ){
             responseHandler(data)
         });
     }

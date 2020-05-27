@@ -10,7 +10,7 @@
             <li><a href="#tab-pjh-Camera" data-toggle="tab">Camera</a></li>
             <li><a href="#tab-pjh-Export-Import" data-toggle="tab">Export / Import</a></li>
             <li><a href="#tab-pjh-Storage" data-toggle="tab">Storage</a></li>
-<!--            <li><a href="#tab-pjh-Debugging" data-toggle="tab">Debugging</a></li>-->
+            <li><a href="#tab-pjh-Debugging" data-toggle="tab">Debugging</a></li>
         </ul>
         <div class="tab-content">
             <!-- GENERAL - TAB -->
@@ -19,6 +19,9 @@
                     <div class="controls">
                         <label class="">
                             Capture print history:
+                                <label class="checkbox">
+                                    <input  style="margin-top:-4px" type="radio" name="capturePrintJobHistoryMode" value="none" data-bind="checked: pluginSettings.capturePrintJobHistoryMode"> none</span>
+                                </label>
                                 <label class="checkbox">
                                     <input  style="margin-top:-4px" type="radio" name="capturePrintJobHistoryMode" value="always" data-bind="checked: pluginSettings.capturePrintJobHistoryMode"> always</span>
                                 </label>
@@ -70,7 +73,7 @@
                 <div class="control-group">
                     <div class="controls">
                         <label class="checkbox">
-                            <input type="checkbox" data-bind="checked: pluginSettings.takeUltimakerThumbnailAfterPrint" > Use UltimakerPackage thumbnail after print (if possible)
+                            <input type="checkbox" data-bind="checked: pluginSettings.takeUltimakerThumbnailAfterPrint" > Use UltimakerPackage thumbnail after print, instead of snapshot (if uploaded in ufp format)
                         </label>
                     </div>
                 </div>
@@ -103,12 +106,11 @@
                         <br/>
                         <div class="row">
                             <div class="span6">
-                                <code>NOT TESTED, yet</code>
                                 <label class="radio">
-                                    <input type="radio" disabled="true" name="importCSVMode" value="replace" data-bind="checked: pluginSettings.importCSVMode"> Replace current database
+                                    <input type="radio" name="importCSVMode" value="replace" data-bind="checked: pluginSettings.importCSVMode"> Replace current database
                                 </label>
                                 <label class="radio">
-                                        <input type="radio" disabled="true" name="importCSVMode" value="append" data-bind="checked: pluginSettings.importCSVMode"> Append to database
+                                        <input type="radio" name="importCSVMode" value="append" data-bind="checked: pluginSettings.importCSVMode"> Append to database
                                 </label>
                             </div>
 
@@ -116,7 +118,7 @@
                                 <div class="input-prepend">
                                     <span class="btn fileinput-button">
                                         <span>Browse...</span>
-                                        <input disabled="true" id="settings-pjh-importcsv-upload"
+                                        <input id="settings-pjh-importcsv-upload"
                                                type="file"
                                                name="file"
                                                data-url="/plugin/PrintJobHistory/importCSV"
@@ -124,8 +126,8 @@
                                     </span>
                                     <span class="add-on" data-bind="text: csvFileUploadName"></span>
                                 </div>
-                                <button disabled="true" class="btn btn-primary"
-                                        data-bind="enable: !csvImportInProgress(), click: performCSVImportFromUpload">
+                                <button class="btn btn-primary"
+                                        data-bind="disable: (csvImportInProgress() || csvFileUploadName() == undefined), click: performCSVImportFromUpload">
                                     <i class="fa fa-spinner fa-spin"
                                        data-bind="visible: csvImportInProgress"></i> Upload & import
                                 </button>
@@ -168,15 +170,17 @@
                                 <li><code>Note</code></li>
                                 <li><code>Spool Name</code></li>
                                 <li><code>Material</code></li>
+                                <li><code>Diameter [mm]</code></li>
                                 <li><code>Density [g/cm3]</code></li>
                                 <li><code>Used Length [mm]</code></li>
                                 <li><code>Calculated Length [mm]</code></li>
                                 <li><code>Used Weight [g]</code></li>
                                 <li><code>Used Filament Cost</code></li>
+                                <li><code>...</code></li>
                             </ul>
                         </div>
                         <div>
-                            Download a <a href="#" data-bind="attr: {href: $root.sampleCSVUrl(), css: {disabled: !$root.sampleCSVUrl()}}">sample csv</a>
+                            Download a <a href="#" data-bind="attr: {href: $root.sampleCSVUrl(), css: {disabled: !$root.sampleCSVUrl()}}">sample csv</a> for a full list of all columns
                         </div>
 
 
@@ -225,7 +229,7 @@
                 </div>
 
                 <div class="control-group">
-                    <label class="control-label">Backupname</label>
+                    <label class="control-label">Database Backupname</label>
                     <div class="controls">
                         e.g.<code>printJobHistory-backup-20191207-0924.db</code>
                     </div>
@@ -233,10 +237,17 @@
 
 
             </div>
-<!--            &lt;!&ndash; DEBUGGING - TAB &ndash;&gt;-->
-<!--            <div class="tab-pane" id="tab-pjh-Debugging">-->
-<!--                TODO some debugging-settings-->
-<!--            </div>-->
+
+            <!-- DEBUGGING - TAB -->
+            <div class="tab-pane" id="tab-pjh-Debugging">
+                <div class="control-group">
+                    <div class="controls">
+                        <label class="checkbox">
+                            <input type="checkbox" data-bind="checked: pluginSettings.sqlLoggingEnabled" > SQL Logging enabled
+                        </label>
+                    </div>
+                </div>
+            </div>
 
         </div>
     </div>

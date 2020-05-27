@@ -157,9 +157,17 @@ function PrintJobHistoryEditDialog(){
         self.snapshotErrorMessageSpan.hide();
         self.imageDisplayMode(IMAGEDISPLAYMODE_SNAPSHOTIMAGE);
 
-        deltaFormat = JSON.parse(printJobItemForEdit.noteDeltaFormat());
-        self.noteEditor.setContents(deltaFormat, 'api');
-
+        // assign content to the Note-Section
+        var noteContent = null;
+        if (printJobItemForEdit.noteDeltaFormat() == null){
+            // Fallback is text (if present), not Html
+            if (printJobItemForEdit.noteText() != null){
+                self.noteEditor.setText(printJobItemForEdit.noteText(), 'api');
+            }
+        } else {
+            deltaFormat = JSON.parse(printJobItemForEdit.noteDeltaFormat());
+            self.noteEditor.setContents(deltaFormat, 'api');
+        }
 
         self.editPrintJobItemDialog.modal({
             //minHeight: function() { return Math.max($.fn.modal.defaults.maxHeight() - 80, 250); }
@@ -257,49 +265,35 @@ function PrintJobHistoryEditDialog(){
                     // VideoStream is not available
                     self.imageDisplayMode(IMAGEDISPLAYMODE_VIDEOSTREAM_ERROR);
                 }
-//                if (!response.result && response.result == false && response.status == 0){
-//                    _restoreSnapshotImageSource();
-//                    self.captureButtonText.text(reCaptureText);
-//                    $("#printJobHistory-cancelCaptureButton").hide();
-//                    self.snapshotSuccessMessageSpan.text("Something wrong with the camera!");
-//                    self.snapshotSuccessMessageSpan.show();
-//
-//                    self.imageDisplayMode(IMAGEDISPLAYMODE_SNAPSHOTIMAGE);
-//                } else {
-//
-////                    newImageUrl  = self.webCamSettings.snapshotUrl();
-//                    $("#printJobHistory-cancelCaptureButton").show();
-//                    self.captureButtonText.text(takeSnapshotText);
-////                    _setSnapshotImageSource(newImageUrl);
-//                }
-//                $("#printJobHistory-captureInProgress").hide();
             })
             .fail(function() {
                 self.imageDisplayMode(IMAGEDISPLAYMODE_VIDEOSTREAM_ERROR);
 
-//                self.captureButtonText.text(reCaptureText);
-////                $("#printJobHistory-cancelCaptureButton").hide();
-//                $("#printJobHistory-captureInProgress").hide();
-//                self.snapshotSuccessMessageSpan.text("Something wrong with the camera!");
-//                self.snapshotSuccessMessageSpan.show();
-//                self.imageDisplayMode(IMAGEDISPLAYMODE_SNAPSHOTIMAGE);
+                self.snapshotErrorMessageSpan.show();
+                self.snapshotErrorMessageSpan.text("Something went wrong. Try again!");
             });
         } else {
             // TAKE SNAPSHOT
-//            $("#printJobHistory-cancelCaptureButton").hide();
             var startShutter = new Date().getTime();
             self.imageDisplayMode(IMAGEDISPLAYMODE_VIDEOSTREAM_WITH_SHUTTER);
             // freeze video stream -> show current tken snapshot
-//            $("#printJobHistory-videoStream").attr("src", self.webCamSettings.snapshotUrl());
             var mySnapshotUrl = self.apiClient.getProxiedSnapshotUrl();
             $("#printJobHistory-videoStream").attr("src", mySnapshotUrl);
 
             self.apiClient.callTakeSnapshot(self.printJobItemForEdit.snapshotFilename(), function(responseData){
-                self.snapshotSuccessMessageSpan.show();
-                self.snapshotSuccessMessageSpan.text("Snapshot captured!");
+                if (responseData["snapshotFilename"] != undefined){
+                    self.snapshotSuccessMessageSpan.show();
+                    self.snapshotSuccessMessageSpan.text("Snapshot captured!");
+
+                } else {
+                    self.snapshotErrorMessageSpan.show();
+                    self.snapshotErrorMessageSpan.text("Something went wrong. Try again!");
+                }
+
                 self.snapshotImage.attr("src", self.apiClient.getSnapshotUrl(responseData.snapshotFilename));
                 self.captureButtonText.text(reCaptureText);
 
+                // SOME UI-SUGAR, if a minimum of time is not passed, just wait and after that remove the "nice" shutter
                 var now = new Date().getTime();
                 var captureDuration = now-startShutter;
                 if (captureDuration < (SHUTTER_DURATION*1000)){

@@ -1,8 +1,9 @@
 # coding=utf-8
 from __future__ import absolute_import
 
+import shutil
 import threading
-
+import datetime
 import requests
 from io import open as i_open
 from PIL import Image
@@ -10,8 +11,11 @@ from PIL import ImageFile
 
 import logging
 import os.path
+import os
+import zipfile
 from io import StringIO
 
+SNAPSHOT_BACKUP_FILENAME = "snapshots-backup-{timestamp}.zip"
 
 class CameraManager(object):
 
@@ -39,7 +43,7 @@ class CameraManager(object):
 		snapshotStoragePath = pluginDataBaseFolder + "/snapshots"
 		if not os.path.exists(snapshotStoragePath):
 			os.makedirs(snapshotStoragePath)
-		self._logger.info("Snapshot-Folderr:"+snapshotStoragePath)
+		self._logger.info("Snapshot-Folder:"+snapshotStoragePath)
 
 		self._snapshotStoragePath = snapshotStoragePath
 		self._pluginDataBaseFolder = pluginDataBaseFolder
@@ -80,6 +84,50 @@ class CameraManager(object):
 			os.remove(imageLocation)
 		self._logger.info("Snapshot '" + imageLocation + "' deleted")
 
+
+	def backupAllSnapshots(self, targetBackupFolder):
+
+		now = datetime.datetime.now()
+		currentDate = now.strftime("%Y%m%d-%H%M")
+		backupZipFileName = SNAPSHOT_BACKUP_FILENAME.format(timestamp=currentDate)
+		backupZipFilePath = os.path.join(targetBackupFolder, backupZipFileName)
+
+		self._createZipFile(backupZipFilePath, self._snapshotStoragePath)
+
+		return backupZipFilePath
+
+	def reCreateSnapshotFolder(self):
+		# delete current folder and recreate the folder
+
+		shutil.rmtree(self._snapshotStoragePath)
+		os.makedirs(self._snapshotStoragePath)
+
+
+	def _createZipFile(self, zipname, path):
+		# function to create a zip file
+		# Parameters: zipname - name of the zip file; path - name of folder/file to be put in zip file
+
+		zipf = zipfile.ZipFile(zipname, 'w', zipfile.ZIP_DEFLATED)
+		zipf.setpassword(b"password")  # if you want to set password to zipfile
+
+		# checks if the path is file or directory
+		if os.path.isdir(path):
+			for files in os.listdir(path):
+				zipf.write(os.path.join(path, files), files)
+
+		elif os.path.isfile(path):
+			zipf.write(os.path.join(path), path)
+		zipf.close()
+
+
+	# def _zipdir(self, path, zipfile_handle):
+	# 	# walk over all files an add it to the zip
+	# 	for root, dirs, files in os.walk(path):
+	# 		for file in files:
+	# 			# zipfile_handle.write(os.path.join(root, file))
+	# 			zipfile_handle.write(os.path.relpath(os.path.join(root, file), os.path.join(path, '..')))
+
+
 	def takeSnapshot(self, snapshotFilename, sendErrorMessageToClientFunction):
 
 		if str(snapshotFilename).endswith(".jpg"):
@@ -92,6 +140,7 @@ class CameraManager(object):
 
 		# streamUrl = self._settings.global_get(["webcam", "stream"])
 		snapshotUrl =  self._globalSettings.global_get(["webcam", "snapshot"])
+
 		self._logger.info("Try taking snapshot '" + snapshotFilename + "' from '" + snapshotUrl + "'")
 		if (snapshotUrl == None or snapshotUrl == ""):
 			return

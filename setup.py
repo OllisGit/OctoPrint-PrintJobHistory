@@ -14,7 +14,7 @@ plugin_package = "octoprint_PrintJobHistory"
 plugin_name = "Print Job History"
 
 # The plugin's version. Can be overwritten within OctoPrint's internal data via __plugin_version__ in the plugin module
-plugin_version = "1.0.0rc6.1"
+plugin_version = "1.0.0"
 
 # The plugin's description. Can be overwritten within OctoPrint's internal data via __plugin_description__ in the plugin
 # module
@@ -24,7 +24,7 @@ plugin_description = """Collects all print jobs and stores the job data into a d
 plugin_author = "OllisGit"
 
 # The plugin's author's mail address.
-plugin_author_email = "you@example.com"
+plugin_author_email = "ollisgit@gmail.com"
 
 # The plugin's homepage URL. Can be overwritten within OctoPrint's internal data via __plugin_url__ in the plugin module
 plugin_url = "https://github.com/OllisGit/OctoPrint-PrintJobHistory"

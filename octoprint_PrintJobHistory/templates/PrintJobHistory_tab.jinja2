@@ -2,17 +2,17 @@
 <div id="tab_printJobHistory">
 
     <div class="row-fluid">
-        <div class="span3">
-            Total: <span data-bind="text: printJobHistoryTableHelper.totalItemCount">Anzahl</span>
+        <div class="span4">
+            Total: <b><span data-bind="text: printJobHistoryTableHelper.totalItemCount">Anzahl</span></b>
             per Page:
             <select class="input-mini text-right"
                     data-bind="options: printJobHistoryTableHelper.pageSizeOptions,
                                value: printJobHistoryTableHelper.selectedPageSize">
             </select>
-            <a href="#" data-bind="click: printJobHistoryTableHelper.reloadItems" title="Force refresh" >Refresh <span class="icon-refresh"></span></a>
+            <a href="#" data-bind="click: printJobHistoryTableHelper.reloadItems" title="Force refresh" ><span class="icon-refresh"></span> Refresh</a>
         </div>
 
-        <div class="span9">
+        <div class="span8">
             <div class="row">
                 <div class="text-right">
                     <small>

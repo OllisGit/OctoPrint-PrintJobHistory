@@ -1,37 +1,33 @@
 # OctoPrint-PrintJobHistory
 
-# WORK IN PROGRESS!!!!
-
-# Release Candidate 6 is out (Python 2/3 + OP1.4) (hopefully the last release candidate)!
-
 [![Version](https://img.shields.io/badge/dynamic/json.svg?color=brightgreen&label=version&url=https://api.github.com/repos/OllisGit/OctoPrint-PrintJobHistory/releases&query=$[0].name)]()
 [![Released](https://img.shields.io/badge/dynamic/json.svg?color=brightgreen&label=released&url=https://api.github.com/repos/OllisGit/OctoPrint-PrintJobHistory/releases&query=$[0].published_at)]()
 ![GitHub Releases (by Release)](https://img.shields.io/github/downloads/OllisGit/OctoPrint-PrintJobHistory/latest/total.svg)
 
-The OctoPrint-Plugin stores all print-job informations of a print in a database
-
-#### Current implementation for Plugin-Manager URL:
-    https://github.com/OllisGit/OctoPrint-PrintJobHistory/releases/latest/download/master.zip
-
+The OctoPrint-Plugin stores all print-job informations of a print in a local database.
+```
+#########################################################################
+Note:
+Adding the plugin to the offical OctoPrint-Repository is requested.
+So, at the moment you need manuell install the plugin from the below URL
+#########################################################################
+```
 #### Support my Efforts
 
 This plugin, as well as my [other plugins](https://github.com/OllisGit/) were developed in my spare time.
 If you like it, I would be thankful about a cup of coffee :)
 
-[![More coffee, more code](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=2BJP2XFEKNG9J&source=url)
+[![More coffee, more code](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=6SW5R6ZUKLB5E&source=url)
 
 
-## Planning Release #1
+## Included features
 
-should include the following features:
-
-### Basic attributes to be captured:
 - [x] Print result (success, fail, cancel)
 - [x] Start/End datetime -> duration
 - [x] Username
 - [x] Filename, filesize
-- [x] Note
-- [x] Image
+- [x] Note (WYSIWYG-Editor)
+- [x] Image (single Image)
 - [x] Printed Layers/Height
 - [x] Spoolname
 - [x] Material
@@ -40,7 +36,6 @@ should include the following features:
 - [x] Filament cost
 
 ### UI features
-- [x] Better error-feedback (more then just the "happy-path")
 - [x] List all printjobs
 - [x] Edit single printjob
 - [x] Capture/Upload Image
@@ -50,14 +45,14 @@ should include the following features:
 - [x] Capture image after print
 - [x] Take Thumbnail from [UltimakerFormatPackage-Plugin](https://plugins.octoprint.org/plugins/UltimakerFormatPackage/)
 - [x] Export all printjobs as CSV
-- [ ] Import printjobs from CSV
+- [x] Import printjobs from CSV
+- [x] Better error-feedback (more then just the "happy-path")
 
 ### Not included
 - No report diagramms
-- No fancy looking UI
 
 ## Planning Release #2, ...
-....to be done.... see:
+.. see:
 - Poll: "What is the next big thing?" https://github.com/OllisGit/OctoPrint-PrintJobHistory/issues/6
 - Planning Board: https://github.com/OllisGit/OctoPrint-PrintJobHistory/projects/1
 
@@ -70,8 +65,8 @@ should include the following features:
 
 ## Setup
 
-Plugin is in "working-mode" and not released in official OctoPrint Plugin-Repository.
-You need to install it manually using this URL:
+Install via the bundled [Plugin Manager](http://docs.octoprint.org/en/master/bundledplugins/pluginmanager.html)
+or manually using this URL:
 
     https://github.com/OllisGit/OctoPrint-PrintJobHistory/releases/latest/download/master.zip
 

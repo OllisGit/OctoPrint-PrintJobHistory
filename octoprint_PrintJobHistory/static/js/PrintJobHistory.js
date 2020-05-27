@@ -6,8 +6,6 @@
  */
 $(function() {
 
-    var PLUGIN_ID = "PrintJobHistory"; // from setup.py plugin_identifier
-
     ////////////////////////////////////////////////////////////
 //    function formatFilamentLength(length){
 //        var pattern = "%.02fm"
@@ -74,7 +72,11 @@ $(function() {
         this.userName(updateData.userName);
         this.fileName(updateData.fileName);
         this.filePathName(updateData.filePathName);
-        this.fileSize(formatSize(updateData.fileSize));
+        if ( isNaN(updateData.fileSize)){
+            this.fileSize(updateData.fileSize);
+        } else {
+            this.fileSize(formatSize(updateData.fileSize));
+        }
         this.printStartDateTime(updateData.printStartDateTime);
         this.printEndDateTime(updateData.printEndDateTime);
         this.printStartDateTimeFormatted(updateData.printStartDateTimeFormatted);
@@ -83,7 +85,13 @@ $(function() {
         this.durationFormatted(updateData.durationFormatted);
         this.noteText(updateData.noteText);
         this.noteDeltaFormat(updateData.noteDeltaFormat);
-        this.noteHtml(updateData.noteHtml);
+        if (updateData.noteHtml != null){
+            this.noteHtml(updateData.noteHtml);
+        } else {
+            // Fallback text
+            this.noteHtml(updateData.noteText);
+        }
+
         this.printedLayers(updateData.printedLayers);
         this.printedHeight(updateData.printedHeight);
 
@@ -164,6 +172,8 @@ $(function() {
     ////////////////////////////////////////////////////////////////////////////// VIEW MODEL
     function PrintjobhistoryViewModel(parameters) {
 
+        var PLUGIN_ID = "PrintJobHistory"; // from setup.py plugin_identifier
+
         var self = this;
 
 /// START MOCK MODEL
@@ -179,7 +189,7 @@ $(function() {
                 "fileSize" : "134KB",
                 "temperatureBed" : "50C",
                 "temperatureNozzle" : "200C",
-                "printedHeight" : "23mm / 23mm",
+                "printedHeight" : "23 / 23mm",
                 "printedLayers" : "149 / 149",
                 "spoolName" : "myspool",
                 "spoolCost" : "2,23",
@@ -206,7 +216,7 @@ $(function() {
                 "temperatureBed" : "60C",
                 "temperatureNozzle" : "220C",
 
-                "printedHeight" : "13mm / 143mm",
+                "printedHeight" : "13 / 143mm",
                 "printedLayers" : "3 / 68",
                 "spoolName" : "Master",
                 "spoolCost" : "2,23",
@@ -253,10 +263,14 @@ $(function() {
 
         self.databaseFileLocation = ko.observable();
         self.snapshotFileLocation = ko.observable();
+
+        self.csvImportDialog = new PrintJobHistoryImportDialog();
         ////////////////////////////////////////////////////// Knockout model-binding/observer
 
 
         ///////////////////////////////////////////////////// START: SETTINGS
+        self.downloadDatabaseUrl = ko.observable();
+
         self.deleteDatabaseAction = function() {
             var result = confirm("Do you really want to delete all printjob history data?");
             if (result == true){
@@ -265,9 +279,6 @@ $(function() {
                 });
             }
         };
-
-        self.downloadDatabaseUrl = ko.observable();
-
 
         self.csvImportUploadButton = $("#settings-pjh-importcsv-upload");
         self.csvImportUploadData = undefined;
@@ -281,11 +292,11 @@ $(function() {
                     // no files? ignore
                     return false;
                 }
-
                 self.csvFileUploadName(data.files[0].name);
                 self.csvImportUploadData = data;
             },
             done: function(e, data) {
+                self.csvImportInProgress(false);
                 self.csvFileUploadName(undefined);
                 self.csvImportUploadData = undefined;
             },
@@ -301,9 +312,17 @@ $(function() {
             if (self.csvImportUploadData === undefined) return;
 
             self.csvImportInProgress(true);
+            self.csvImportDialog.showDialog(function(shouldTableReload){
+                    //
+                    if (shouldTableReload == true){
+                        self.printJobHistoryTableHelper.reloadItems();
+                    }
+                }
+            );
             self.csvImportUploadData.submit();
         };
 
+        // download sample csv-file
         self.sampleCSVUrl = function(printJobItem){
             return self.apiClient.getSampleCSVUrl();
         }
@@ -317,6 +336,7 @@ $(function() {
             self.pluginSettings = self.settingsViewModel.settings.plugins[PLUGIN_ID];
             self.printJobEditDialog.init(self.apiClient, self.settingsViewModel.settings.webcam);
             self.pluginCheckDialog.init(self.apiClient, self.pluginSettings);
+            self.csvImportDialog.init(self.apiClient);
 
             initTableVisibilities();
 
@@ -324,6 +344,7 @@ $(function() {
              new ResetSettingsUtilV2(self.pluginSettings).assignResetSettingsFeature(PLUGIN_ID, function(data){
                 // no additional reset function
              });
+
         }
 
         self.onAfterBinding = function() {
@@ -379,26 +400,11 @@ $(function() {
                 return;
             }
 
-            if ("csvImportResult" == data.action){
-                self.csvImportInProgress(false);
-
-//                new PNotify({
-//                    title: 'Attention',
-//                    text: notifyMessage,
-//                    type: notfiyType,
-//                    hide: false
-//                    });
-                messageText = data.errorCollection.join(" <br> ")
-                new PNotify({
-                    title: data.message,
-                    text: messageText
-//                    type: notfiyType,
-//                    hide: false
-                    });
-
-                return;
+            if ("csvImportStatus" == data.action){
+                self.csvImportDialog.updateText(data);
             }
-            self.csvImportInProgress(false);
+
+//            self.csvImportInProgress(false);
             if ("errorPopUp" == data.action){
                 new PNotify({
                     title: 'ERROR:' + data.title,

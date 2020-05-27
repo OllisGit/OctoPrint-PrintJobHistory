@@ -13,6 +13,7 @@ class SettingsKeys():
 	KEY_SHOWPRINTJOBDIALOGAFTERPRINT_MODE_SUCCESSFUL = "successful"
 
 	SETTINGS_KEY_CAPTURE_PRINTJOBHISTORY_MODE = "capturePrintJobHistoryMode"
+	KEY_CAPTURE_PRINTJOBHISTORY_MODE_NONE = "none"
 	KEY_CAPTURE_PRINTJOBHISTORY_MODE_ALWAYS = "always"
 	KEY_CAPTURE_PRINTJOBHISTORY_MODE_SUCCESSFUL = "successful"
 
@@ -28,3 +29,6 @@ class SettingsKeys():
 	## Storage
 	SETTINGS_KEY_DATABASE_PATH = "databaseFileLocation"
 	SETTINGS_KEY_SNAPSHOT_PATH = "snapshotFileLocation"
+
+	## Debugging
+	SETTINGS_KEY_SQL_LOGGING_ENABLED = "sqlLoggingEnabled"
