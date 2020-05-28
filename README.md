@@ -57,9 +57,9 @@ If you like it, I would be thankful about a cup of coffee :)
 - Planning Board: https://github.com/OllisGit/OctoPrint-PrintJobHistory/projects/1
 
 ## Screenshots
-![plugin-settings](screenshots/plugin-settings.png "Plugin-Settings")
 ![plugin-tab](screenshots/plugin-tab.png "Plugin-Tab")
 ![editPrintJob-dialog](screenshots/editPrintJob-dialog.png "EditPrintJob-Dialog")
+![plugin-settings](screenshots/plugin-settings.png "Plugin-Settings")
 ![missingplugins-dialog](screenshots/missingPlugins-dialog.png "MissingPlugins-Dialog")
 
 
