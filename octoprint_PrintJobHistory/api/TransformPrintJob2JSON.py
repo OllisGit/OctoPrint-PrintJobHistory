@@ -10,7 +10,8 @@ def transformPrintJobModel(job):
 	jobAsDict = job.__data__
 
 	jobAsDict["printStartDateTimeFormatted"] = job.printStartDateTime.strftime('%d.%m.%Y %H:%M')
-	jobAsDict["printEndDateTimeFormatted"] = job.printEndDateTime.strftime('%d.%m.%Y %H:%M')
+	if (job.printEndDateTime):
+		jobAsDict["printEndDateTimeFormatted"] = job.printEndDateTime.strftime('%d.%m.%Y %H:%M')
 	# # Calculate duration
 	# duration = job.printEndDateTime - job.printStartDateTime
 	duration = job.duration
