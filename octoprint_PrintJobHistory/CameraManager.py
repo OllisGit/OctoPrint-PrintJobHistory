@@ -197,22 +197,22 @@ class CameraManager(object):
 		thread.start()
 
 
-	def takeUltimakerThumbnail(self, snapshotFilename, printJobFilename):
+	def takePluginThumbnail(self, snapshotFilename, printJobFilename, pluginFolder, extension):
 		if str(snapshotFilename).endswith(".jpg"):
-			snapshotFilename = self._snapshotStoragePath + "/" +snapshotFilename
+			snapshotFilename = self._snapshotStoragePath + "/" + snapshotFilename
 		else:
-			snapshotFilename = self._snapshotStoragePath + "/" +snapshotFilename + ".jpg"
+			snapshotFilename = self._snapshotStoragePath + "/" + snapshotFilename + ".jpg"
 
-		if str(printJobFilename).endswith(".ufp.gcode"):
-			printJobFilename = printJobFilename[0:len(printJobFilename)-10]
+		if str(printJobFilename).endswith(extension):
+			printJobFilename = printJobFilename[0:len(printJobFilename)-len(extension)]
 
-		ultimakerThumnailLocation = self._pluginDataBaseFolder + "/../UltimakerFormatPackage/" + printJobFilename + ".png"
-		if os.path.isfile(ultimakerThumnailLocation):
+		thumnailLocation = self._pluginDataBaseFolder + "/../" + pluginFolder + "/" + printJobFilename + ".png"
+		if os.path.isfile(thumnailLocation):
 			# Convert png to jpg and save in printjobhistory storage
 
-			self._logger.info("Try converting thumbnail '" + ultimakerThumnailLocation + "' to '" + snapshotFilename + "'")
+			self._logger.info("Try converting thumbnail '" + thumnailLocation + "' to '" + snapshotFilename + "'")
 
-			im = Image.open(ultimakerThumnailLocation)
+			im = Image.open(thumnailLocation)
 			rgb_im = im.convert('RGB')
 			rgb_im.save(snapshotFilename)
 
@@ -220,11 +220,20 @@ class CameraManager(object):
 			pass
 
 		else:
-			self._logger.warning("UltimakerFormat Thumbnail doesn't exists in: '"+ultimakerThumnailLocation+"'")
+			self._logger.warning("Thumbnail doesn't exists in: '"+thumnailLocation+"'")
 
 
 
 	def takeUltimakerPackageThumbnailAsync(self, snapshotFilename, printJobFilename):
-		thread = threading.Thread(name='TakeUltimakerThumbnail', target=self.takeUltimakerThumbnail, args=(snapshotFilename,printJobFilename,))
+		pluginFolder = "UltimakerFormatPackage"
+		extension = ".ufp.gcode"
+		thread = threading.Thread(name='TakeUltimakerThumbnail', target=self.takePluginThumbnail, args=(snapshotFilename,printJobFilename,pluginFolder,extension,))
+		thread.daemon = True
+		thread.start()
+
+	def takePrusaSlicerThumbnailAsync(self, snapshotFilename, printJobFilename):
+		pluginFolder = "prusaslicerthumbnails"
+		extension = ".gcode"
+		thread = threading.Thread(name='TakePrusaSlicerThumbnail', target=self.takePluginThumbnail, args=(snapshotFilename,printJobFilename,pluginFolder,extension,))
 		thread.daemon = True
 		thread.start()
