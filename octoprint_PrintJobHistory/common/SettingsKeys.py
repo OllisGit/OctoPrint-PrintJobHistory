@@ -20,6 +20,7 @@ class SettingsKeys():
 	## Camera
 	SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT = "takeSnapshotAfterPrint"
 	SETTINGS_KEY_TAKE_ULTIMAKER_THUMBNAIL_AFTER_PRINT = "takeUltimakerThumbnailAfterPrint"
+	SETTINGS_KEY_TAKE_PRUSASLICER_THUMBNAIL_AFTER_PRINT = "takePrusaSlicerThumbnailAfterPrint"
 
 	## Export / Import
 	SETTINGS_KEY_IMPORT_CSV_MODE = "importCSVMode"
