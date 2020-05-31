@@ -64,6 +64,9 @@ labels:
   - name: "status: wontfix"
     description: "I don't wont to fix this"
     color: fbca04
+  - name: "status: markedForAutoClose"
+    description: "Issue will be closed automatically"
+    color: ed6d75
 
 
 # Collaborators: give specific users access to this repository.
