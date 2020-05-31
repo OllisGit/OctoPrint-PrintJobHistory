@@ -197,7 +197,7 @@ class CameraManager(object):
 		thread.start()
 
 
-	def takePluginThumbnail(self, snapshotFilename, printJobFilename, pluginFolder, extension):
+	def takePluginThumbnail(self, snapshotFilename, printJobFilename, pluginFolder, extension = ".gcode"):
 		if str(snapshotFilename).endswith(".jpg"):
 			snapshotFilename = self._snapshotStoragePath + "/" + snapshotFilename
 		else:
@@ -226,14 +226,12 @@ class CameraManager(object):
 
 	def takeUltimakerPackageThumbnailAsync(self, snapshotFilename, printJobFilename):
 		pluginFolder = "UltimakerFormatPackage"
-		extension = ".ufp.gcode"
-		thread = threading.Thread(name='TakeUltimakerThumbnail', target=self.takePluginThumbnail, args=(snapshotFilename,printJobFilename,pluginFolder,extension,))
+		thread = threading.Thread(name='TakeUltimakerThumbnail', target=self.takePluginThumbnail, args=(snapshotFilename,printJobFilename,pluginFolder,))
 		thread.daemon = True
 		thread.start()
 
 	def takePrusaSlicerThumbnailAsync(self, snapshotFilename, printJobFilename):
 		pluginFolder = "prusaslicerthumbnails"
-		extension = ".gcode"
-		thread = threading.Thread(name='TakePrusaSlicerThumbnail', target=self.takePluginThumbnail, args=(snapshotFilename,printJobFilename,pluginFolder,extension,))
+		thread = threading.Thread(name='TakePrusaSlicerThumbnail', target=self.takePluginThumbnail, args=(snapshotFilename,printJobFilename,pluginFolder,))
 		thread.daemon = True
 		thread.start()

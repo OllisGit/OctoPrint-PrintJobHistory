@@ -49,10 +49,9 @@ class CSVColumn:
 
 	def getCSV(self, printJobModel):
 		columnValue =  self.formattorParser.formatValue(printJobModel, self.fieldName)
-		if isinstance(columnValue, float):
-			pass
-		columnValue = str(columnValue)
-		# columnValue = columnValue.encode("utf-8")
+
+		columnValue = StringUtils.to_native_str(columnValue)
+
 		return columnValue
 
 	def parseAndAssignFieldValue(self, fieldValue, printJobModel, errorCollection, lineNumber):
@@ -75,7 +74,7 @@ class DefaultCSVFormattorParser:
 
 		adjustedValue = valueToFormat if valueToFormat is not None else '-'
 		if (type(adjustedValue) is int or type(adjustedValue) is float or type(adjustedValue) is str or type(adjustedValue) is unicode):
-			adjustedValue = str(adjustedValue)
+			adjustedValue = StringUtils.to_native_str(adjustedValue)
 			adjustedValue = adjustedValue.replace('\n', ' ').replace('\r', '')
 		else:
 			# print("BOOOOOOMMMMM!!!!!  "+str(type(adjustedValue)))
@@ -97,7 +96,7 @@ class PrintStatusCSVFormattorParser:
 
 		adjustedValue = valueToFormat if valueToFormat is not None else '-'
 		if (type(adjustedValue) is int or type(adjustedValue) is float):
-			adjustedValue = str(adjustedValue)
+			adjustedValue = StringUtils.to_native_str(adjustedValue)
 
 		adjustedValue = adjustedValue.replace('\n', ' ').replace('\r', '')
 

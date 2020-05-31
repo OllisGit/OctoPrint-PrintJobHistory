@@ -6,7 +6,6 @@ import re
 
 # see https://www.safaribooksonline.com/library/view/python-cookbook-2nd/0596007973/ch01s19.html
 
-
 def multiple_replace(text, adict):
     rx = re.compile('|'.join(map(re.escape, adict)))
     def one_xlat(match):
@@ -179,6 +178,49 @@ def formatFloatSave(pattern, value, defaultString):
 		return defaultString
 	floatValue = float(value)
 	return pattern.format(floatValue)
+
+#################### START: copied from octorprint 1.4.x for 1.3.x compatible reason
+
+import sys
+from past.builtins import basestring, unicode
+
+
+def to_bytes(s_or_u, encoding="utf-8", errors="strict"):
+	# type: (Union[unicode, bytes], str, str) -> bytes
+	"""Make sure ``s_or_u`` is a bytestring."""
+	if s_or_u is None:
+		return s_or_u
+
+	if not isinstance(s_or_u, basestring):
+		s_or_u = str(s_or_u)
+
+	if isinstance(s_or_u, unicode):
+		return s_or_u.encode(encoding, errors=errors)
+	else:
+		return s_or_u
+
+def to_unicode(s_or_u, encoding="utf-8", errors="strict"):
+	# type: (Union[unicode, bytes], str, str) -> unicode
+	"""Make sure ``s_or_u`` is a unicode string."""
+	if s_or_u is None:
+		return s_or_u
+
+	if not isinstance(s_or_u, basestring):
+		s_or_u = str(s_or_u)
+
+	if isinstance(s_or_u, bytes):
+		return s_or_u.decode(encoding, errors=errors)
+	else:
+		return s_or_u
+
+
+def to_native_str(s_or_u):
+	# type: (Union[unicode, bytes]) -> str
+	"""Make sure ``s_or_u`` is a 'str'."""
+	if sys.version_info[0] == 2:
+		return to_bytes(s_or_u)
+	else:
+		return to_unicode(s_or_u)
 
 
 # bla = unicode('1')

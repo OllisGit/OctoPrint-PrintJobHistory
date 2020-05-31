@@ -12,7 +12,7 @@ script:
 ## https://github.com/oliexdev/openScale/pull/121
 ## https://github.com/oliexdev/openScale/pull/121/files
 before_deploy:
-  - git tag -f ${PLUGIN_VERSION}-draft
+  - git tag -f travis-build
   - git remote add gh https://${TRAVIS_REPO_SLUG%/*}:${GITHUB_TOKEN}@github.com/${TRAVIS_REPO_SLUG}.git
   - git push -f gh travis-build
   - git remote remove gh

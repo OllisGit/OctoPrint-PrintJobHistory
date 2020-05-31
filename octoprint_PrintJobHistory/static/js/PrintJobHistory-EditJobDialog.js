@@ -246,7 +246,14 @@ function PrintJobHistoryEditDialog(){
             // SHOW VIDEOSTREAM
             self.imageDisplayMode(IMAGEDISPLAYMODE_VIDEOSTREAM_LOADING);
 
-            OctoPrint.util.testUrl(self.webCamSettings.snapshotUrl(), {
+            snapshotUrl = self.webCamSettings.snapshotUrl();
+            streamUrl = self.webCamSettings.streamUrl();
+
+            if (snapshotUrl == null || streamUrl == null || snapshotUrl.length == 0 || streamUrl.length == 0) {
+                alert("Camera-Error: Please make sure that both stream- and snapshot-url is configured in your camera-settings")
+            }
+
+            OctoPrint.util.testUrl(snapshotUrl, {
                 method: "GET",
                 response: "bytes",
                 timeout: self.webCamSettings.streamTimeout(),
