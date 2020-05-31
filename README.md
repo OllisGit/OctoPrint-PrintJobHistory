@@ -5,6 +5,7 @@
 ![GitHub Releases (by Release)](https://img.shields.io/github/downloads/OllisGit/OctoPrint-PrintJobHistory/latest/total.svg)
 
 The OctoPrint-Plugin stores all print-job informations of a print in a local database.
+These informations were collected from OctoPrint itself, but also from other plugins. See [below](#Optional-Plugins) for more information abaut these plugins.
 
 #### Support my Efforts
 
@@ -44,6 +45,20 @@ If you like it, I would be thankful about a cup of coffee :)
 
 ### Not included
 - No report diagramms
+
+## Optional Plugins
+
+- [PreHeat](https://plugins.octoprint.org/plugins/preheat/)
+    - Starting Temperature
+- [FillamentManager](https://plugins.octoprint.org/plugins/filamentmanager/)
+    - Spool - Informations
+- [DisplayLayerProgress](https://plugins.octoprint.org/plugins/DisplayLayerProgress/)
+    - Layer and Height
+- [UltimakerFormatPackage](https://plugins.octoprint.org/plugins/UltimakerFormatPackage/)
+    - Thumbnail
+- [PrusaSlicer-Thumbnail](https://plugins.octoprint.org/plugins/prusaslicerthumbnails/)
+    - Thumbnail
+
 
 ## Planning Release #2, ...
 .. see:
