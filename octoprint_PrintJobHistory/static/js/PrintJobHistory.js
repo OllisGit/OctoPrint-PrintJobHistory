@@ -51,6 +51,7 @@ $(function() {
 		this.usedCost = ko.observable();
 
 		this.snapshotFilename = ko.observable();
+		this.slicerSettingsAsText = ko.observable();
 /*
         this.successful = ko.computed(function() {
             return this.success() == 1;
@@ -141,6 +142,7 @@ $(function() {
         }
 
 		this.snapshotFilename(updateData.snapshotFilename);
+		this.slicerSettingsAsText(updateData.slicerSettingsAsText)
     };
 
 
@@ -202,7 +204,8 @@ $(function() {
                 "noteText" : "Good output of Legolas",
                 "noteDeltaFormat" : "Good output of Legolas",
                 "noteHtml" : "<h1>Good output of Legolas</h1>",
-                "snapshotFilename" : ko.observable("20191003-123322")
+                "snapshotFilename" : ko.observable("20191003-123322"),
+                "slicerSettingsAsText" : ko.observable()
 
             },{
                 "databaseId" : ko.observable(2),
@@ -230,8 +233,8 @@ $(function() {
                 "noteText" : "Bad quality",
                 "noteDeltaFormat" : "Bad quality",
                 "noteHtml" : "<h2>Bad quality,/h2>",
-                "snapshotFilename" : ko.observable("20191003-153312")
-
+                "snapshotFilename" : ko.observable("20191003-153312"),
+                "slicerSettingsAsText" : ko.observable()
             }
         ];
 //        self.printJobHistorylistHelper.updateItems(printHistoryJobItems);

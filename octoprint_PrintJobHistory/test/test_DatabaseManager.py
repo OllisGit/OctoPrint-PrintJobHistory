@@ -8,6 +8,7 @@ def clientOutput(message1, message2):
 	print(message1)
 	print(message2)
 
+logging.basicConfig(level=logging.DEBUG)
 testLogger = logging.getLogger("testLogger")
 logging.info("Start Database-Test")
 databaseManager = DatabaseManager(testLogger, True)
@@ -25,15 +26,21 @@ def convert(value):
 # 		result = value.encode("utf-8")
 # 	return result
 
-printJob = databaseManager.loadPrintJob(1)
-# python2 -> unicode
-# python3 -> str (es gibt kein unicode)
-fileName = printJob.fileName
-convert(fileName)
-fileSize = printJob.fileSize
-convert(fileSize)
-printStartDateTime = printJob.printStartDateTime
-convert(printStartDateTime)
-diameter = printJob.loadFilamentFromAssoziation().diameter
-convert(diameter)
+
+# printJob = databaseManager.loadPrintJob(1)
+# # python2 -> unicode
+# # python3 -> str (es gibt kein unicode)
+# fileName = printJob.fileName
+# convert(fileName)
+# fileSize = printJob.fileSize
+# convert(fileSize)
+# printStartDateTime = printJob.printStartDateTime
+# convert(printStartDateTime)
+# diameter = printJob.loadFilamentFromAssoziation().diameter
+# convert(diameter)
+
+currentScheme = 1
+targetScheme = 5
+
+databaseManager._upgradeDatabase(currentScheme, targetScheme)
 

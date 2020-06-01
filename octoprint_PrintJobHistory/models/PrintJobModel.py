@@ -23,6 +23,7 @@ class PrintJobModel(BaseModel):
 	noteHtml = CharField(null=True)
 	printedLayers = CharField(null=True)
 	printedHeight = CharField(null=True)
+	slicerSettingsAsText = TextField(null=True)
 
 	allFilaments = None
 	allTemperatures = None

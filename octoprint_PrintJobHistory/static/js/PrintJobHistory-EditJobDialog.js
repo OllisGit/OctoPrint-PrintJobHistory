@@ -64,6 +64,9 @@ function PrintJobHistoryEditDialog(){
     function _restoreSnapshotImageSource(){
         _setSnapshotImageSource(self.lastSnapshotImageSource);
     }
+
+    self.isSlicerSettingsPresent = ko.observable(false);
+
     /////////////////////////////////////////////////////////////////////////////////////////////////// INIT
 
     this.init = function(apiClient, webCamSettings){
@@ -135,7 +138,28 @@ function PrintJobHistoryEditDialog(){
                 self.snapshotUploadInProgress(false);
             }
         });
+
+        self.slicerSettingsDialog = $("#dialog_printJobHistory_slicerSettings");
     }
+
+
+    this.showSlicerSettingsDialog = function(){
+        self.slicerSettingsDialog.modal({
+            //minHeight: function() { return Math.max($.fn.modal.defaults.maxHeight() - 80, 250); }
+            keyboard: false,
+            clickClose: false,
+            showClose: false,
+            backdrop: "static"
+        }).css({
+            width: 'auto',
+            'margin-left': function() { return -($(this).width() /2); }
+        });
+    }
+
+    this.closeSlicerSettingsDialog = function(){
+        self.slicerSettingsDialog.modal('hide');
+    }
+
 
     this.isInitialized = function() {
         return self.apiClient != null;
@@ -169,6 +193,11 @@ function PrintJobHistoryEditDialog(){
             self.noteEditor.setContents(deltaFormat, 'api');
         }
 
+        slicerSettingsPresent = self.printJobItemForEdit.slicerSettingsAsText();
+        if (slicerSettingsPresent != null && slicerSettingsPresent.length != 0){
+            self.isSlicerSettingsPresent(true);
+    }
+
         self.editPrintJobItemDialog.modal({
             //minHeight: function() { return Math.max($.fn.modal.defaults.maxHeight() - 80, 250); }
             keyboard: false,
@@ -179,6 +208,8 @@ function PrintJobHistoryEditDialog(){
             width: 'auto',
             'margin-left': function() { return -($(this).width() /2); }
         });
+
+
     }
 
 

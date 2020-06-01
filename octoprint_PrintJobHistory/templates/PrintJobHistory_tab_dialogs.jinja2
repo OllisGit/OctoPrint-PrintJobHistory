@@ -15,12 +15,13 @@
         </div>
         <div class="modal-footer">
 
-        <div class="control-group">
-            <div class="controls">
-                <span class="" style="text-align:left">
-                    <input data-bind="checked: pluginCheckDialog.deactivatePluginCheck" type="checkbox" style="margin-bottom: 10px;"> disable optional plugin check
-                </span>
-                <button class="btn btn-confirm" style="text-align:right">Close</button></div>
+            <div class="control-group">
+                <div class="controls">
+                    <span class="" style="text-align:left">
+                        <input data-bind="checked: pluginCheckDialog.deactivatePluginCheck" type="checkbox" style="margin-bottom: 10px;"> disable optional plugin check
+                    </span>
+                    <button class="btn btn-confirm" style="text-align:right">Close</button>
+                </div>
             </div>
         </div>
     </div>
@@ -202,8 +203,13 @@
                                         </div>
                                     </div>
                                 </div>
-                        </div>
+                                <div class="" style="margin-left:40px">
 
+                                    <a href='' data-bind="visible:printJobEditDialog.isSlicerSettingsPresent, click: printJobEditDialog.showSlicerSettingsDialog" style="text-align:right">Show Slicer Settings</a>
+<!--                                    <button class="btn btn-primary" data-bind="click: printJobEditDialog.showSlicerSettingsDialog" style="text-align:right">showSlicerSettingsDialog</button>-->
+                                </div>
+                        </div>
+                        <!-- WEB CAM - STUFF -->
                         <div class="span6">
                             <div class="">
 
@@ -317,4 +323,27 @@
             </div>
         </div>
     </div>
+
+
+    <!-- SlicerSettings View - Dialog -->
+    <div id="dialog_printJobHistory_slicerSettings" class="modal hide fade">
+        <div class="modal-header">
+            <h3 class="modal-title">Slicer-Settings for that print job </h3>
+        </div>
+        <div class="modal-body">
+            <div class="row">
+                <span class="" > <textarea readonly style="margin-left:14px;" type="text" class="input-xxlarge" rows="30" data-bind="readonly: true, textInput: printJobForEditing().slicerSettingsAsText">Halleie weoihf oeif owieefj oijwef ioj wefoij wefij oijwefioj owjf oij wefoij </textarea> </span>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <div class="control-group">
+                <div class="controls">
+                    <button class="btn "  data-bind="click: printJobEditDialog.closeSlicerSettingsDialog" style="text-align:right">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
 </span>

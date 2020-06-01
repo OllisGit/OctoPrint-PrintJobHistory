@@ -18,7 +18,7 @@ from peewee import *
 FORCE_CREATE_TABLES = False
 # SQL_LOGGING = True
 
-CURRENT_DATABASE_SCHEME_VERSION = 2
+CURRENT_DATABASE_SCHEME_VERSION = 3
 
 # List all Models
 MODELS = [PluginMetaDataModel, PrintJobModel, FilamentModel, TemperatureModel]
@@ -58,22 +58,62 @@ class DatabaseManager(object):
 				self._logger.info("We need to upgrade the database scheme from: '" + str(currentDatabaseSchemeVersion) + "' to: '" + str(CURRENT_DATABASE_SCHEME_VERSION) + "'")
 
 				try:
-					self._backupDatabaseFile()
-					if (currentDatabaseSchemeVersion < 2):
-						self._upgradeFrom1To2()
+					self.backupDatabaseFile(self._databasePath)
+					self._upgradeDatabase(currentDatabaseSchemeVersion, CURRENT_DATABASE_SCHEME_VERSION)
 				except Exception as e:
 					self._logger.error("Error during database upgrade!!!!")
-					self._logger.error(str(e))
+					self._logger.exception(e)
+					return
 				self._logger.info("Database-scheme successfully upgraded.")
+		pass
+
+	def _upgradeDatabase(self,currentDatabaseSchemeVersion, targetDatabaseSchemeVersion):
+
+		migrationFunctions = [self._upgradeFrom1To2, self._upgradeFrom2To3, self._upgradeFrom3To4, self._upgradeFrom4To5]
+
+		for migrationMethodIndex in range(currentDatabaseSchemeVersion -1, targetDatabaseSchemeVersion -1):
+			self._logger.info("Database migration from '" + str(migrationMethodIndex + 1) + "' to '" + str(migrationMethodIndex + 2) + "'")
+			migrationFunctions[migrationMethodIndex]()
+			pass
+		pass
+
+	def _upgradeFrom4To5(self):
+		self._logger.info(" Starting 4 -> 5")
+
+	def _upgradeFrom3To4(self):
+		self._logger.info(" Starting 3 -> 4")
+
+	def _upgradeFrom2To3(self):
+		self._logger.info(" Starting 2 -> 3")
+		# What is changed:
+		# - PrintJobModel:
+		# 	- Add Column: slicerSettingsAsText
+
+		connection = sqlite3.connect(self._databaseFileLocation)
+		cursor = connection.cursor()
+
+		sql = """
+		PRAGMA foreign_keys=off;
+		BEGIN TRANSACTION;
+
+			ALTER TABLE 'pjh_printjobmodel' ADD 'slicerSettingsAsText' TEXT;
+
+				UPDATE 'pjh_pluginmetadatamodel' SET value=3 WHERE key='databaseSchemeVersion';
+		COMMIT;
+		PRAGMA foreign_keys=on;
+		"""
+		cursor.executescript(sql)
+
+		connection.close()
+		self._logger.info(" Successfully 2 -> 3")
 		pass
 
 
 	def _upgradeFrom1To2(self):
+		self._logger.info(" Starting 1 -> 2")
 		# What is changed:
 		# - PrintJobModel: Add Column fileOrigin
 		# - FilamentModel: Several ColumnTypes were wrong
-
-
 		connection = sqlite3.connect(self._databaseFileLocation)
 		cursor = connection.cursor()
 
@@ -115,7 +155,6 @@ class DatabaseManager(object):
 		cursor.executescript(sql)
 
 		connection.close()
-
 		pass
 
 

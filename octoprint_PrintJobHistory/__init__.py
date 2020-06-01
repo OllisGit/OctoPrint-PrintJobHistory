@@ -21,6 +21,7 @@ from octoprint_PrintJobHistory.models.TemperatureModel import TemperatureModel
 from peewee import DoesNotExist
 
 from .common.SettingsKeys import SettingsKeys
+from .common.SlicerSettingsParser import SlicerSettingsParser
 from .api.PrintJobHistoryAPI import PrintJobHistoryAPI
 from .api import TransformPrintJob2JSON
 from .DatabaseManager import DatabaseManager
@@ -302,10 +303,6 @@ class PrintJobHistoryPlugin(
 
 	#### print job finished
 	def _printJobFinished(self, printStatus, payload):
-		self._currentPrintJobModel.printEndDateTime = datetime.datetime.now()
-		self._currentPrintJobModel.duration = (self._currentPrintJobModel.printEndDateTime - self._currentPrintJobModel.printStartDateTime).total_seconds()
-		self._currentPrintJobModel.printStatusResult = printStatus
-
 		captureMode = self._settings.get([SettingsKeys.SETTINGS_KEY_CAPTURE_PRINTJOBHISTORY_MODE])
 		if (captureMode == SettingsKeys.KEY_CAPTURE_PRINTJOBHISTORY_MODE_NONE):
 			return
@@ -322,6 +319,20 @@ class PrintJobHistoryPlugin(
 		# capture the print
 		if (captureThePrint == True):
 			self._logger.info("Start capturing print job")
+			# Core Data
+			self._currentPrintJobModel.printEndDateTime = datetime.datetime.now()
+			self._currentPrintJobModel.duration = (
+						self._currentPrintJobModel.printEndDateTime - self._currentPrintJobModel.printStartDateTime).total_seconds()
+			self._currentPrintJobModel.printStatusResult = printStatus
+
+			# Slicer Settings
+			selectedFilename = payload.get("path")
+			selectedFile = self._file_manager.path_on_disk(payload.get("origin"), selectedFilename)
+			slicerSettings = SlicerSettingsParser(self._logger).extractSlicerSettings(selectedFile, None)
+			if (slicerSettings.settingsAsText != None and len(slicerSettings.settingsAsText) != 0):
+				self._currentPrintJobModel.slicerSettingsAsText = slicerSettings.settingsAsText
+
+			# Image
 			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT]):
 				self._cameraManager.takeSnapshotAsync(
 														CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime),
