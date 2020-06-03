@@ -46,10 +46,6 @@ class PrintJobHistoryPlugin(
 		self._filamentManagerPluginImplementationState = None
 		self._displayLayerProgressPluginImplementation = None
 		self._displayLayerProgressPluginImplementationState = None
-		self._ultimakerFormatPluginImplementation = None
-		self._ultimakerFormatPluginImplementationState = None
-		self._prusaSlicerThumbnailsPluginImplementation = None
-		self._prusaSlicerThumbnailsPluginImplementationState = None
 
 		pluginDataBaseFolder = self.get_plugin_data_folder()
 
@@ -102,20 +98,10 @@ class PrintJobHistoryPlugin(
 		self._displayLayerProgressPluginImplementationState  = pluginInfo[0]
 		self._displayLayerProgressPluginImplementation = pluginInfo[1]
 
-		pluginInfo = self._getPluginInformation("UltimakerFormatPackage")
-		self._ultimakerFormatPluginImplementationState  = pluginInfo[0]
-		self._ultimakerFormatPluginImplementation = pluginInfo[1]
-
-		pluginInfo = self._getPluginInformation("prusaslicerthumbnails")
-		self._prusaSlicerThumbnailsPluginImplementationState  = pluginInfo[0]
-		self._prusaSlicerThumbnailsPluginImplementation = pluginInfo[1]
-
 		self._logger.info("Plugin-State: "
 						  "PreHeat=" + self._preHeatPluginImplementationState + " "
 						  "DisplayLayerProgress=" + self._displayLayerProgressPluginImplementationState + " "
-						  "filamentmanager=" + self._filamentManagerPluginImplementationState + " "
-						  "ultimakerformat=" + self._ultimakerFormatPluginImplementationState + " "
-						  "PrusaSlicerThumbnails=" + self._ultimakerFormatPluginImplementationState)
+						  "filamentmanager=" + self._filamentManagerPluginImplementationState)
 
 		if sendToClient == True:
 			missingMessage = ""
@@ -128,12 +114,6 @@ class PrintJobHistoryPlugin(
 
 			if self._displayLayerProgressPluginImplementation == None:
 				missingMessage = missingMessage + "<li>DisplayLayerProgress (<b>" + self._displayLayerProgressPluginImplementationState + "</b>)</li>"
-
-			if self._ultimakerFormatPluginImplementation == None:
-				missingMessage = missingMessage + "<li>UltimakerFormatPackage (<b>" + self._ultimakerFormatPluginImplementationState + "</b>)</li>"
-
-			if self._prusaSlicerThumbnailsPluginImplementation == None:
-				missingMessage = missingMessage + "<li>PrusaSlicerThumbnails (<b>" + self._prusaSlicerThumbnailsPluginImplementationState + "</b>)</li>"
 
 			if missingMessage != "":
 				missingMessage = "<ul>" + missingMessage + "</ul>"
@@ -339,19 +319,15 @@ class PrintJobHistoryPlugin(
 														self._sendErrorMessageToClient
 													 )
 
-			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_ULTIMAKER_THUMBNAIL_AFTER_PRINT]):
+			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_PLUGIN_THUMBNAIL_AFTER_PRINT]):
+				metadata = self._file_manager.get_metadata(payload["origin"], payload["path"])
 				# check if available
-				if (not self._ultimakerFormatPluginImplementation == None):
-					self._cameraManager.takeUltimakerPackageThumbnailAsync(CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime), self._currentPrintJobModel.fileName)
+				if ("thumbnail" in metadata):
+					self._cameraManager.takeThumbnailAsync(
+						CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime),
+						metadata["thumbnail"])
 				else:
-					self._logger.warn("UltimakerPackageFormat Thumbnail enabled, but Plugin not available! Activate Plugin-Depenedency check")
-
-			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_PRUSASLICER_THUMBNAIL_AFTER_PRINT]):
-				# check if available
-				if (not self._prusaSlicerThumbnailsPluginImplementation == None):
-					self._cameraManager.takePrusaSlicerThumbnailAsync(CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime), self._currentPrintJobModel.filePathName)
-				else:
-					self._logger.warn("PrusaSlicerThumbnails enabled, but Plugin not available! Activate Plugin-Depenedency check")
+					self._logger.warn("Thumbnail not found in print metadata")
 
 			# FilamentInformations e.g. length
 			self._createAndAssignFilamentModel(self._currentPrintJobModel, payload)
@@ -493,8 +469,7 @@ class PrintJobHistoryPlugin(
 
 		## Camera
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT] = True
-		settings[SettingsKeys.SETTINGS_KEY_TAKE_ULTIMAKER_THUMBNAIL_AFTER_PRINT] = True
-		settings[SettingsKeys.SETTINGS_KEY_TAKE_PRUSASLICER_THUMBNAIL_AFTER_PRINT] = True
+		settings[SettingsKeys.SETTINGS_KEY_TAKE_PLUGIN_THUMBNAIL_AFTER_PRINT] = True
 
 		## Export / Import
 		settings[SettingsKeys.SETTINGS_KEY_IMPORT_CSV_MODE] = SettingsKeys.KEY_IMPORTCSV_MODE_APPEND
