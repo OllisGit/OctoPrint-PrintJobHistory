@@ -19,6 +19,7 @@ If you like it, I would be thankful about a cup of coffee :)
 
 - [x] Print result (success, fail, cancel)
 - [x] Start/End datetime -> duration
+- [x] Temperatures Bed/Extruder -> HINT: Only single Extruder-Temperature is currently collected
 - [x] Username
 - [x] Filename, filesize
 - [x] Note (WYSIWYG-Editor)
@@ -30,7 +31,6 @@ If you like it, I would be thankful about a cup of coffee :)
 - [x] Used weight
 - [x] Filament cost
 - [x] Slicer Settings (look [here](https://github.com/OllisGit/OctoPrint-PrintJobHistory/wiki/Slicer-Settings) for "how to use it")
-
 
 ### UI features
 - [x] List all printjobs
