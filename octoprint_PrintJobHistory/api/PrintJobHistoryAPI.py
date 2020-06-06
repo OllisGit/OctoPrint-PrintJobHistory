@@ -2,6 +2,7 @@
 from __future__ import absolute_import
 
 import shutil
+import sqlite3
 import tempfile
 import threading
 
@@ -161,6 +162,16 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		self._databaseManager.updatePrintJob(printJobModel)
 		# response = self.get_printjobhistory()
 		# return response
+
+		return flask.jsonify()
+
+	#######################################################################################   FORCE CLOSE EDIT DIALOG
+	@octoprint.plugin.BlueprintPlugin.route("/forceCloseEditDialog", methods=["PUT"])
+	def put_forceCloseEditDialog(self):
+
+		# Inform all Browser to close the EditDialog
+		self._sendDataToClient(dict(action="closeEditDialog"))
+
 		return flask.jsonify()
 
 	#######################################################################################   GET SNAPSHOT
@@ -237,6 +248,9 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 							headers={'Content-Disposition': 'attachment; filename=OctoprintPrintJobHistory.csv'}) # TODO add timestamp
 
 		else:
+			if (exportType == "legacyPrintHistory"):
+				return self.exportPrintHistoryData()
+
 			print("BOOOMM not supported type")
 		pass
 
@@ -277,6 +291,11 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 
 		resultOfPrintJobs = CSVExportImporter.parseCSV(path, updateParsingStatus, errorCollection, logger)
+
+		if (len(errorCollection) != 0):
+			successMessage = "Some error(s) occurs during parsing! No jobs imported!"
+			sendCSVUploadStatusToClient("finished", "", "", "", successMessage, errorCollection)
+			return
 
 		importModeText = "append"
 		backupDatabaseFilePath = None
@@ -356,8 +375,83 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 		return flask.jsonify(started=True)
 
+	###################################################################################### EXPORT of PrintHistory.db
+	# @octoprint.plugin.BlueprintPlugin.route("/exportPrintHistory", methods=["GET"])
+	def exportPrintHistoryData(self):
+
+		allJobsModels = list()
 
 
+		history_db_path = self.get_plugin_data_folder()+"/../printhistory/history.db"
 
+		conn = sqlite3.connect(history_db_path)
+		cur = conn.cursor()
+		cur.execute("SELECT * FROM print_history ORDER BY timestamp")
+
+		for row in cur.fetchall():
+			printJob = PrintJobModel()
+			filamentModel = FilamentModel()
+			isFilamentValuesPresent = False
+			for i, value in enumerate(row):
+				# id, fileName, note, spool, filamentVolume (float), filamentLength (float), printTime (float), success (int), timestamp (float), user (unicode), parameters (json-string)
+				fieldName = cur.description[i][0]
+				if (fieldName == "fileName"):
+					printJob.fileName = value
+					continue
+				if (fieldName == "note"):
+					printJob.noteText = value
+					continue
+				if (fieldName == "spool"):
+					isFilamentValuesPresent = True
+					filamentModel.spoolName = value
+					continue
+				if (fieldName == "filamentVolume"):
+					# isFilamentValuesPresent = True
+					# filamentModel.spoolName = value
+					continue # just ignore
+				if (fieldName == "filamentLength"):
+					isFilamentValuesPresent = True
+					filamentModel.usedLength = value
+					filamentModel.calculatedLength = value
+					continue
+				if (fieldName == "printTime"):
+					printJob.duration = int(value)
+					continue
+				if (fieldName == "success"):
+					if (value == 1):
+						printJob.printStatusResult = "success"
+					else:
+						printJob.printStatusResult = "failed"
+					continue
+				if (fieldName == "timestamp"):
+					startPrintDataTime = datetime.fromtimestamp(value)
+					printJob.printStartDateTime = startPrintDataTime
+					continue
+				if (fieldName == "user"):
+					printJob.userName = value
+					continue
+
+				if (fieldName == "parameters"):
+					continue # just ignore
+				pass
+
+			if (isFilamentValuesPresent == True):
+				printJob.addFilamentModel(filamentModel)
+
+			# Calculate endtime
+			endDateTime = printJob.printStartDateTime + timedelta(seconds=printJob.duration)
+			printJob.printEndDateTime = endDateTime
+
+			allJobsModels.append(printJob)
+		# history_dict = [dict(
+		# 						(cur.description[i][0], value) \
+		# 					 for i, value in enumerate(row)
+		# 					) for row in cur.fetchall()]
+
+		conn.close()
+
+		return Response(CSVExportImporter.transform2CSV(allJobsModels),
+						mimetype='text/csv',
+						headers={'Content-Disposition': 'attachment; filename=PrintHistory.csv'})
 
 

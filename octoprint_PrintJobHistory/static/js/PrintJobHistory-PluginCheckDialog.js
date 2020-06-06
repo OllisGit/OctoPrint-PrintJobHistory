@@ -2,7 +2,7 @@
 
 function PrintJobHistoryPluginCheckDialog(){
 
-    self = this;
+    var self = this;
 
     self.apiClient = null;
     myPluginSettings = null;

@@ -31,6 +31,7 @@ If you like it, I would be thankful about a cup of coffee :)
 - [x] Used weight
 - [x] Filament cost
 - [x] Slicer Settings (look [here](https://github.com/OllisGit/OctoPrint-PrintJobHistory/wiki/Slicer-Settings) for "how to use it")
+- [x] Export all data from PrintHistory-Plugin as CSV
 
 ### UI features
 - [x] List all printjobs
@@ -40,7 +41,7 @@ If you like it, I would be thankful about a cup of coffee :)
 - [x] Sort history table (printdate, filename)
 - [x] Table column visibility
 - [x] Capture image after print
-- [x] Take Thumbnail from [UltimakerFormatPackage-Plugin](https://plugins.octoprint.org/plugins/UltimakerFormatPackage/)
+- [x] Take Thumbnail from [UltimakerFormatPackage](https://plugins.octoprint.org/plugins/UltimakerFormatPackage/) and [PrusaSlicer Thumbnails](https://plugins.octoprint.org/plugins/prusaslicerthumbnails/)
 - [x] Export all printjobs as CSV
 - [x] Import printjobs from CSV
 - [x] Better error-feedback (more then just the "happy-path")

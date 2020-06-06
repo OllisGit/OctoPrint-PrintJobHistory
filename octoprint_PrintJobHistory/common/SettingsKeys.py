@@ -21,6 +21,9 @@ class SettingsKeys():
 	SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT = "takeSnapshotAfterPrint"
 	SETTINGS_KEY_TAKE_PLUGIN_THUMBNAIL_AFTER_PRINT = "takePluginThumbnailAfterPrint"
 
+	SETTINGS_KEY_TAKE_TEMPERATURE_FROM_PREHEAT = "takeTemperatureFromPreHeatPlugin"
+	SETTINGS_KEY_DELAY_READING_TEMPERATURE_FROM_PRINTER = "delayReadingTemperatureFromPrinter"
+
 	## Export / Import
 	SETTINGS_KEY_IMPORT_CSV_MODE = "importCSVMode"
 	KEY_IMPORTCSV_MODE_REPLACE = "replace"

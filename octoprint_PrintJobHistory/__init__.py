@@ -46,6 +46,12 @@ class PrintJobHistoryPlugin(
 		self._filamentManagerPluginImplementationState = None
 		self._displayLayerProgressPluginImplementation = None
 		self._displayLayerProgressPluginImplementationState = None
+		self._ultimakerFormatPluginImplementation = None
+		self._ultimakerFormatPluginImplementationState = None
+		self._prusaSlicerThumbnailsPluginImplementation = None
+		self._prusaSlicerThumbnailsPluginImplementationState = None
+		self._printHistoryPluginImplementation = None
+
 
 		pluginDataBaseFolder = self.get_plugin_data_folder()
 
@@ -98,10 +104,27 @@ class PrintJobHistoryPlugin(
 		self._displayLayerProgressPluginImplementationState  = pluginInfo[0]
 		self._displayLayerProgressPluginImplementation = pluginInfo[1]
 
+		pluginInfo = self._getPluginInformation("UltimakerFormatPackage")
+		self._ultimakerFormatPluginImplementationState  = pluginInfo[0]
+		self._ultimakerFormatPluginImplementation = pluginInfo[1]
+
+		pluginInfo = self._getPluginInformation("prusaslicerthumbnails")
+
+		self._prusaSlicerThumbnailsPluginImplementationState  = pluginInfo[0]
+		self._prusaSlicerThumbnailsPluginImplementation = pluginInfo[1]
+
+		pluginInfo = self._getPluginInformation("printhistory")
+		if ("enabled" == pluginInfo[0]):
+			self._printHistoryPluginImplementation = pluginInfo[1]
+		else:
+			self._printHistoryPluginImplementation = None
+
 		self._logger.info("Plugin-State: "
 						  "PreHeat=" + self._preHeatPluginImplementationState + " "
 						  "DisplayLayerProgress=" + self._displayLayerProgressPluginImplementationState + " "
-						  "filamentmanager=" + self._filamentManagerPluginImplementationState)
+						  "filamentmanager=" + self._filamentManagerPluginImplementationState + " "
+						  "ultimakerformat=" + self._ultimakerFormatPluginImplementationState + " "
+						  "PrusaSlicerThumbnails=" + self._ultimakerFormatPluginImplementationState)
 
 		if sendToClient == True:
 			missingMessage = ""
@@ -114,6 +137,12 @@ class PrintJobHistoryPlugin(
 
 			if self._displayLayerProgressPluginImplementation == None:
 				missingMessage = missingMessage + "<li>DisplayLayerProgress (<b>" + self._displayLayerProgressPluginImplementationState + "</b>)</li>"
+
+			if self._ultimakerFormatPluginImplementation == None:
+				missingMessage = missingMessage + "<li>UltimakerFormatPackage (<b>" + self._ultimakerFormatPluginImplementationState + "</b>)</li>"
+
+			if self._prusaSlicerThumbnailsPluginImplementation == None:
+				missingMessage = missingMessage + "<li>PrusaSlicerThumbnails (<b>" + self._prusaSlicerThumbnailsPluginImplementationState + "</b>)</li>"
 
 			if missingMessage != "":
 				missingMessage = "<ul>" + missingMessage + "</ul>"
@@ -231,39 +260,51 @@ class PrintJobHistoryPlugin(
 		tempTool = 0
 		tempBed = 0
 
-		if self._preHeatPluginImplementation != None:
-			path_on_disk = octoprint.server.fileManager.path_on_disk(self._currentPrintJobModel.fileOrigin, self._currentPrintJobModel.filePathName)
+		shouldReadTemperatureFromPreHeat = self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_TEMPERATURE_FROM_PREHEAT])
+		if (shouldReadTemperatureFromPreHeat == True):
+			self._logger.info("Try reading Temperature from PreHeat-Plugin...")
 
-			preHeatTemperature = self._preHeatPluginImplementation.read_temperatures_from_file(path_on_disk)
-			if preHeatTemperature != None:
-				if "bed" in preHeatTemperature:
-					tempBed = preHeatTemperature["bed"]
-					tempFound = True
-				if "tool0" in preHeatTemperature:
-					tempTool = preHeatTemperature["tool0"]
-					tempFound = True
-			pass
+			if (self._preHeatPluginImplementation != None):
+				path_on_disk = octoprint.server.fileManager.path_on_disk(self._currentPrintJobModel.fileOrigin, self._currentPrintJobModel.filePathName)
+
+				preHeatTemperature = self._preHeatPluginImplementation.read_temperatures_from_file(path_on_disk)
+				if preHeatTemperature != None:
+					if "bed" in preHeatTemperature:
+						tempBed = preHeatTemperature["bed"]
+						tempFound = True
+					if "tool0" in preHeatTemperature:
+						tempTool = preHeatTemperature["tool0"]
+						tempFound = True
+				pass
+			else:
+				self._logger.warn("... PreHeat Plugin not installed/enabled")
+
+		if (tempFound == True):
+			self._logger.info("... Temperature found '" + str(tempBed) + "' '" + str(tempTool) + "'")
+			self._addTemperatureToPrintModel(self._currentPrintJobModel, tempBed, tempTool)
 		else:
+			# readTemperatureFromPrinter
 			# because temperature is 0 at the beginning, we need to wait a couple of seconds (maybe 3)
 			self._readAndAssignCurrentTemperatureDelayed(self._currentPrintJobModel)
 
-		if (tempFound == True):
-			self._addTemperatureToPrintModel(self._currentPrintJobModel, tempBed, tempTool)
 
 
 
-	def _readCurrentTemeratureAsync(self, printer, printJobModel, addTemperatureToPrintModel):
-		time.sleep(10)
+	def _readCurrentTemeratureFromPrinterAsync(self, printer, printJobModel, addTemperatureToPrintModel):
+		dealyInSeconds  = self._settings.get_int([SettingsKeys.SETTINGS_KEY_DELAY_READING_TEMPERATURE_FROM_PRINTER])
+		time.sleep(dealyInSeconds)
+
 		currentTemps = printer.get_current_temperatures()
 		if (currentTemps != None and "bed" in currentTemps and "tool0" in currentTemps):
 			tempBed = currentTemps["bed"]["target"]
 			tempTool = currentTemps["tool0"]["target"]
+			self._logger.info("Temperature from Printer '" + str(tempBed) + "' '" + str(tempTool) + "'")
 			addTemperatureToPrintModel(printJobModel, tempBed, tempTool)
 
 
 	def _readAndAssignCurrentTemperatureDelayed(self, printJobModel):
 		thread = threading.Thread(name='ReadCurrentTemperature',
-								  target=self._readCurrentTemeratureAsync,
+								  target=self._readCurrentTemeratureFromPrinterAsync,
 								  args=(self._printer, printJobModel, self._addTemperatureToPrintModel,))
 		thread.daemon = True
 		thread.start()
@@ -313,7 +354,7 @@ class PrintJobHistoryPlugin(
 				self._currentPrintJobModel.slicerSettingsAsText = slicerSettings.settingsAsText
 
 			# Image
-			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT]):
+			if (self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT])):
 				self._cameraManager.takeSnapshotAsync(
 														CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime),
 														self._sendErrorMessageToClient
@@ -381,9 +422,10 @@ class PrintJobHistoryPlugin(
 				databaseFileLocation = self._databaseManager.getDatabaseFileLocation()
 				snapshotFileLocation = self._cameraManager.getSnapshotFileLocation()
 
-				self._sendDataToClient(dict(action="updateStorageInformation",
+				self._sendDataToClient(dict(action="initalData",
 											databaseFileLocation = databaseFileLocation,
-											snapshotFileLocation = snapshotFileLocation
+											snapshotFileLocation = snapshotFileLocation,
+											isPrintHistoryPluginAvailable = self._printHistoryPluginImplementation != None
 											))
 			# Check if all needed Plugins are available, if not modale dialog to User
 			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_PLUGIN_DEPENDENCY_CHECK]):
@@ -470,6 +512,10 @@ class PrintJobHistoryPlugin(
 		## Camera
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT] = True
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_PLUGIN_THUMBNAIL_AFTER_PRINT] = True
+
+		## Temperature
+		settings[SettingsKeys.SETTINGS_KEY_TAKE_TEMPERATURE_FROM_PREHEAT] = True
+		settings[SettingsKeys.SETTINGS_KEY_DELAY_READING_TEMPERATURE_FROM_PRINTER] = 60
 
 		## Export / Import
 		settings[SettingsKeys.SETTINGS_KEY_IMPORT_CSV_MODE] = SettingsKeys.KEY_IMPORTCSV_MODE_APPEND

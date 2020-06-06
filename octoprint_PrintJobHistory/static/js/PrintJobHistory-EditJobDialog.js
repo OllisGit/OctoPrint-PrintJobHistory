@@ -212,6 +212,13 @@ function PrintJobHistoryEditDialog(){
 
     }
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////// CLOSE DIALOG
+    this.closeDialog = function(){
+        var visible = self.editPrintJobItemDialog.hasClass('in');
+        if (visible == true){
+            self.editPrintJobItemDialog.modal('hide');
+        }
+    }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////// ABORT PRINT JOB ITEM
     this.abortPrintJobItem  = function(){

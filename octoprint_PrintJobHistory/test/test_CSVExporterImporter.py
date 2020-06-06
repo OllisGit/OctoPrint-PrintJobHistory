@@ -64,3 +64,26 @@ import logging
 # 	print("Locale Version is newer or equal")
 # else:
 # 	print("Remote Version is newer, update available")
+
+
+# f = open("costUnitBug.txt", "r")
+# fieldValue = f.readline()
+# f.close()
+# fieldValue = fieldValue.strip()
+# costUnit = fieldValue[-1]
+# if (costUnit.isdigit()):
+# 	# no unit present
+# 	usedCost = float(fieldValue)
+# else:
+# 	# Split between cot and unit
+# 	costValue = ""
+# 	for i in range(len(fieldValue)):
+# 		c = fieldValue[i]
+# 		if (c.isdigit() or c == "." ):
+# 			costValue += c
+# 		else:
+# 			costUnit = fieldValue[i:]
+# 			break
+#
+# print(usedCost)
+# print(costUnit)

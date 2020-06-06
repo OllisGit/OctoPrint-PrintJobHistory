@@ -59,6 +59,7 @@ class CSVColumn:
 			self.formattorParser.parseAndAssignFieldValue(self.columnLabel, self.fieldName, fieldValue, printJobModel, errorCollection, lineNumber)
 		except Exception as e:
 			errorMessage = str(e)
+			errorMessage = re.sub(r"[^a-zA-Z0-9()]"," ", errorMessage) # fix for: #32 'invalid literal for float(): 0.00 <k> '
 			errorCollection.append("[" + str(
 				lineNumber) + "]" + "Error parsing value '" + fieldValue + "' for field '" + self.columnLabel + "': " + errorMessage)
 
@@ -309,11 +310,21 @@ class FilamentCSVFormattorParser:
 		elif (COLUMN_USED_FILAMENT_COSTS == fieldLabel):
 			costUnit = fieldValue[-1]
 			if (costUnit.isdigit()):
+				# no unit present
 				filemanentModel.usedCost = float(fieldValue)
 			else:
-				costValue = fieldValue[:-1]
+				# Split between cost and unit
+				costValue = ""
+				for i in range(len(fieldValue)):
+					c = fieldValue[i]
+					if (c.isdigit() or c == "."):
+						costValue += c
+					else:
+						costUnit = fieldValue[i:]
+						break
 				filemanentModel.usedCost = float(costValue)
 				filemanentModel.spoolCostUnit = costUnit
+
 			pass
 		pass
 
@@ -464,11 +475,18 @@ def parseCSV(csvFile4Import, updateParsingStatus, errorCollection, logger):
 							csvColumn = columnOrderInFile[columnIndex]
 							if not csvColumn == None:
 								columnValue = columnValue.strip()
-								csvColumn.parseAndAssignFieldValue(columnValue, printJobModel, errorCollection, lineNumber)
+								# check if mandatory value is missing
+								if (len(columnValue) == 0):
+									columnName = csvColumn.columnLabel
+									if columnName in mandatoryFieldNames:
+										errorCollection.append("["+str(lineNumber)+"] Mandatory value for column '" + columnName + "' is missing!")
+										pass
+								else:
+									csvColumn.parseAndAssignFieldValue(columnValue, printJobModel, errorCollection, lineNumber)
 								pass
 						columnIndex += 1
 					if (len(errorCollection) != 0):
-						logger.warn("ERROR(s) occurred!!!!!")
+						logger.error("Reading error line '" + str(lineNumber) + "' in Column '" + column + "' ")
 					else:
 						result.append(printJobModel)
 			pass

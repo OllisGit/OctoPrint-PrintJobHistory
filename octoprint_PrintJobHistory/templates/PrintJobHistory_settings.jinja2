@@ -8,6 +8,7 @@
 <!--            <li><a href="#tab-pjh-Visibility" data-toggle="tab">Visibility</a></li>-->
 <!--            <li><a href="#tab-pjh-Filament" data-toggle="tab">Filament</a></li>-->
             <li><a href="#tab-pjh-Camera" data-toggle="tab">Camera</a></li>
+            <li><a href="#tab-pjh-Temerature" data-toggle="tab">Temerature</a></li>
             <li><a href="#tab-pjh-Export-Import" data-toggle="tab">Export / Import</a></li>
             <li><a href="#tab-pjh-Storage" data-toggle="tab">Storage</a></li>
             <li><a href="#tab-pjh-Debugging" data-toggle="tab">Debugging</a></li>
@@ -73,7 +74,7 @@
                 <div class="control-group">
                     <div class="controls">
                         <label class="checkbox">
-                            <input type="checkbox" data-bind="checked: pluginSettings.takePluginThumbnailAfterPrint" > Use thumbnail after print, instead of snapshot
+                            <input type="checkbox" data-bind="checked: pluginSettings.takePluginThumbnailAfterPrint" > Use thumbnail (if provided) after print, instead of snapshot
                         </label>
                     </div>
                 </div>
@@ -89,12 +90,38 @@
                     </div>
                 </div>
             </div>
+            <!-- TEMPERATURE - TAB -->
+            <div class="tab-pane" id="tab-pjh-Temerature">
+                <div class="control-group">
+                    <div class="">
+                        <label class="checkbox">
+                            <input type="checkbox" data-bind="checked: pluginSettings.takeTemperatureFromPreHeatPlugin" > Take temperature values from PreHeat-Plugin (if installed)
+                        </label>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="">Fallback: Read temperature from printer after print start with a delay of
+                        <span class="input">
+                            <span class="input-append">
+                                <input type="number" step="1" min="0" class="input-mini text-right" data-bind="value: pluginSettings.delayReadingTemperatureFromPrinter">
+                                <span class="add-on">seconds</span>
+                            </span>
+                        </span>
+                    </label>
+                </div>
+            </div>
+
             <!-- EXPORT / IMPORT - TAB -->
             <div class="tab-pane" id="tab-pjh-Export-Import">
                 <h3>Export</h3>
                 <div class="control-group">
                     <div class="controls">
-                        <span><b>Printjob History Database</b>: Export all data as <a href="#" data-bind="attr: {href: $root.exportUrl('CSV'), css: {disabled: !$root.exportUrl('CSV')}}">CSV-File</a></span>
+                        <span><b>PrintJoHistory Database</b>: Export all data as <a href="#" data-bind="attr: {href: $root.exportUrl('CSV'), css: {disabled: !$root.exportUrl('CSV')}}">CSV-File</a></span>
+                    </div>
+                </div>
+                <div class="control-group" data-bind="visible: isPrintHistoryPluginAvailable">
+                    <div class="controls">
+                        <span><b>Legacy: Print History Database</b>: Export all data as <a href="#" data-bind="attr: {href: $root.exportUrl('legacyPrintHistory'), css: {disabled: !$root.exportUrl('legacyPrintHistory')}}">CSV-File</a></span>
                     </div>
                 </div>
 <!--                <div class="control-group">-->
@@ -112,7 +139,7 @@
                 <div class="control-group">
                     <div class="controls">
                         <div class="row">
-                            Import a CSV-File to the printjob history database.
+                            Import a CSV-File to the PrintJobHistory database.
                         </div>
                         <br/>
                         <div class="row">

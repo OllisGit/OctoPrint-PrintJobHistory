@@ -149,5 +149,18 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
     }
 
 
+    this.callForceCloseEditDialog = function(responseHandler){
+        $.ajax({
+            //url: API_BASEURL + "plugin/"+PLUGIN_ID+"/loadPrintJobHistory",
+            url: this.baseUrl + "plugin/"+this.pluginId+"/forceCloseEditDialog",
+            type: "PUT"
+        }).done(function( data ){
+            responseHandler(data)
+            //shoud be done by the server to make sure the server is informed countdownDialog.modal('hide');
+            //countdownDialog.modal('hide');
+            //countdownCircle = null;
+        });
+    }
+
 
 }

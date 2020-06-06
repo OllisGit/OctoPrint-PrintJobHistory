@@ -264,6 +264,8 @@ $(function() {
         self.csvFileUploadName = ko.observable();
         self.csvImportInProgress = ko.observable(false);
 
+        self.isPrintHistoryPluginAvailable = ko.observable(false);
+
         self.databaseFileLocation = ko.observable();
         self.snapshotFileLocation = ko.observable();
 
@@ -275,7 +277,7 @@ $(function() {
         self.downloadDatabaseUrl = ko.observable();
 
         self.deleteDatabaseAction = function() {
-            var result = confirm("Do you really want to delete all printjob history data?");
+            var result = confirm("Do you really want to delete all PrintJobHistory data?");
             if (result == true){
                 self.apiClient.callDeleteDatabase(function(responseData) {
                     self.printJobHistoryTableHelper.reloadItems();
@@ -355,7 +357,7 @@ $(function() {
             self.downloadDatabaseUrl(self.apiClient.getDownloadDatabaseUrl());
             // to bring up dialogs the binding must be already done
             if (self.printJobToShowAfterStartup != null){
-                self.showPrintJobDetailsDialogAction(self.printJobToShowAfterStartup);
+                self.showPrintJobDetailsDialogAction(self.printJobToShowAfterStartup, true);
             }
             if (self.missingPluginDialogMessage != null){
                 self.pluginCheckDialog.showMissingPluginsDialog(self.missingPluginDialogMessage);
@@ -370,9 +372,10 @@ $(function() {
                 return;
             }
 
-            if ("updateStorageInformation" == data.action){
+            if ("initalData" == data.action){
                 self.databaseFileLocation(data.databaseFileLocation);
                 self.snapshotFileLocation(data.snapshotFileLocation);
+                self.isPrintHistoryPluginAvailable(data.isPrintHistoryPluginAvailable)
             }
 
             if ("missingPlugin" == data.action){
@@ -390,15 +393,21 @@ $(function() {
                 self.printJobHistoryTableHelper.reloadItems();
                 if (data.printJobItem != null){
                     self.printJobToShowAfterStartup = data.printJobItem;
-                    self.showPrintJobDetailsDialogAction(data.printJobItem);
+                    self.showPrintJobDetailsDialogAction(data.printJobItem, true);
                 }
                 return;
             }
 
+            if ("closeEditDialog" == data.action){
+                self.printJobEditDialog.closeDialog();
+                return;
+            }
+
+
             if ("showPrintJobDialogAfterClientConnection" == data.action){
                 if (data.printJobItem != null){
                     self.printJobToShowAfterStartup = data.printJobItem;
-                    self.showPrintJobDetailsDialogAction(data.printJobItem);
+                    self.showPrintJobDetailsDialogAction(data.printJobItem, true);
                 }
                 return;
             }
@@ -433,8 +442,11 @@ $(function() {
 
         ///////////////////////////////////////////////////// START: DIALOG Stuff
 
-        self.showPrintJobDetailsDialogAction = function(selectedPrintJobItem) {
+        self.showPrintJobDetailsDialogAction = function(selectedPrintJobItem, forceCloseDialog) {
 
+            if (forceCloseDialog == null){
+                forceCloseDialog = false;
+            }
             self.printJobForEditing(new PrintJobItem(ko.mapping.toJS(selectedPrintJobItem)));
 
             self.printJobEditDialog.showDialog(self.printJobForEditing(), function(shouldTableReload){
@@ -456,6 +468,14 @@ $(function() {
                         "showPrintJobDialogAfterPrint_jobId": null
                     };
                     OctoPrint.settings.savePluginSettings(PLUGIN_ID, payload);
+                }
+
+                if (forceCloseDialog == true){
+
+                    self.apiClient.callForceCloseEditDialog(function(responseData){
+                        // do nothing
+                    });
+
                 }
             });
         };
