@@ -1,4 +1,10 @@
-function TableItemHelper(loadItemsFunction, defaultPageSize, defaultSortColumn, defaultFilterName){
+/**
+ * loadItemsFunction,
+ * defaultPageSize,
+ * defaultSortColumn,
+ * defaultFilterName
+ */
+ function TableItemHelper(loadItemsFunction, defaultPageSize, defaultSortColumn, defaultFilterName){
 
     var self = this;
 

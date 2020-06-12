@@ -29,12 +29,12 @@
                 </small>
             </div>
             <div class="pull-right" style="clear: both;">
-            <small>
-                Show prints:
-                <a href="#" data-bind="click: function() { printJobHistoryTableHelper.changeFilter('all'); }"><i class="icon-ok" data-bind="style: {visibility: printJobHistoryTableHelper.isFilterSelected('all') ? 'visible' : 'hidden'}"></i> all</a> |
-                <a href="#" data-bind="click: function() { printJobHistoryTableHelper.changeFilter('onlySuccess'); }"><i class="icon-ok" data-bind="style: {visibility: printJobHistoryTableHelper.isFilterSelected('onlySuccess') ? 'visible' : 'hidden'}"></i> only successful</a> |
-                <a href="#" data-bind="click: function() { printJobHistoryTableHelper.changeFilter('onlyFailed'); }"><i class="icon-ok" data-bind="style: {visibility: printJobHistoryTableHelper.isFilterSelected('onlyFailed') ? 'visible' : 'hidden'}"></i> only failed</a>
-            </small>
+                <small>
+                    Show prints:
+                    <a href="#" data-bind="click: function() { printJobHistoryTableHelper.changeFilter('all'); }"><i class="icon-ok" data-bind="style: {visibility: printJobHistoryTableHelper.isFilterSelected('all') ? 'visible' : 'hidden'}"></i> all</a> |
+                    <a href="#" data-bind="click: function() { printJobHistoryTableHelper.changeFilter('onlySuccess'); }"><i class="icon-ok" data-bind="style: {visibility: printJobHistoryTableHelper.isFilterSelected('onlySuccess') ? 'visible' : 'hidden'}"></i> only successful</a> |
+                    <a href="#" data-bind="click: function() { printJobHistoryTableHelper.changeFilter('onlyFailed'); }"><i class="icon-ok" data-bind="style: {visibility: printJobHistoryTableHelper.isFilterSelected('onlyFailed') ? 'visible' : 'hidden'}"></i> only failed</a>
+                </small>
             </div>
         </div>
     </div>
@@ -201,7 +201,7 @@
         </ul>
     </div>
 
-
+    <!-- START: PAGEINATION BLOCK    -->
     <div class="pagination pagination-mini pagination-centered" style="margin:0px">
         <ul>
             <li data-bind="css: {disabled: printJobHistoryTableHelper.currentPage() === 0}">
@@ -219,6 +219,8 @@
             </li>
         </ul>
     </div>
+    <!-- END: PAGEINATION BLOCK    -->
+
 
     <table id="printjobhistory_main_table" class="table table-striped table-hover table-condensed table-hover" style="clear: both;">
         <thead>
@@ -291,7 +293,7 @@
 
 
 
-
+    <!-- START: PAGEINATION BLOCK    -->
     <div class="pagination pagination-mini pagination-centered" style="margin:0px">
         <ul>
             <li data-bind="css: {disabled: printJobHistoryTableHelper.currentPage() === 0}">
@@ -309,5 +311,6 @@
             </li>
         </ul>
     </div>
+    <!-- END: PAGEINATION BLOCK    -->
 
 </div>

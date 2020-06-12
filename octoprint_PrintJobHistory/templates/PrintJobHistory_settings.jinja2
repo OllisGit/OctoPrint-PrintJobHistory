@@ -8,7 +8,7 @@
 <!--            <li><a href="#tab-pjh-Visibility" data-toggle="tab">Visibility</a></li>-->
 <!--            <li><a href="#tab-pjh-Filament" data-toggle="tab">Filament</a></li>-->
             <li><a href="#tab-pjh-Camera" data-toggle="tab">Camera</a></li>
-            <li><a href="#tab-pjh-Temerature" data-toggle="tab">Temerature</a></li>
+            <li><a href="#tab-pjh-Temperature" data-toggle="tab">Temperature</a></li>
             <li><a href="#tab-pjh-Export-Import" data-toggle="tab">Export / Import</a></li>
             <li><a href="#tab-pjh-Storage" data-toggle="tab">Storage</a></li>
             <li><a href="#tab-pjh-Debugging" data-toggle="tab">Debugging</a></li>
@@ -62,25 +62,25 @@
 <!--            <div class="tab-pane" id="tab-pjh-Filament">-->
 <!--                TODO some filament-settings-->
 <!--            </div>-->
+
             <!-- CAMERA - TAB -->
             <div class="tab-pane" id="tab-pjh-Camera">
                 <div class="control-group">
                     <div class="controls">
                         <label class="checkbox">
-                            <input type="checkbox" data-bind="checked: pluginSettings.takeSnapshotAfterPrint" > Take snapshot after print
+                            <input type="checkbox" data-bind="checked: pluginSettings.takeSnapshotAfterPrint,
+                                                              disable: pluginSettings.takeSnapshotOnGCodeCommnd" > Take camera snapshot after print
                         </label>
+                        <span class="help-inline">Hint: if enabled, the thumbnail image from the gcode is not stored in the history!</span>
                     </div>
                 </div>
                 <div class="control-group">
                     <div class="controls">
                         <label class="checkbox">
-                            <input type="checkbox" data-bind="checked: pluginSettings.takePluginThumbnailAfterPrint" > Use thumbnail (if provided) after print, instead of snapshot
+                            <input type="checkbox" data-bind="checked: pluginSettings.takePluginThumbnailAfterPrint,
+                                                              disable: pluginSettings.takeSnapshotOnGCodeCommnd" > Use thumbnail (if provided) after print, instead of camera snapshot
                         </label>
-                    </div>
-                </div>
-                <div class="control-group">
-                    <div class="controls">
-                        <div>
+                        <div class="help-inline">
                             Currently tested thumbnail plugins:
                             <ul>
                                 <li>Ultimaker Format Package (if uploaded in ufp format)</li>
@@ -89,9 +89,21 @@
                         </div>
                     </div>
                 </div>
+                <div class="control-group">
+                    <div class="controls">
+                        <label class="checkbox">
+                            <input type="checkbox" data-bind="checked: pluginSettings.takeSnapshotOnGCodeCommnd" > Take camera snapshot if following gcode was sent
+                            <div><input type="text" data-bind="value: pluginSettings.takeSnapshotGCodeCommndPattern" ></div>
+                        </label>
+                        <div class="help-inline">
+                            You don't need to enter the command exactly, the plugin  checks if the gcode starts with the entered text.
+                            <div>E.g. Text: <code>M117 Snap</code>. Sent gcode was: <code>M117 Snapshot</code>. Result: snapshot is taken</div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <!-- TEMPERATURE - TAB -->
-            <div class="tab-pane" id="tab-pjh-Temerature">
+            <div class="tab-pane" id="tab-pjh-Temperature">
                 <div class="control-group">
                     <div class="">
                         <label class="checkbox">

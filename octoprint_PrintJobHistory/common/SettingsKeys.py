@@ -20,6 +20,9 @@ class SettingsKeys():
 	## Camera
 	SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT = "takeSnapshotAfterPrint"
 	SETTINGS_KEY_TAKE_PLUGIN_THUMBNAIL_AFTER_PRINT = "takePluginThumbnailAfterPrint"
+	SETTINGS_KEY_TAKE_SNAPSHOT_ON_GCODE_COMMAND = "takeSnapshotOnGCodeCommnd"
+	SETTINGS_KEY_TAKE_SNAPSHOT_GCODE_COMMAND_PATTERN = "takeSnapshotGCodeCommndPattern"
+
 
 	SETTINGS_KEY_TAKE_TEMPERATURE_FROM_PREHEAT = "takeTemperatureFromPreHeatPlugin"
 	SETTINGS_KEY_DELAY_READING_TEMPERATURE_FROM_PRINTER = "delayReadingTemperatureFromPrinter"

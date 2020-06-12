@@ -27,6 +27,8 @@ from .api import TransformPrintJob2JSON
 from .DatabaseManager import DatabaseManager
 from .CameraManager import CameraManager
 
+from octoprint_PrintJobHistory.common import StringUtils
+
 
 class PrintJobHistoryPlugin(
 							PrintJobHistoryAPI,
@@ -290,7 +292,7 @@ class PrintJobHistoryPlugin(
 
 
 
-	def _readCurrentTemeratureFromPrinterAsync(self, printer, printJobModel, addTemperatureToPrintModel):
+	def _readCurrentTemperatureFromPrinterAsync(self, printer, printJobModel, addTemperatureToPrintModel):
 		dealyInSeconds  = self._settings.get_int([SettingsKeys.SETTINGS_KEY_DELAY_READING_TEMPERATURE_FROM_PRINTER])
 		time.sleep(dealyInSeconds)
 
@@ -304,7 +306,7 @@ class PrintJobHistoryPlugin(
 
 	def _readAndAssignCurrentTemperatureDelayed(self, printJobModel):
 		thread = threading.Thread(name='ReadCurrentTemperature',
-								  target=self._readCurrentTemeratureFromPrinterAsync,
+								  target=self._readCurrentTemperatureFromPrinterAsync,
 								  args=(self._printer, printJobModel, self._addTemperatureToPrintModel,))
 		thread.daemon = True
 		thread.start()
@@ -353,22 +355,27 @@ class PrintJobHistoryPlugin(
 			if (slicerSettings.settingsAsText != None and len(slicerSettings.settingsAsText) != 0):
 				self._currentPrintJobModel.slicerSettingsAsText = slicerSettings.settingsAsText
 
-			# Image
-			if (self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT])):
-				self._cameraManager.takeSnapshotAsync(
-														CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime),
-														self._sendErrorMessageToClient
-													 )
+			# Image / Thumbnail
+			if (self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_ON_GCODE_COMMAND])):
+				# Image is (hopefully) already taken by gcode-sent-listener
+				pass
+			else:
+				if (self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT])):
+					self._cameraManager.takeSnapshotAsync(
+															CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime),
+															self._sendErrorMessageToClient
+														 )
 
-			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_PLUGIN_THUMBNAIL_AFTER_PRINT]):
-				metadata = self._file_manager.get_metadata(payload["origin"], payload["path"])
-				# check if available
-				if ("thumbnail" in metadata):
-					self._cameraManager.takeThumbnailAsync(
-						CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime),
-						metadata["thumbnail"])
-				else:
-					self._logger.warn("Thumbnail not found in print metadata")
+
+				if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_PLUGIN_THUMBNAIL_AFTER_PRINT]):
+					metadata = self._file_manager.get_metadata(payload["origin"], payload["path"])
+					# check if available
+					if ("thumbnail" in metadata):
+						self._cameraManager.takeThumbnailAsync(
+							CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime),
+							metadata["thumbnail"])
+					else:
+						self._logger.warn("Thumbnail not found in print metadata")
 
 			# FilamentInformations e.g. length
 			self._createAndAssignFilamentModel(self._currentPrintJobModel, payload)
@@ -412,6 +419,20 @@ class PrintJobHistoryPlugin(
 	def on_after_startup(self):
 		# check if needed plugins were available
 		self._checkForMissingPluginInfos()
+
+	# Listen to all  g-code which where already sent to the printer (thread: comm.sending_thread)
+	def on_sentGCodeHook(self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs):
+		# take snapshot an gcode command
+		if (self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_ON_GCODE_COMMAND])):
+			gcodePattern = self._settings.get([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_GCODE_COMMAND_PATTERN])
+			commandAsString = StringUtils.to_native_str(cmd)
+			if (commandAsString.startswith(gcodePattern)):
+				self._cameraManager.takeSnapshotAsync(
+					CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime),
+					self._sendErrorMessageToClient
+				)
+			pass
+		pass
 
 	def on_event(self, event, payload):
 		# WebBrowser opened
@@ -512,6 +533,9 @@ class PrintJobHistoryPlugin(
 		## Camera
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT] = True
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_PLUGIN_THUMBNAIL_AFTER_PRINT] = True
+		settings[SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_ON_GCODE_COMMAND] = False
+		settings[SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_GCODE_COMMAND_PATTERN] = "M117 Snap"
+
 
 		## Temperature
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_TEMPERATURE_FROM_PREHEAT] = True
@@ -617,6 +641,7 @@ def __plugin_load__():
 	global __plugin_hooks__
 	__plugin_hooks__ = {
 		# "octoprint.server.http.routes": __plugin_implementation__.route_hook,
+		"octoprint.comm.protocol.gcode.sent": __plugin_implementation__.on_sentGCodeHook,
 		"octoprint.server.http.bodysize": __plugin_implementation__.bodysize_hook,
 		"octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
 	}

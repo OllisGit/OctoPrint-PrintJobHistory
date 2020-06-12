@@ -150,7 +150,7 @@ class CameraManager(object):
 		flipV = self._globalSettings.global_get(["webcam", "flipV"])
 
 		try:
-			response = requests.get(snapshotUrl, verify=not True,timeout=float(60))
+			response = requests.get(snapshotUrl, verify=not True,timeout=float(30))
 			if response.status_code == requests.codes.ok:
 				self._logger.info("Process snapshot image")
 				with i_open(snapshotFilename, 'wb') as snapshot_file:
