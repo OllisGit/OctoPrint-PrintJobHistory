@@ -1,16 +1,24 @@
 import logging
 
 # from octoprint_PrintJobHistory.api import TransformPrintJob2JSON
-# from octoprint_PrintJobHistory.common.CSVExportImporter import importCSV, transform2CSV
-
-###################################
+# from octoprint_PrintJobHistory.common.CSVExportImporter import parseCSV, transform2CSV
+#
+# logging.basicConfig(level=logging.DEBUG)
+# testLogger = logging.getLogger("testLogger")
+# logging.info("Start CSV-Test")
+# ###################################
 # ## IMPORT
+#
+# def updateParsingStatus(lineNumber):
+# 	print("Parsing line '{}'".format(int(lineNumber)))
+#
 # print("START IMPORT")
 # errorCollection = list()
 # csvFile4Import = "/Users/o0632/0_Projekte/3DDruck/OctoPrint/OctoPrint-PrintJobHistory/testdata/sample.csv"
-# result = importCSV(csvFile4Import, errorCollection, logging)
+# result = parseCSV(csvFile4Import, updateParsingStatus,  errorCollection, testLogger, deleteAfterParsing=False)
+# print(errorCollection)
 # print("END IMPORT")
-#
+
 #
 #
 # ###################################

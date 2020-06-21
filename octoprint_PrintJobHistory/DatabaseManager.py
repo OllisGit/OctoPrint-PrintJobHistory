@@ -362,5 +362,5 @@ class DatabaseManager(object):
 				transaction.rollback()
 				self._logger.exception("Could not delete printJob from database:" + str(e))
 
-				self.sendErrorMessageToClient("PJH-DatabaseManager", "Could not update the printjob ('"+ str(databaseId) +"') into the database. See OctoPrint.log for details!")
+				self.sendErrorMessageToClient("PJH-DatabaseManager", "Could not delete the printjob ('"+ str(databaseId) +"') from the database. See OctoPrint.log for details!")
 			pass

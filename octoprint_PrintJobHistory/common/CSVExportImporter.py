@@ -23,7 +23,7 @@ COLUMN_FILE_SIZE = "File Size [bytes]"
 COLUMN_LAYERS = "Layers [current / total]"
 COLUMN_HEIGHT = "Height [current / total]"
 COLUMN_NOTE = "Note"
-COLUMN_TEMPERATURES = "Temperatures [bed:temp tool0:temp]"
+COLUMN_TEMPERATURES = "Temperatures [bed:temp toolX:temp]"
 COLUMN_SPOOL_VENDOR = "Spool Vendor"
 COLUMN_SPOOL_NAME = "Spool Name"
 COLUMN_MATERIAL = "Material"
@@ -108,18 +108,18 @@ class PrintStatusCSVFormattorParser:
 			# check if mandatory
 			return
 		SUCCESS = "success"
-		CANCEL = "canceled"
+		CANCELED = "canceled"
 		FAILED = "failed"
-		if (SUCCESS == fieldValue or CANCEL == fieldValue or FAILED == fieldValue):
+		if (SUCCESS == fieldValue or CANCELED == fieldValue or FAILED == fieldValue):
 			setattr(printJobModel, fieldName, fieldValue)
 		elif("0" == fieldValue):
-			setattr(printJobModel, fieldName, CANCEL)
+			setattr(printJobModel, fieldName, CANCELED)
 		elif("1" == fieldValue):
 			setattr(printJobModel, fieldName, SUCCESS)
 		elif("2" == fieldValue):
 			setattr(printJobModel, fieldName, FAILED)
 		else:
-			errorCollection.append("["+str(lineNumber)+"]"+" Wrong print job status type '"+fieldValue+"'. Allowed: '"+SUCCESS+"' or 1, '"+CANCEL+"' or 0, '"+FAILED+"' or 2")
+			errorCollection.append("["+str(lineNumber)+"]"+" Wrong print job status type '"+fieldValue+"'. Allowed: '"+SUCCESS+"' or 1, '"+CANCELED+"' or 0, '"+FAILED+"' or 2")
 		pass
 
 class DateTimeCSVFormattorParser:
@@ -184,7 +184,7 @@ class DurationCSVFormattorParser:
 
 class TemperaturCSVFormattorParser:
 
-	tempPattern = re.compile("bed:([0-9]*\.?[0-9]*) tool[0-9]:([0-9]*\.?[0-9]*)")
+	tempPattern = re.compile("bed:([0-9]*\.?[0-9]*) (tool[0-9]):([0-9]*\.?[0-9]*)")
 
 	def formatValue(self, printJob, fieldName):
 		if (hasattr(printJob, fieldName) == False):
@@ -213,7 +213,8 @@ class TemperaturCSVFormattorParser:
 		matched = self.tempPattern.match(fieldValue)
 		if (matched):
 			bedTemp = float(matched.group(1))
-			toolTemp = float(matched.group(2))
+			toolId = matched.group(2)	# e.g. tool1
+			toolTemp = float(matched.group(3))
 
 			tempModel = TemperatureModel()
 			tempModel.sensorName = "bed"
@@ -221,7 +222,7 @@ class TemperaturCSVFormattorParser:
 			printJobModel.addTemperatureModel(tempModel)
 
 			tempModel = TemperatureModel()
-			tempModel.sensorName = "tool0"
+			tempModel.sensorName = toolId
 			tempModel.sensorValue = toolTemp
 			printJobModel.addTemperatureModel(tempModel)
 			pass
@@ -431,7 +432,7 @@ mandatoryFieldNames = [
 columnOrderInFile = dict()
 
 
-def parseCSV(csvFile4Import, updateParsingStatus, errorCollection, logger):
+def parseCSV(csvFile4Import, updateParsingStatus, errorCollection, logger, deleteAfterParsing=True):
 
 	result = list()	# List with printJobModels
 	lineNumber = 0
@@ -495,9 +496,10 @@ def parseCSV(csvFile4Import, updateParsingStatus, errorCollection, logger):
 		errorCollection.append(errorMessage)
 		logger.error(errorMessage)
 	finally:
-		logger.info("Removing uploded csv temp-file")
-		try:
-			os.remove(csvFile4Import)
-		except Exception:
-			pass
+		if (deleteAfterParsing):
+			logger.info("Removing uploded csv temp-file")
+			try:
+				os.remove(csvFile4Import)
+			except Exception:
+				pass
 	return result

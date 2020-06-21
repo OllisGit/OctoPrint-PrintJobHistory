@@ -19,7 +19,7 @@ If you like it, I would be thankful about a cup of coffee :)
 
 - [x] Print result (success, fail, cancel)
 - [x] Start/End datetime -> duration
-- [x] Temperatures Bed/Extruder -> HINT: Only single Extruder-Temperature is currently collected
+- [x] Temperatures Bed/Extruder -> HINT: Only single Extruder-Temperature is currently collected. Selectable Tool
 - [x] Username
 - [x] Filename, filesize
 - [x] Note (WYSIWYG-Editor)

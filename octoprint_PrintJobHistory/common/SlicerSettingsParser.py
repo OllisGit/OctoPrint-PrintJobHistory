@@ -100,10 +100,9 @@ class SlicerSettingsParser(object):
 					gcodeCount = 0
 				lastLineResult = lineResult
 
-				debugInformation = "ORDER: " + str(readingOrder) + " LineNumber: " + str(lineNumber) + " GCodeFound: " + str(
-					gcodeCount)
+				debugInformation = "ORDER: " + str(readingOrder) + " LineNumber: " + str(lineNumber) + " GCodeFound: " + str(gcodeCount)
 				# print(debugInformation)
-				self._logger.debug(debugInformation)
+				# self._logger.debug(debugInformation)
 
 				pass
 		self._logger.debug(" Slicer-Settings:")

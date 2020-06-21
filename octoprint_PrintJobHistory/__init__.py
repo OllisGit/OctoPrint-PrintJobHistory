@@ -259,7 +259,8 @@ class PrintJobHistoryPlugin(
 		self._currentPrintJobModel.fileSize = payload["size"]
 
 		tempFound = False
-		tempTool = 0
+		toolId = self._settings.get([SettingsKeys.SETTINGS_KEY_DEFAULT_TOOL_ID])
+		tempTool = -1
 		tempBed = 0
 
 		shouldReadTemperatureFromPreHeat = self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_TEMPERATURE_FROM_PREHEAT])
@@ -274,16 +275,18 @@ class PrintJobHistoryPlugin(
 					if "bed" in preHeatTemperature:
 						tempBed = preHeatTemperature["bed"]
 						tempFound = True
-					if "tool0" in preHeatTemperature:
-						tempTool = preHeatTemperature["tool0"]
+					if toolId in preHeatTemperature:
+						tempTool = preHeatTemperature[toolId]	#"tool0"
 						tempFound = True
+					else:
+						self._logger.warn("... PreHeat-Temperatures does not include default Extruder-Tool '"+toolId+"'")
 				pass
 			else:
 				self._logger.warn("... PreHeat Plugin not installed/enabled")
 
 		if (tempFound == True):
-			self._logger.info("... Temperature found '" + str(tempBed) + "' '" + str(tempTool) + "'")
-			self._addTemperatureToPrintModel(self._currentPrintJobModel, tempBed, tempTool)
+			self._logger.info("... Temperature found '" + str(tempBed) + "' ' Tool '"+toolId+"' '" + str(tempTool) + "'")
+			self._addTemperatureToPrintModel(self._currentPrintJobModel, tempBed, toolId, tempTool)
 		else:
 			# readTemperatureFromPrinter
 			# because temperature is 0 at the beginning, we need to wait a couple of seconds (maybe 3)
@@ -299,9 +302,16 @@ class PrintJobHistoryPlugin(
 		currentTemps = printer.get_current_temperatures()
 		if (currentTemps != None and "bed" in currentTemps and "tool0" in currentTemps):
 			tempBed = currentTemps["bed"]["target"]
-			tempTool = currentTemps["tool0"]["target"]
-			self._logger.info("Temperature from Printer '" + str(tempBed) + "' '" + str(tempTool) + "'")
-			addTemperatureToPrintModel(printJobModel, tempBed, tempTool)
+			# Maybe an other tool should be used.
+			toolId = self._settings.get([SettingsKeys.SETTINGS_KEY_DEFAULT_TOOL_ID]) # "tool0"
+			tempTool = -1
+			try:
+				tempTool = currentTemps[toolId]["target"]
+			except Exception as e:
+				self._logger.error("Could not read temperature from Tool '"+toolId+"'", e)
+
+			self._logger.info("Temperature from Printer '" + str(tempBed) + "' Tool '"+toolId+"' '" + str(tempTool) + "'")
+			addTemperatureToPrintModel(printJobModel, tempBed, toolId, tempTool)
 
 
 	def _readAndAssignCurrentTemperatureDelayed(self, printJobModel):
@@ -313,14 +323,14 @@ class PrintJobHistoryPlugin(
 		pass
 
 
-	def _addTemperatureToPrintModel(self, printJobModel, bedTemp, toolTemp):
+	def _addTemperatureToPrintModel(self, printJobModel, bedTemp, toolId, toolTemp):
 		tempModel = TemperatureModel()
 		tempModel.sensorName = "bed"
 		tempModel.sensorValue = bedTemp
 		printJobModel.addTemperatureModel(tempModel)
 
 		tempModel = TemperatureModel()
-		tempModel.sensorName = "tool0"
+		tempModel.sensorName = toolId #"tool0"
 		tempModel.sensorValue = toolTemp
 		printJobModel.addTemperatureModel(tempModel)
 
@@ -538,6 +548,7 @@ class PrintJobHistoryPlugin(
 
 
 		## Temperature
+		settings[SettingsKeys.SETTINGS_KEY_DEFAULT_TOOL_ID] = "tool0"
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_TEMPERATURE_FROM_PREHEAT] = True
 		settings[SettingsKeys.SETTINGS_KEY_DELAY_READING_TEMPERATURE_FROM_PRINTER] = 60
 

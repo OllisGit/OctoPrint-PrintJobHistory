@@ -23,7 +23,8 @@ class SettingsKeys():
 	SETTINGS_KEY_TAKE_SNAPSHOT_ON_GCODE_COMMAND = "takeSnapshotOnGCodeCommnd"
 	SETTINGS_KEY_TAKE_SNAPSHOT_GCODE_COMMAND_PATTERN = "takeSnapshotGCodeCommndPattern"
 
-
+	# Temperatrue
+	SETTINGS_KEY_DEFAULT_TOOL_ID = "defaultTemperatureToolId"
 	SETTINGS_KEY_TAKE_TEMPERATURE_FROM_PREHEAT = "takeTemperatureFromPreHeatPlugin"
 	SETTINGS_KEY_DELAY_READING_TEMPERATURE_FROM_PRINTER = "delayReadingTemperatureFromPrinter"
 
