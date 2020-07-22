@@ -53,7 +53,7 @@ class SlicerSettingsParser(object):
 		reverseReadinStarted = False
 		lastTopFilePosition = 0	# needed for overlapping detection of top-region and bottom-region
 		lineNumber = 0
-		with open(gcodeFilePath, 'r') as fileHandle:
+		with open(gcodeFilePath, 'rb') as fileHandle:
 			while True:
 
 				if (readingOrder == 0):
@@ -73,7 +73,7 @@ class SlicerSettingsParser(object):
 					line = self.nextReversedLine(fileHandle, lastTopFilePosition)
 					lineNumber += 1
 
-				if (line == ''):
+				if (line == b''):
 					# EOF reached
 					readingOrder += 1
 
@@ -84,7 +84,7 @@ class SlicerSettingsParser(object):
 						# finaly top/Bottom reading is done
 						break
 
-				lineResult = self.processLine(line, slicerSettings)
+				lineResult = self.processLine(line.decode("utf-8"), slicerSettings)
 				# print(lineResult)
 				if (lineResult == LINE_RESULT_GCODE):
 					gcodeCount += 1
@@ -151,7 +151,7 @@ class SlicerSettingsParser(object):
 		return LINE_RESULT_GCODE
 
 	def nextReversedLine(self, fileHandle, lastTopFilePosition):
-		line = ''
+		line = b''
 
 		filePosition = fileHandle.tell()
 		if (filePosition <=0):
@@ -163,8 +163,8 @@ class SlicerSettingsParser(object):
 
 		while filePosition >= 0:
 			fileHandle.seek(filePosition)
-			current_char = fileHandle.read(1)
-			line += current_char
+			current_byte = fileHandle.read(1)
+			line += current_byte
 
 			if (filePosition == 0):
 				line = line[::-1]
@@ -172,12 +172,12 @@ class SlicerSettingsParser(object):
 				break
 
 			fileHandle.seek(filePosition - 1)
-			next_char = fileHandle.read(1)
-			if next_char == "\n":
+			next_byte = fileHandle.read(1)
+			if next_byte == b"\n":
 				line = line[::-1]
 				# HACK
 				if len(line)==0:
-					line = " "
+					line = b" "
 				fileHandle.seek(filePosition - 1)
 				break
 			filePosition -= 1
