@@ -275,6 +275,39 @@ $(function() {
 
         ///////////////////////////////////////////////////// START: SETTINGS
         self.downloadDatabaseUrl = ko.observable();
+        self.takeSnapshotAfterPrintDisabled = ko.observable(false);
+        self.takeSnapshotOnGCodeCommndDisabled = ko.observable(false);
+        self.takeSnapshotGCodeCommndPatternDisabled = ko.observable(false);
+        self.cameraSnapShotURLAvailable = ko.observable(false);
+
+        isSnapshotUrlPresent = function(snapshotUrl){
+            return snapshotUrl != null && snapshotUrl.trim().length != 0;
+        }
+        self.initCameraSettingsBehaviour = function(){
+
+            if (self.settingsViewModel.settings.webcam.snapshotUrl != null){
+                // assign inital values
+                self.cameraSnapShotURLAvailable(isSnapshotUrlPresent(self.settingsViewModel.settings.webcam.snapshotUrl()));
+
+                self.settingsViewModel.settings.webcam.snapshotUrl.subscribe(function(newSnapShotUrl){
+                    self.cameraSnapShotURLAvailable(isSnapshotUrlPresent(newSnapShotUrl));
+                });
+            }
+
+            // Checkbox - stuff
+            self.pluginSettings.takeSnapshotAfterPrint.subscribe(function(newValue){
+
+                    if (newValue == true){
+                        self.pluginSettings.takeSnapshotOnGCodeCommnd(false);
+                    }
+            });
+            self.pluginSettings.takeSnapshotOnGCodeCommnd.subscribe(function(newValue){
+
+                    if (newValue == true){
+                        self.pluginSettings.takeSnapshotAfterPrint(false);
+                    }
+            });
+        }
 
         self.deleteDatabaseAction = function() {
             var result = confirm("Do you really want to delete all PrintJobHistory data?");
@@ -350,6 +383,7 @@ $(function() {
                 // no additional reset function
              });
 
+            self.initCameraSettingsBehaviour();
         }
 
         self.onAfterBinding = function() {
@@ -375,7 +409,8 @@ $(function() {
             if ("initalData" == data.action){
                 self.databaseFileLocation(data.databaseFileLocation);
                 self.snapshotFileLocation(data.snapshotFileLocation);
-                self.isPrintHistoryPluginAvailable(data.isPrintHistoryPluginAvailable)
+                self.isPrintHistoryPluginAvailable(data.isPrintHistoryPluginAvailable);
+                return;
             }
 
             if ("missingPlugin" == data.action){
@@ -395,6 +430,11 @@ $(function() {
                     self.printJobToShowAfterStartup = data.printJobItem;
                     self.showPrintJobDetailsDialogAction(data.printJobItem, true);
                 }
+                return;
+            }
+
+            if ("reloadTableItems" == data.action){
+                self.printJobHistoryTableHelper.reloadItems();
                 return;
             }
 

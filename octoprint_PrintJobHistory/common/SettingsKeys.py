@@ -22,6 +22,9 @@ class SettingsKeys():
 	SETTINGS_KEY_TAKE_PLUGIN_THUMBNAIL_AFTER_PRINT = "takePluginThumbnailAfterPrint"
 	SETTINGS_KEY_TAKE_SNAPSHOT_ON_GCODE_COMMAND = "takeSnapshotOnGCodeCommnd"
 	SETTINGS_KEY_TAKE_SNAPSHOT_GCODE_COMMAND_PATTERN = "takeSnapshotGCodeCommndPattern"
+	SETTINGS_KEY_PREFERED_IMAGE_SOURCE = "preferedImageSource"
+	KEY_PREFERED_IMAGE_SOURCE_THUMBNAIL = "thumbnail"
+	KEY_PREFERED_IMAGE_SOURCE_CAMERA = "camera"
 
 	# Temperatrue
 	SETTINGS_KEY_DEFAULT_TOOL_ID = "defaultTemperatureToolId"

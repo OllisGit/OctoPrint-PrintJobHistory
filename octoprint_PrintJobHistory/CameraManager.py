@@ -61,6 +61,10 @@ class CameraManager(object):
 	# def isVideoStreamEnabled(self):
 	# 	self._globalSettings.global_get(["webcam", "webcamEnabled"])
 
+	def isSnapshotPresent(self, snapshotFilename):
+		imageLocation = self.buildSnapshotFilenameLocation(snapshotFilename, False)
+		result = os.path.exists(imageLocation)
+		return result
 
 	def buildSnapshotFilenameLocation(self, snapshotFilename, returnDefaultImage = True):
 		if str(snapshotFilename).endswith(".jpg"):
@@ -119,6 +123,11 @@ class CameraManager(object):
 			zipf.write(os.path.join(path), path)
 		zipf.close()
 
+	def isCamaraSnahotURLPresent(self):
+		snapshotUrl = self._globalSettings.global_get(["webcam", "snapshot"])
+		if (snapshotUrl == None or len(str(snapshotUrl).strip()) == 0):
+			return False
+		return True
 
 	# def _zipdir(self, path, zipfile_handle):
 	# 	# walk over all files an add it to the zip
@@ -126,9 +135,7 @@ class CameraManager(object):
 	# 		for file in files:
 	# 			# zipfile_handle.write(os.path.join(root, file))
 	# 			zipfile_handle.write(os.path.relpath(os.path.join(root, file), os.path.join(path, '..')))
-
-
-	def takeSnapshot(self, snapshotFilename, sendErrorMessageToClientFunction):
+	def takeSnapshot(self, snapshotFilename, sendErrorMessageToClientFunction, callbackFunction=None):
 
 		if str(snapshotFilename).endswith(".jpg"):
 			snapshotFilename = self._snapshotStoragePath + "/" +snapshotFilename
@@ -142,7 +149,10 @@ class CameraManager(object):
 		snapshotUrl =  self._globalSettings.global_get(["webcam", "snapshot"])
 
 		self._logger.info("Try taking snapshot '" + snapshotFilename + "' from '" + snapshotUrl + "'")
-		if (snapshotUrl == None or snapshotUrl == ""):
+		if (snapshotUrl == None or len(str(snapshotUrl).strip()) == 0):
+			self._logger.info("No snapshot camera url defined!")
+			if (callbackFunction != None):
+				callbackFunction(False)
 			return
 
 		rotate = self._globalSettings.global_get(["webcam", "rotate90"])
@@ -150,7 +160,7 @@ class CameraManager(object):
 		flipV = self._globalSettings.global_get(["webcam", "flipV"])
 
 		try:
-			response = requests.get(snapshotUrl, verify=not True,timeout=float(30))
+			response = requests.get(snapshotUrl, verify=not True,timeout=float(10))
 			if response.status_code == requests.codes.ok:
 				self._logger.info("Process snapshot image")
 				with i_open(snapshotFilename, 'wb') as snapshot_file:
@@ -185,19 +195,26 @@ class CameraManager(object):
 				# hsize = int((float(img.size[1]) * float(wpercent)))
 				# img = img.resize((basewidth, hsize), Image.ANTIALIAS)
 				# img.save(snapshotThumbnailFilename, "JPEG")
+				if (callbackFunction != None):
+					callbackFunction(True)
 			else:
 				self._logger.error("Invalid response code from snapshot-url. Code:" + str(response.status_code))
+				if (callbackFunction != None):
+					callbackFunction(False)
 		except (Exception) as error:
 			sendErrorMessageToClientFunction("Take Snapshot", "Unable to get snapshot from URL: " + snapshotUrl)
 			self._logger.error(error)
+			if (callbackFunction != None):
+				callbackFunction(False)
 
-	def takeSnapshotAsync(self, snapshotFilename, sendErrorMessageToClientFunction):
-		thread = threading.Thread(name='TakeSnapshot', target=self.takeSnapshot, args=(snapshotFilename, sendErrorMessageToClientFunction,))
+	def takeSnapshotAsync(self, snapshotFilename, sendErrorMessageToClientFunction, callbackFunction=None):
+		thread = threading.Thread(name='TakeSnapshot', target=self.takeSnapshot, args=(snapshotFilename, sendErrorMessageToClientFunction, callbackFunction,))
 		thread.daemon = True
 		thread.start()
 
 
-	def takePluginThumbnail(self, snapshotFilename, thumbnailLocation):
+	def takePluginThumbnail(self, snapshotFilename, thumbnailLocation, storeImage = True):
+
 		if str(snapshotFilename).endswith(".jpg"):
 			snapshotFilename = self._snapshotStoragePath + "/" + snapshotFilename
 		else:
@@ -210,8 +227,8 @@ class CameraManager(object):
 		splitPath = thumbnailLocation.split("/", 3)
 
 		if (len(splitPath) != 4):
-			self._logger.warning("Can not split thumbnail path '" + thumbnailLocation + "'")
-			return
+			self._logger.error("Can not split thumbnail path '" + thumbnailLocation + "'")
+			return False
 
 		pluginFolder = splitPath[1]
 		thumbnailName = splitPath[3]
@@ -220,19 +237,20 @@ class CameraManager(object):
 
 		if os.path.isfile(thumbnailLocation):
 			# Convert png to jpg and save in printjobhistory storage
-
-			self._logger.info("Try converting thumbnail '" + thumbnailLocation + "' to '" + snapshotFilename + "'")
-
-			im = Image.open(thumbnailLocation)
-			rgb_im = im.convert('RGB')
-			rgb_im.save(snapshotFilename)
-
-			self._logger.info("Converting successfull!")
-
+			if (storeImage):
+				self._logger.info("Try converting thumbnail '" + thumbnailLocation + "' to '" + snapshotFilename + "'")
+				im = Image.open(thumbnailLocation)
+				rgb_im = im.convert('RGB')
+				rgb_im.save(snapshotFilename)
+				self._logger.info("Converting successfull!")
+			else:
+				self._logger.info("Thumbnail is present")
+			return True
 		else:
-			self._logger.warning("Thumbnail doesn't exists in: '"+thumbnailLocation+"'")
+			self._logger.error("Thumbnail doesn't exists in: '"+thumbnailLocation+"'")
+		return False
 
-	def takeThumbnailAsync(self, snapshotFilename, thumbnailLocation):
-		thread = threading.Thread(name='TakeThumbnail', target=self.takePluginThumbnail, args=(snapshotFilename,thumbnailLocation))
-		thread.daemon = True
-		thread.start()
+	# def takeThumbnailAsync(self, snapshotFilename, thumbnailLocation):
+	# 	thread = threading.Thread(name='TakeThumbnail', target=self.takePluginThumbnail, args=(snapshotFilename,thumbnailLocation))
+	# 	thread.daemon = True
+	# 	thread.start()

@@ -1,25 +1,37 @@
 # -*- encoding: utf-8 -*-
 
-import os
 import logging
-import tempfile
-import lzma
+
+from octoprint_PrintJobHistory.common import StringUtils
 from octoprint_PrintJobHistory.common.SlicerSettingsParser import SlicerSettingsParser
 
-FIXTURES = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "testdata", "gcode")
+
+def test_parseSettings():
+
+	gcodeForParsing="../../testdata/slicer-settings/PRUSA_Treefrog_0.2mm_FLEX_MK3S_1h5m.gcode"
+
+	testLogger = logging.getLogger("testLogger")
+	settingsParser = SlicerSettingsParser(testLogger)
+
+	slicerSettings = settingsParser.extractSlicerSettings(gcodeForParsing)
+	assert slicerSettings.settingsAsText
+	assert 245 == len(slicerSettings.settingsAsDict)
+	assert "Printer Settings → Extruder 1" in  StringUtils.to_native_str(slicerSettings.settingsAsText)
+	assert "80°, I'm printing at 40°" in StringUtils.to_native_str(slicerSettings.settingsAsText)
+
+	gcodeForParsing="../../testdata/slicer-settings/CURA_schieberdeckel2.gcode"
+	slicerSettings = settingsParser.extractSlicerSettings(gcodeForParsing)
+	assert slicerSettings.settingsAsText
+	assert 4 == len(slicerSettings.settingsAsDict)
+	assert "Cura" in slicerSettings.settingsAsText
+	assert "bottom_layers" in slicerSettings.settingsAsText
+
+	print(" Test passed")
+	pass
 
 
-def test_decodes_bytes_correctly():
+if __name__ == '__main__':
+	print("Start SlicerSettingsParser Test")
+	test_parseSettings()
+	print("Finished")
 
-    ssp = SlicerSettingsParser(logging.root)
-    with tempfile.TemporaryDirectory() as tmpd:
-        gcode_fn = os.path.join(tmpd, "treefrog.gcode")
-
-        with lzma.open(os.path.join(FIXTURES, "Treefrog_0.2mm_FLEX_MK3S_1h5m.gcode.xz")) as ifp:
-            with open(gcode_fn, "wb") as ofp:
-                ofp.write(ifp.read())
-
-        slicerSettings = ssp.extractSlicerSettings(gcode_fn, None)
-
-    assert slicerSettings.settingsAsText
-    assert "Printer Settings → Extruder 1" in slicerSettings.settingsAsText

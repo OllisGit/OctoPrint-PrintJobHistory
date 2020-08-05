@@ -92,6 +92,13 @@ class PrintJobHistoryPlugin(
 									title= title,
 									message=message))
 
+	def _sendReloadTableToClient(self, shouldSend=True):
+		if (shouldSend == True):
+			payload = {
+				"action": "reloadTableItems"
+			}
+			self._sendDataToClient(payload)
+
 	def _checkForMissingPluginInfos(self, sendToClient=False):
 
 		pluginInfo = self._getPluginInformation("preheat")
@@ -189,47 +196,63 @@ class PrintJobHistoryPlugin(
 
 		fileData = self._file_manager.get_metadata(payload["origin"], payload["path"])
 
+		toolId = None
 		filamentLength = None
 		if "analysis" in fileData:
 			if "filament" in fileData["analysis"]:
-				if "tool0" in fileData["analysis"]["filament"]:
-					filamentLength = fileData["analysis"]["filament"]["tool0"]['length']
+				toolId = self._settings.get([SettingsKeys.SETTINGS_KEY_DEFAULT_TOOL_ID])  # "tool0"
+				if toolId in fileData["analysis"]["filament"]:
+					filamentLength = fileData["analysis"]["filament"][toolId]['length']
 
+		if (filamentLength == None):
+			self._logger.error("Filamentlength not found for toolId '"+toolId+"'")
 		filemanentModel.calculatedLength = filamentLength
 
 		if self._filamentManagerPluginImplementation != None:
 
 			filemanentModel.usedLength = self._filamentManagerPluginImplementation.filamentOdometer.totalExtrusion[0]
-			selectedSpool = self._filamentManagerPluginImplementation.filamentManager.get_all_selections(self._filamentManagerPluginImplementation.client_id)
-			if  selectedSpool != None and len(selectedSpool) > 0:
-				spoolData = selectedSpool[0]["spool"]
-				spoolName = spoolData["name"]
-				spoolCost = spoolData["cost"]
-				spoolCostUnit = self._filamentManagerPluginImplementation._settings.get(["currencySymbol"])
-				spoolWeight = spoolData["weight"]
+			selectedSpools = self._filamentManagerPluginImplementation.filamentManager.get_all_selections(self._filamentManagerPluginImplementation.client_id)
+			if  selectedSpools != None and len(selectedSpools) > 0:
+				spoolData = None
+				defaultToolNumber = toolId[-1]
+				for currentSpoolData in selectedSpools:
+					toolNumber = str(currentSpoolData["tool"])
+					if (defaultToolNumber == toolNumber):
+						spoolData = currentSpoolData["spool"]
+						break
 
-				profileData = selectedSpool[0]["spool"]["profile"]
-				diameter = profileData["diameter"]
-				material = profileData["material"]
-				vendor = profileData["vendor"]
-				density = profileData["density"]
+				if (spoolData == None):
+					self._logger.error("Filamentmanager Spooldata could not be found for toolId '" + toolId + "'")
+				else:
+					spoolName = spoolData["name"]
+					spoolCost = spoolData["cost"]
+					spoolCostUnit = self._filamentManagerPluginImplementation._settings.get(["currencySymbol"])
+					spoolWeight = spoolData["weight"]
 
-				filemanentModel.spoolName = spoolName
-				filemanentModel.spoolCost = spoolCost
-				filemanentModel.spoolCostUnit = spoolCostUnit
-				filemanentModel.spoolWeight = spoolWeight
+					profileData = spoolData["profile"]
+					diameter = profileData["diameter"]
+					material = profileData["material"]
+					vendor = profileData["vendor"]
+					density = profileData["density"]
 
-				filemanentModel.profileVendor = vendor
-				filemanentModel.diameter = diameter
-				filemanentModel.density = density
-				filemanentModel.material = material
+					filemanentModel.spoolName = spoolName
+					filemanentModel.spoolCost = spoolCost
+					filemanentModel.spoolCostUnit = spoolCostUnit
+					filemanentModel.spoolWeight = spoolWeight
 
-				radius = diameter / 2;
-				volume = filemanentModel.usedLength * math.pi * radius * radius / 1000;
-				usedWeight = volume * density
+					filemanentModel.profileVendor = vendor
+					filemanentModel.diameter = diameter
+					filemanentModel.density = density
+					filemanentModel.material = material
 
-				filemanentModel.usedWeight = usedWeight
-				filemanentModel.usedCost = spoolCost / spoolWeight * usedWeight
+					radius = diameter / 2.0
+					volume = filemanentModel.usedLength * math.pi * radius * radius / 1000.0
+					usedWeight = volume * density
+
+					filemanentModel.usedWeight = usedWeight
+					filemanentModel.usedCost = spoolCost / spoolWeight * usedWeight
+		else:
+			self._logger.info("Empty filamentModel, because Filamentmanager not installed!")
 
 		printJob.addFilamentModel(filemanentModel)
 		pass
@@ -352,42 +375,24 @@ class PrintJobHistoryPlugin(
 		# capture the print
 		if (captureThePrint == True):
 			self._logger.info("Start capturing print job")
-			# Core Data
+
+			# - Core Data
 			self._currentPrintJobModel.printEndDateTime = datetime.datetime.now()
 			self._currentPrintJobModel.duration = (
 						self._currentPrintJobModel.printEndDateTime - self._currentPrintJobModel.printStartDateTime).total_seconds()
 			self._currentPrintJobModel.printStatusResult = printStatus
 
-			# Slicer Settings
+			# - Slicer Settings
 			selectedFilename = payload.get("path")
 			selectedFile = self._file_manager.path_on_disk(payload.get("origin"), selectedFilename)
-			slicerSettings = SlicerSettingsParser(self._logger).extractSlicerSettings(selectedFile, None)
+			slicerSettings = SlicerSettingsParser(self._logger).extractSlicerSettings(selectedFile)
 			if (slicerSettings.settingsAsText != None and len(slicerSettings.settingsAsText) != 0):
 				self._currentPrintJobModel.slicerSettingsAsText = slicerSettings.settingsAsText
 
-			# Image / Thumbnail
-			if (self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_ON_GCODE_COMMAND])):
-				# Image is (hopefully) already taken by gcode-sent-listener
-				pass
-			else:
-				if (self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT])):
-					self._cameraManager.takeSnapshotAsync(
-															CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime),
-															self._sendErrorMessageToClient
-														 )
+			# - Image / Thumbnail
+			self._grabImage(payload)
 
-
-				if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_PLUGIN_THUMBNAIL_AFTER_PRINT]):
-					metadata = self._file_manager.get_metadata(payload["origin"], payload["path"])
-					# check if available
-					if ("thumbnail" in metadata):
-						self._cameraManager.takeThumbnailAsync(
-							CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime),
-							metadata["thumbnail"])
-					else:
-						self._logger.warn("Thumbnail not found in print metadata")
-
-			# FilamentInformations e.g. length
+			# - FilamentInformations e.g. length
 			self._createAndAssignFilamentModel(self._currentPrintJobModel, payload)
 
 			# store everything in the database
@@ -423,7 +428,76 @@ class PrintJobHistoryPlugin(
 			}
 			self._sendDataToClient(payload)
 		else:
-			self._logger.info("Snapshot not captured, because not activated")
+			self._logger.info("PrintJob not captured, because not activated!")
+
+
+	def _grabImage(self, payload):
+		isCameraPresent = self._cameraManager.isCamaraSnahotURLPresent()
+
+		takeSnapshotAfterPrint = self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT])
+		takeSnapshotOnGCode = self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_ON_GCODE_COMMAND])
+		takeThumbnailAfterPrint = self._settings.get_boolean(
+			[SettingsKeys.SETTINGS_KEY_TAKE_PLUGIN_THUMBNAIL_AFTER_PRINT])
+
+		preferedSnapshot = self._settings.get(
+			[SettingsKeys.SETTINGS_KEY_PREFERED_IMAGE_SOURCE]) == SettingsKeys.KEY_PREFERED_IMAGE_SOURCE_CAMERA
+		preferedThumbnail = self._settings.get(
+			[SettingsKeys.SETTINGS_KEY_PREFERED_IMAGE_SOURCE]) == SettingsKeys.KEY_PREFERED_IMAGE_SOURCE_THUMBNAIL
+
+		isThumbnailPresent = self._isThumbnailPresent(payload)
+
+		# - No Image
+		if (takeSnapshotAfterPrint == False and takeSnapshotOnGCode==False and takeThumbnailAfterPrint == False):
+			self._logger.info("no image should be taken")
+			return
+		# - Only Thumbnail
+		if (takeThumbnailAfterPrint == True and takeSnapshotAfterPrint == False and takeSnapshotOnGCode == False):
+			# Try to take the thmbnail
+			self._takeThumbnailImage(payload)
+			return
+		if (takeThumbnailAfterPrint == True and isThumbnailPresent == True and preferedThumbnail == True):
+			self._takeThumbnailImage(payload)
+			return
+		# - Only Camera
+		if ( (takeSnapshotAfterPrint == True or takeSnapshotOnGCode == True) and takeThumbnailAfterPrint == False):
+			if (isCameraPresent == False):
+				self._logger.info("Camera Snapshot is selected but no camera url is available")
+				return
+			self._cameraManager.takeSnapshotAsync(
+													CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime),
+													self._sendErrorMessageToClient,
+													self._sendReloadTableToClient
+												 )
+
+
+			return
+		# - Camera
+		if (isCameraPresent == True and takeSnapshotAfterPrint == True):
+			self._cameraManager.takeSnapshotAsync(
+													CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime),
+													self._sendErrorMessageToClient,
+													self._sendReloadTableToClient
+												 )
+
+	def _isThumbnailPresent(self, payload):
+		return self._takeThumbnailImage(payload, storeImage=False)
+
+	def _takeThumbnailImage(self, payload, storeImage = True):
+		thumbnailPresent = False
+		metadata = self._file_manager.get_metadata(payload["origin"], payload["path"])
+		# check if available
+		if ("thumbnail" in metadata):
+			thumbnailPresent = self._cameraManager.takePluginThumbnail(
+									CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime),
+									metadata["thumbnail"],
+									storeImage = storeImage
+									)
+		else:
+			self._logger.warn("Thumbnail not found in print metadata")
+
+		return thumbnailPresent
+
+
 
 	#######################################################################################   OP - HOOKs
 	def on_after_startup(self):
@@ -545,6 +619,7 @@ class PrintJobHistoryPlugin(
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_PLUGIN_THUMBNAIL_AFTER_PRINT] = True
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_ON_GCODE_COMMAND] = False
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_GCODE_COMMAND_PATTERN] = "M117 Snap"
+		settings[SettingsKeys.SETTINGS_KEY_PREFERED_IMAGE_SOURCE] = SettingsKeys.KEY_PREFERED_IMAGE_SOURCE_THUMBNAIL
 
 
 		## Temperature
@@ -622,7 +697,7 @@ class PrintJobHistoryPlugin(
 
 	# Increase upload-size (default 100kb) for uploading images
 	def bodysize_hook(self, current_max_body_sizes, *args, **kwargs):
-		return [("POST", r"/upload/", 5 * 1024 * 1024)]	# size in bytes
+		return [("POST", r"/upload/", 20 * 1024 * 1024)]	# size in bytes
 
 
 	# # For Streaming I need a special ResponseHandler

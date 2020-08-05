@@ -36,7 +36,7 @@ class SlicerSettingsParser(object):
 		self._logger = logging.getLogger(parentLogger.name + "." + self.__class__.__name__)
 		# self._logger.setLevel(logging.DEBUG)
 
-	def extractSlicerSettings(self, gcodeFilePath, includedSettingsKeyList):
+	def extractSlicerSettings(self, gcodeFilePath):
 
 		self._logger.info("Start parsing Slicer-Settings")
 		# Read the file from top
@@ -185,17 +185,3 @@ class SlicerSettingsParser(object):
 		return line
 
 
-
-
-if __name__ == '__main__':
-	parsingFilename = "/Users/o0632/0_Projekte/3DDruck/OctoPrint/OctoPrint-PrintJobHistory/testdata/slicer-settings/CURA_schieberdeckel2.gcode"
-	#parsingFilename = "/Users/o0632/0_Projekte/3DDruck/OctoPrint/OctoPrint-PrintJobHistory/testdata/slicer-settings/simple.gcode"
-
-
-	testLogger = logging.getLogger("testLogger")
-	settingsParser = SlicerSettingsParser(testLogger)
-	slicerSettings = settingsParser.extractSlicerSettings(parsingFilename, None)
-
-	print("TEXT: "+slicerSettings.settingsAsText)
-	print(slicerSettings.settingsAsDict)
-	print("done")

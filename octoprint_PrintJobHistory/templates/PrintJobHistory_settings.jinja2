@@ -65,20 +65,45 @@
 
             <!-- CAMERA - TAB -->
             <div class="tab-pane" id="tab-pjh-Camera">
-                <div class="control-group">
+                <div class="control-group" data-bind="visible: cameraSnapShotURLAvailable">
                     <div class="controls">
                         <label class="checkbox">
                             <input type="checkbox" data-bind="checked: pluginSettings.takeSnapshotAfterPrint,
-                                                              disable: pluginSettings.takeSnapshotOnGCodeCommnd" > Take camera snapshot after print
+                                                              disable: takeSnapshotAfterPrintDisabled" > Take camera snapshot after print
                         </label>
-                        <span class="help-inline">Hint: if enabled, the thumbnail image from the gcode is not stored in the history!</span>
+                        <label class="checkbox">
+                            <input type="checkbox" data-bind="checked: pluginSettings.takeSnapshotOnGCodeCommnd,
+                                                              disable: takeSnapshotOnGCodeCommndDisabled" > Take camera snapshot if following gcode was sent
+                            <div><input type="text" data-bind="value: pluginSettings.takeSnapshotGCodeCommndPattern,
+                                                               disable: takeSnapshotGCodeCommndPatternDisabled" ></div>
+                        </label>
+                        <div class="help-inline">
+                            You don't need to enter the command exactly, the plugin  checks if the gcode starts with the entered text.
+                            <div>E.g. Text: <code>M117 Snap</code>. Sent gcode was: <code>M117 Snapshot</code>. Result: snapshot is taken</div>
+                        </div>
                     </div>
                 </div>
+                <div class="control-group" data-bind="visible: cameraSnapShotURLAvailable()==false">
+                    <div class="controls">
+                        <div class="help-inline">
+                            <code>No Snapshot URL defined in "Webcam & Timelapse" section</code>
+                        </div>
+                    </div>
+                </div>
+
+<!--                <div class="control-group">-->
+<!--                    <div class="controls">-->
+<!--                        <label class="checkbox">-->
+<!--                            <input type="checkbox" data-bind="checked: pluginSettings.takeSnapshotAfterPrint,-->
+<!--                                                              disable: pluginSettings.takeSnapshotOnGCodeCommnd" > Take camera snapshot after print-->
+<!--                        </label>-->
+<!--                        <span class="help-inline">Hint: if enabled, the thumbnail image from the gcode is not stored in the history!</span>-->
+<!--                    </div>-->
+<!--                </div>-->
                 <div class="control-group">
                     <div class="controls">
                         <label class="checkbox">
-                            <input type="checkbox" data-bind="checked: pluginSettings.takePluginThumbnailAfterPrint,
-                                                              disable: pluginSettings.takeSnapshotOnGCodeCommnd" > Use thumbnail (if provided) after print, instead of camera snapshot
+                            <input type="checkbox" data-bind="checked: pluginSettings.takePluginThumbnailAfterPrint" > Use thumbnail (if provided) after print, instead of camera snapshot
                         </label>
                         <div class="help-inline">
                             Currently tested thumbnail plugins:
@@ -89,18 +114,32 @@
                         </div>
                     </div>
                 </div>
+<!--                <div class="control-group">-->
+<!--                    <div class="controls">-->
+<!--                        <label class="checkbox">-->
+<!--                            <input type="checkbox" data-bind="checked: pluginSettings.takeSnapshotOnGCodeCommnd" > Take camera snapshot if following gcode was sent-->
+<!--                            <div><input type="text" data-bind="value: pluginSettings.takeSnapshotGCodeCommndPattern" ></div>-->
+<!--                        </label>-->
+<!--                        <div class="help-inline">-->
+<!--                            You don't need to enter the command exactly, the plugin  checks if the gcode starts with the entered text.-->
+<!--                            <div>E.g. Text: <code>M117 Snap</code>. Sent gcode was: <code>M117 Snapshot</code>. Result: snapshot is taken</div>-->
+<!--                        </div>-->
+<!--                    </div>-->
+<!--                </div>-->
                 <div class="control-group">
                     <div class="controls">
-                        <label class="checkbox">
-                            <input type="checkbox" data-bind="checked: pluginSettings.takeSnapshotOnGCodeCommnd" > Take camera snapshot if following gcode was sent
-                            <div><input type="text" data-bind="value: pluginSettings.takeSnapshotGCodeCommndPattern" ></div>
+                        <label>
+                            If both Camera- and Thumbnail-Image is available, which one should be prefered?
+                            <select data-bind="value: pluginSettings.preferedImageSource" class="input-medium">
+                                <option value="thumbnail">Thumbnail</option>
+                                <option value="camera">Camera</option>
+                            </select>
                         </label>
-                        <div class="help-inline">
-                            You don't need to enter the command exactly, the plugin  checks if the gcode starts with the entered text.
-                            <div>E.g. Text: <code>M117 Snap</code>. Sent gcode was: <code>M117 Snapshot</code>. Result: snapshot is taken</div>
-                        </div>
                     </div>
                 </div>
+
+
+
             </div>
             <!-- TEMPERATURE - TAB -->
             <div class="tab-pane" id="tab-pjh-Temperature">
@@ -136,7 +175,7 @@
                 <h3>Export</h3>
                 <div class="control-group">
                     <div class="controls">
-                        <span><b>PrintJoHistory Database</b>: Export all data as <a href="#" data-bind="attr: {href: $root.exportUrl('CSV'), css: {disabled: !$root.exportUrl('CSV')}}">CSV-File</a></span>
+                        <span><b>PrintJobHistory Database</b>: Export all data as <a href="#" data-bind="attr: {href: $root.exportUrl('CSV'), css: {disabled: !$root.exportUrl('CSV')}}">CSV-File</a></span>
                     </div>
                 </div>
                 <div class="control-group" data-bind="visible: isPrintHistoryPluginAvailable">
@@ -303,6 +342,7 @@
                         <label class="checkbox">
                             <input type="checkbox" data-bind="checked: pluginSettings.sqlLoggingEnabled" > SQL Logging enabled
                         </label>
+                        <span class="help-inline">Hint: You need to restart your server after you changed the checkbox value.</span>
                     </div>
                 </div>
             </div>
