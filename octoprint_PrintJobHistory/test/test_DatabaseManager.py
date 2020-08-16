@@ -8,12 +8,20 @@ def clientOutput(message1, message2):
 	print(message1)
 	print(message2)
 
-logging.basicConfig(level=logging.DEBUG)
-testLogger = logging.getLogger("testLogger")
-logging.info("Start Database-Test")
-databaseManager = DatabaseManager(testLogger, True)
-databaseManager.initDatabase(databaselocation, clientOutput)
-
+# logging.basicConfig(level=logging.DEBUG)
+# testLogger = logging.getLogger("testLogger")
+# logging.info("Start Database-Test")
+# databaseManager = DatabaseManager(testLogger, True)
+# databaseManager.initDatabase(databaselocation, clientOutput)
+#
+# type = "ppostgres"
+# host="localhost"
+# port="5432"
+# databaseName="rainbow_database"
+# username = "unicorn_user"
+# password = "magical_password"
+# result = databaseManager.testConnection(type, host, port, databaseName, username, password)
+# print(result)
 
 def convert(value):
 	result = StringUtils.to_native_str(value)
@@ -39,8 +47,9 @@ def convert(value):
 # diameter = printJob.loadFilamentFromAssoziation().diameter
 # convert(diameter)
 
-currentScheme = 1
-targetScheme = 5
+# currentScheme = 1
+# targetScheme = 5
+#
+# databaseManager._upgradeDatabase(currentScheme, targetScheme)
 
-databaseManager._upgradeDatabase(currentScheme, targetScheme)
 

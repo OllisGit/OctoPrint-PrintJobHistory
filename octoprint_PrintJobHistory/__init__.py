@@ -193,8 +193,8 @@ class PrintJobHistoryPlugin(
 	# Grabs all informations for the filament attributes
 	def _createAndAssignFilamentModel(self, printJob, payload):
 		filemanentModel  = FilamentModel()
-
-		fileData = self._file_manager.get_metadata(payload["origin"], payload["path"])
+		filePath = payload["path"]
+		fileData = self._file_manager.get_metadata(payload["origin"], filePath)
 
 		toolId = None
 		filamentLength = None
@@ -203,9 +203,15 @@ class PrintJobHistoryPlugin(
 				toolId = self._settings.get([SettingsKeys.SETTINGS_KEY_DEFAULT_TOOL_ID])  # "tool0"
 				if toolId in fileData["analysis"]["filament"]:
 					filamentLength = fileData["analysis"]["filament"][toolId]['length']
+				else:
+					self._logger.error("MetaFile Filamentlength not found for toolId '" + str(toolId) + "'")
+			else:
+				self._logger.error("MetaFile of '" + str(filePath) + "' doesnt include 'filament'")
+		else:
+			self._logger.error("MetaFile of '"+str(filePath)+"' doesnt include 'analysis'")
 
 		if (filamentLength == None):
-			self._logger.error("Filamentlength not found for toolId '"+toolId+"'")
+			self._logger.error("Filamentlength not found for toolId '" + str(toolId) + "'")
 		filemanentModel.calculatedLength = filamentLength
 
 		if self._filamentManagerPluginImplementation != None:
@@ -262,9 +268,9 @@ class PrintJobHistoryPlugin(
 		currentLayer = payload["currentLayer"]
 		self._currentPrintJobModel.printedLayers = currentLayer + " / " + totalLayers
 
-		totalHeightWithExtrusion = payload["totalHeightWithExtrusion"]
+		totalHeight = payload["totalHeight"]
 		currentHeight = payload["currentHeight"]
-		self._currentPrintJobModel.printedHeight = currentHeight + " / " + totalHeightWithExtrusion
+		self._currentPrintJobModel.printedHeight = currentHeight + " / " + totalHeight
 
 	def _createPrintJobModel(self, payload):
 		self._currentPrintJobModel = PrintJobModel()
@@ -621,7 +627,6 @@ class PrintJobHistoryPlugin(
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_GCODE_COMMAND_PATTERN] = "M117 Snap"
 		settings[SettingsKeys.SETTINGS_KEY_PREFERED_IMAGE_SOURCE] = SettingsKeys.KEY_PREFERED_IMAGE_SOURCE_THUMBNAIL
 
-
 		## Temperature
 		settings[SettingsKeys.SETTINGS_KEY_DEFAULT_TOOL_ID] = "tool0"
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_TEMPERATURE_FROM_PREHEAT] = True
@@ -629,6 +634,16 @@ class PrintJobHistoryPlugin(
 
 		## Export / Import
 		settings[SettingsKeys.SETTINGS_KEY_IMPORT_CSV_MODE] = SettingsKeys.KEY_IMPORTCSV_MODE_APPEND
+
+		settings["datbaseSettings"] = {
+			"useExternal": "true",
+			"type": "postgres",
+			"host": "localhost",
+			"port": 5432,
+			"databaseName": "PrintJobDatabase",
+			"user": "Olli",
+			"password": "illO"
+		}
 
 		## Debugging
 		settings[SettingsKeys.SETTINGS_KEY_SQL_LOGGING_ENABLED] = False

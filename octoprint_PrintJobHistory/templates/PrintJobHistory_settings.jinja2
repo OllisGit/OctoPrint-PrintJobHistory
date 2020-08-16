@@ -308,6 +308,26 @@
             </div>
             <!-- STORAGE - TAB -->
             <div class="tab-pane" id="tab-pjh-Storage">
+
+<!--                <h4>Instance Name</h4>-->
+<!--                <div class="control-group" >-->
+<!--                    <label class="control-label" >OctoPrint Name</label>-->
+<!--                    <div class="controls">-->
+<!--                        <input type="text" class="input-block-level" >-->
+<!--                        <span class="help-block">The instance name is used to identified the print jobs in an external database. <br/>-->
+<!--                        <div class="alert">If you change this name, you can't read the print jobs from the dabase anymore. You need to manually replace the name in the external database. TODO implement renaming function.</div>-->
+<!--                        </span>-->
+<!--                    </div>-->
+<!--                </div>-->
+
+                <h4>Local SQLite3 Database</h4>
+
+<!--                <div class="controls">-->
+<!--                    <label class="radio">-->
+<!--                        <input type="radio" name="externalDatabaseGroup" value="false" data-bind="checked: pluginSettings.datbaseSettings.useExternal"> Use local SqLite3 database-->
+<!--                    </label>-->
+<!--                </div>-->
+
                 <div class="control-group">
                     <label class="control-label">Database file location</label>
                     <div class="controls">
@@ -324,14 +344,65 @@
                         <input type="text" disabled class="input-xlarge text-right" data-bind="value: snapshotFileLocation"/>
                     </div>
                 </div>
-
                 <div class="control-group">
                     <label class="control-label">Database Backupname</label>
                     <div class="controls">
                         e.g.<code>printJobHistory-backup-20191207-0924.db</code>
                     </div>
                 </div>
+<!--                <div class="control-group">-->
+<!--                    <button class="btn btn-info pull-right" style="margin-right: 80px;">Test connection</button>-->
+<!--                </div>-->
 
+
+<!--
+                <h4>External Database</h4>
+                <div class="controls">
+                    <label class="radio">
+                        <input type="radio" name="externalDatabaseGroup" value="true" data-bind="checked: pluginSettings.datbaseSettings.useExternal"> Use external database
+                    </label>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">Host</label>
+                    <div class="controls">
+                        <input type="text" data-bind="value: pluginSettings.datbaseSettings.host"/>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Port</label>
+                    <div class="controls">
+                        <input type="text" data-bind="value: pluginSettings.datbaseSettings.port"/>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Database Name</label>
+                    <div class="controls">
+                        <input type="text" data-bind="value: pluginSettings.datbaseSettings.databaseName"/>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">User</label>
+                    <div class="controls">
+                        <input type="text" data-bind="value: pluginSettings.datbaseSettings.user"/>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">Password</label>
+                    <div class="controls">
+                        <input type="password" data-bind="value: pluginSettings.datbaseSettings.password"/>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <span class="controls">
+                        <span>Success! Database Schemeversion: 3</span>
+                    </span>
+                    <button class="btn btn-info pull-right" style="margin-right: 80px;">Test connection</button>
+                </div>
+
+                <h4>Plugin V1.7.0 database scheme: #3</h4>
+-->
 
             </div>
 

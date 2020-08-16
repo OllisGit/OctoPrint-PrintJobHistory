@@ -14,7 +14,7 @@ plugin_package = "octoprint_PrintJobHistory"
 plugin_name = "Print Job History"
 
 # The plugin's version. Can be overwritten within OctoPrint's internal data via __plugin_version__ in the plugin module
-plugin_version = "1.6.0"
+plugin_version = "1.7.0"
 
 # The plugin's description. Can be overwritten within OctoPrint's internal data via __plugin_description__ in the plugin
 # module
@@ -37,7 +37,7 @@ plugin_requires = [
 	"pillow",
 	"peewee"
 ]
-
+# "psycopg2-binary" # postgresdriver
 ### --------------------------------------------------------------------------------------------------------------------
 ### More advanced options that you usually shouldn't have to touch follow after this point
 ### --------------------------------------------------------------------------------------------------------------------

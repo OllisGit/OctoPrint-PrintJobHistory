@@ -168,7 +168,78 @@ class DatabaseManager(object):
 		self._database.close()
 		self._logger.info("Database tables created")
 
+
+
+
+
 	################################################################################################### public functions
+
+	# return:{
+	#  connected: True
+	#  tablesPresent: True
+	#  schemeVersion: 2
+	# }
+	# else {
+	#  errorMessage: "BOOOMMM"
+	def testConnection(self, type, host, port,  databaeName, username, password):
+
+		databaseToTest = None
+		if ("postgres" == type):
+			databaseToTest = PostgresqlDatabase(
+				databaeName,
+				user=username,
+				password=password,
+				host=host,
+				port=port
+			)
+		else:
+			databaseToTest = SqliteDatabase(self._databaseFileLocation)
+		DatabaseManager.db = databaseToTest
+		databaseToTest.bind(MODELS)
+		# self._logger.info("Check if database-scheme upgrade needed.")
+		# self._createOrUpgradeSchemeIfNecessary()
+
+		schemeVersion = None
+		jobCount = None
+		try:
+			databaseToTest.connect(reuse_if_open=True)
+
+			schemeVersionFromDatabaseModel = None
+			try:
+				# scheme version
+				schemeVersionFromDatabaseModel = PluginMetaDataModel.get(
+					PluginMetaDataModel.key == PluginMetaDataModel.KEY_DATABASE_SCHEME_VERSION)
+				schemeVersionFromDatabaseModel = int(schemeVersionFromDatabaseModel.value)
+
+				# job count
+				jobCount = self.countPrintJobsByQuery({
+					"filterName" : "all"
+				})
+				pass
+			except Exception as e:
+				errorMessage = str(e)
+				if errorMessage.startswith("no such table"):
+					pass
+
+			databaseToTest.close()
+
+
+		except Exception as e:
+			# Because this block of code is wrapped with "atomic", a
+			# new transaction will begin automatically after the call
+			# to rollback().
+			errorMessage =  str(e);
+			self._logger.warn("Test Database-Connection failed:" +errorMessage)
+			return {
+				"error": errorMessage
+			}
+
+		return {
+			"schemeVersion": schemeVersionFromDatabaseModel,
+			"jobCount": jobCount
+		}
+
+
 	# datapasePath '/Users/o0632/Library/Application Support/OctoPrint/data/PrintJobHistory'
 	def initDatabase(self, databasePath, sendErrorMessageToClient):
 		self._logger.info("Init DatabaseManager")
@@ -176,8 +247,7 @@ class DatabaseManager(object):
 		self._databasePath = databasePath
 		self._databaseFileLocation = os.path.join(databasePath, "printJobHistory.db")
 
-		self._logger.info("Creating database in: " + str(self._databaseFileLocation))
-
+		self._logger.info("Using database in: " + str(self._databaseFileLocation))
 
 		import logging
 		logger = logging.getLogger('peewee')

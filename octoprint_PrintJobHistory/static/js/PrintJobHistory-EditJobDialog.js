@@ -140,8 +140,33 @@ function PrintJobHistoryEditDialog(){
         });
 
         self.slicerSettingsDialog = $("#dialog_printJobHistory_slicerSettings");
+        self.changePrintStatusDialog = $("#dialog_printJobHistory_changePrintStatus");
     }
 
+    this.showPrintStatusDialog = function(){
+        self.changePrintStatusDialog.modal({
+            //minHeight: function() { return Math.max($.fn.modal.defaults.maxHeight() - 80, 250); }
+            keyboard: false,
+            clickClose: false,
+            showClose: false,
+            backdrop: "static"
+        }).css({
+            width: 'auto',
+            'margin-left': function() { return -($(this).width() /2); }
+        });
+    }
+
+    this.closePrintStatusDialog = function(){
+        self.changePrintStatusDialog.modal('hide');
+    }
+    this.selectedPrintStatus = function(selectedColor){
+        if ("green" == selectedColor){
+            self.printJobItemForEdit.printStatusResult("success");
+        } else {
+            self.printJobItemForEdit.printStatusResult("failed");
+        }
+        self.closePrintStatusDialog();
+    }
 
     this.showSlicerSettingsDialog = function(){
         self.slicerSettingsDialog.modal({
@@ -155,6 +180,7 @@ function PrintJobHistoryEditDialog(){
             'margin-left': function() { return -($(this).width() /2); }
         });
     }
+
 
     this.closeSlicerSettingsDialog = function(){
         self.slicerSettingsDialog.modal('hide');
