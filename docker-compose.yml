@@ -1,0 +1,17 @@
+version: '3'
+services:
+  postgres:
+    image: "postgres" # use latest official postgres version
+    environment:
+      - POSTGRES_DB:printjobhistory_database
+      - POSTGRES_USER:Olli
+      - POSTGRES_PASSWORD:illO
+#    env_file:
+#      - database.env # configure postgres
+    volumes:
+      - database-data:/var/lib/postgresql/data/ # persist data even if container shuts down
+    ports:
+      - 5432:5432
+volumes:
+  database-data: # named volumes can be managed easier using docker-compose
+
