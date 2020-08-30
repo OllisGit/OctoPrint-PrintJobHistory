@@ -71,6 +71,8 @@ If you like it, I would be thankful about a cup of coffee :)
 ## Screenshots
 ![plugin-tab](screenshots/plugin-tab.png "Plugin-Tab")
 ![editPrintJob-dialog](screenshots/editPrintJob-dialog.png "EditPrintJob-Dialog")
+![changePrintStatus-dialog](screenshots/editPrintJob-changeStatus-dialog.png "Change print status")
+![statistics-dialog](screenshots/statistics-dialog.png "Print Statistics")
 ![plugin-settings](screenshots/plugin-settings.png "Plugin-Settings")
 ![missingplugins-dialog](screenshots/missingPlugins-dialog.png "MissingPlugins-Dialog")
 

@@ -77,6 +77,21 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
             //countdownCircle = null;
         });
     }
+    // load STATISTICS PrintJob-Items
+    this.callLoadStatisticsByQuery = function (tableQuery, responseHandler){
+        query = _buildRequestQuery(tableQuery);
+        urlToCall = this.baseUrl + "plugin/"+this.pluginId+"/loadStatisticByQuery?"+query;
+        $.ajax({
+            //url: API_BASEURL + "plugin/"+PLUGIN_ID+"/loadPrintJobHistory",
+            url: urlToCall,
+            type: "GET"
+        }).done(function( data ){
+            responseHandler(data)
+            //shoud be done by the server to make sure the server is informed countdownDialog.modal('hide');
+            //countdownDialog.modal('hide');
+            //countdownCircle = null;
+        });
+    }
 
     this.callDeleteDatabase = function(responseHandler){
         $.ajax({

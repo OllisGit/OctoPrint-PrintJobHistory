@@ -4,13 +4,17 @@
  * defaultSortColumn,
  * defaultFilterName
  */
- function TableItemHelper(loadItemsFunction, defaultPageSize, defaultSortColumn, defaultFilterName){
+ function PrintJobTableItemHelper(loadItemsFunction, defaultPageSize, defaultSortColumn, defaultFilterName){
 
     var self = this;
 
     self.loadItemsFunction = loadItemsFunction;
     self.items = ko.observableArray([]);
     self.totalItemCount = ko.observable(0);
+    self.currentItemCount = ko.observable(0);
+    self.selectedTableItems = ko.observableArray();
+    self.allSelectedCheckbox = ko.observable(false);    // checkbox
+
 
     // paging
     self.pageSizeOptions = ko.observableArray([10, 25, 50, 100, "all"])
@@ -23,10 +27,38 @@
     // Filterinng
     self.filterOptions = ["all", "onlySuccess", "onlyFailed"];
     self.selectedFilterName = ko.observable(defaultFilterName);
+    // Date
+    self.queryStartDate = ko.observable(null);
+    self.queryEndDate = ko.observable(null);
 
     self.isInitialLoadDone = false;
+
+    self.selectAll = function(checkedValue){
+        if (checkedValue == false){
+            self.selectedTableItems.removeAll();
+        } else {
+            self.selectedTableItems.removeAll();
+            ko.utils.arrayPushAll(self.selectedTableItems, self.items());
+        }
+    }
+
+    self.singleSelect = function(checkedValue){
+        if (checkedValue == true){
+            self.allSelectedCheckbox(true);
+        } else {
+            if (self.selectedTableItems().length == 0){
+                self.allSelectedCheckbox(false);
+            }
+        }
+    }
+
     // ############################################################################################### private functions
     self._loadItems = function(){
+        var tableQuery = self.getTableQuery();
+        self.loadItemsFunction( tableQuery, self.items, self.totalItemCount, self.currentItemCount );
+    }
+
+    self.getTableQuery = function(){
         var from = Math.max(self.currentPage() * self.pageSize(), 0);
 //        var to = Math.min(from + self.pageSize(), self.totalItemCount());
         var to = self.pageSize();
@@ -39,8 +71,10 @@
             "sortColumn": self.sortColumn(),
             "sortOrder": self.sortOrder(),
             "filterName": self.selectedFilterName(),
+            "startDate": self.queryStartDate() == null ? "" : self.queryStartDate(),
+            "endDate": self.queryEndDate() == null ? "" : self.queryEndDate(),
         };
-        self.loadItemsFunction( tableQuery, self.items, self.totalItemCount );
+        return tableQuery;
     }
 
     self.currentPage.subscribe(function(newPageIndex) {
@@ -59,7 +93,10 @@
 
 
     // ################################################################################################ public functions
+
     self.reloadItems = function(){
+        self.allSelectedCheckbox(false);
+        self.selectedTableItems.removeAll();
         self._loadItems();
     }
 

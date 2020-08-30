@@ -37,6 +37,8 @@ $(function() {
 		this.temperatureBed = ko.observable();
 		this.temperatureNozzle = ko.observable();
 
+//        this.usedSpoolManagerPlugin = ko.observable();
+//        this.spoolItem = ko.observable();
 		this.diameter = ko.observable();
 		this.density = ko.observable();
 		this.material = ko.observable();
@@ -107,6 +109,14 @@ $(function() {
             this.temperatureBed(updateData.temperatureBed);
             this.temperatureNozzle(updateData.temperatureNozzle);
         }
+
+//        this.usedSpoolManagerPlugin(updateData.usedSpoolManagerPlugin);
+//        if (updateData.spoolItemData != null){
+//            this.spoolItem = self.spoolDialog.createSpoolItemForTable(updateData.spoolItemData);
+//        } else {
+//            this.spoolItem = null;
+//        }
+
 
         //Filament
         if (updateData.filamentModel != null){
@@ -206,7 +216,7 @@ $(function() {
                 "noteHtml" : "<h1>Good output of Legolas</h1>",
                 "snapshotFilename" : ko.observable("20191003-123322"),
                 "slicerSettingsAsText" : ko.observable()
-
+//                "usedSpoolManagerPlugin": ko.observable()
             },{
                 "databaseId" : ko.observable(2),
                 "success" : ko.observable("0"),
@@ -235,6 +245,7 @@ $(function() {
                 "noteHtml" : "<h2>Bad quality,/h2>",
                 "snapshotFilename" : ko.observable("20191003-153312"),
                 "slicerSettingsAsText" : ko.observable()
+//                "usedSpoolManagerPlugin": ko.observable()
             }
         ];
 //        self.printJobHistorylistHelper.updateItems(printHistoryJobItems);
@@ -245,12 +256,14 @@ $(function() {
         self.loginStateViewModel = parameters[0];
         self.loginState = parameters[0];
         self.settingsViewModel = parameters[1];
+//        self.spoolManagerViewModel = parameters[2];
         self.pluginSettings = null;
 
         self.apiClient = new PrintJobHistoryAPIClient(PLUGIN_ID, BASEURL);
-        self.componentFactory = new ComponentFactory(PLUGIN_ID);
+        self.componentFactory = new PrintJobComponentFactory(PLUGIN_ID);
         self.printJobEditDialog = new PrintJobHistoryEditDialog(null, null);
         self.pluginCheckDialog = new PrintJobHistoryPluginCheckDialog();
+        self.statisticDialog = new StatisticDialog();
 
         self.printJobForEditing = ko.observable();
         self.printJobForEditing(new PrintJobItem(printHistoryJobItems[0]));
@@ -265,11 +278,22 @@ $(function() {
         self.csvImportInProgress = ko.observable(false);
 
         self.isPrintHistoryPluginAvailable = ko.observable(false);
+//        self.isMultiSpoolManagerPluginsAvailable = ko.observable(false);
 
         self.databaseFileLocation = ko.observable();
         self.snapshotFileLocation = ko.observable();
 
         self.csvImportDialog = new PrintJobHistoryImportDialog();
+
+//        self.usedNoneOrFilamentManagerPlugin = function(){
+//            var usedPlugin = self.printJobForEditing().usedSpoolManagerPlugin();
+//            if (usedPlugin == null || usedPlugin == "nonePlugin" || usedPlugin == "filamentManagerPlugin"){
+//                return true;
+//            }
+//            return false;
+//        }
+
+
         ////////////////////////////////////////////////////// Knockout model-binding/observer
 
 
@@ -375,6 +399,7 @@ $(function() {
             self.printJobEditDialog.init(self.apiClient, self.settingsViewModel.settings.webcam);
             self.pluginCheckDialog.init(self.apiClient, self.pluginSettings);
             self.csvImportDialog.init(self.apiClient);
+            self.statisticDialog.init(self.apiClient);
 
             initTableVisibilities();
 
@@ -410,6 +435,7 @@ $(function() {
                 self.databaseFileLocation(data.databaseFileLocation);
                 self.snapshotFileLocation(data.snapshotFileLocation);
                 self.isPrintHistoryPluginAvailable(data.isPrintHistoryPluginAvailable);
+//                self.isMultiSpoolManagerPluginsAvailable(data.isMultiSpoolManagerPluginsAvailable);
                 return;
             }
 
@@ -482,6 +508,12 @@ $(function() {
 
         ///////////////////////////////////////////////////// START: DIALOG Stuff
 
+        self.showStatisticDialog = function(){
+            self.statisticDialog.showDialog(self.printJobHistoryTableHelper.getTableQuery(), function(shouldTableReload){
+            });
+        }
+
+
         self.showPrintJobDetailsDialogAction = function(selectedPrintJobItem, forceCloseDialog) {
 
             if (forceCloseDialog == null){
@@ -524,7 +556,7 @@ $(function() {
 
 
 
-        //////////// TABLE BEHAVIOR
+        ///////////////////////////////////////////////////// STAR: TABLE BEHAVIOR
         initTableVisibilities = function(){
             // load all settings from browser storage
             if (!Modernizr.localstorage) {
@@ -567,43 +599,151 @@ $(function() {
             assignVisibility("image");
         }
 
-        loadJobFunction = function(tableQuery, observableTableModel, observableTotalItemCount){
+        loadJobFunction = function(tableQuery, observableTableModel, observableTotalItemCount, observableCurrentItemCount){
             // api-call
             self.apiClient.callLoadPrintJobsByQuery(tableQuery, function(responseData){
+                // handle response
                 totalItemCount = responseData["totalItemCount"];
                 allPrintJobs = responseData["allPrintJobs"];
                 var dataRows = ko.utils.arrayMap(allPrintJobs, function (data) {
                     return new PrintJobItem(data);
                 });
-
                 observableTotalItemCount(totalItemCount);
+                observableCurrentItemCount(dataRows.length);
                 observableTableModel(dataRows);
 
             });
         }
 
-        self.printJobHistoryTableHelper = new TableItemHelper(loadJobFunction, 10, "printStartDateTime", "all");
+        self.printJobHistoryTableHelper = new PrintJobTableItemHelper(loadJobFunction, 25, "printStartDateTime", "all");
 
+        // - timeframe query
+        self.allTimeFrames = ko.observableArray([
+            { key: "all", label: "all" },
+            { key: "custom", label: "custom" },
+            { key: "lastWeek", label: "last 7 days" },
+            { key: "lastMonth", label: "last 30 days" },
+            { key: "lastThreeMonth", label: "last 90 days" },
+            { key: "lastYear", label: "last 365 days" },
+        ]);
+
+        self.selectedTimeFrame = ko.observable("all");
+        self.isCustomTimeFrame = ko.observable(false);
+
+        self.selectedTimeFrame.subscribe(function(newValue){
+                    self.isCustomTimeFrame("custom" == newValue);
+
+
+                    if ("custom" == newValue){
+                        self.isQueryStartEnabled(true);
+                        self.isQueryEndEnabled(true);
+                        return
+                    }
+                    self.isQueryStartEnabled(false);
+                    self.isQueryEndEnabled(false);
+                    // calculate new start/end date
+                    var startDate = new Date(Date.now());
+                    var endDate = new Date(Date.now());
+
+                    if ("lastWeek" == newValue){
+                        startDate.setDate(startDate.getDate() - 7);
+                    } else
+                    if ("lastMonth" == newValue){
+                        startDate.setDate(startDate.getDate() - 30);
+                    } else
+                    if ("lastThreeMonth" == newValue){
+                        startDate.setDate(startDate.getDate() - 90);
+                    } else
+                    if ("lastYear" == newValue){
+                        startDate.setDate(startDate.getDate() - 365);
+                    } else
+                    if ("all" == newValue ){
+                        startDate = null;
+                        endDate = null;
+                        self.printJobHistoryTableHelper.queryStartDate("");
+                        self.printJobHistoryTableHelper.queryEndDate("");
+                    }
+
+                    if (startDate != null && endDate != null){
+                        var yyyy = startDate.getFullYear().toString();
+                        var mm = (startDate.getMonth() + 101).toString().slice(-2);
+                        var dd = (startDate.getDate() + 100).toString().slice(-2);
+                        self.printJobHistoryTableHelper.queryStartDate(dd + "." + mm + "." + yyyy);
+
+                        yyyy = endDate.getFullYear().toString();
+                        mm = (endDate.getMonth() + 101).toString().slice(-2);
+                        dd = (endDate.getDate() + 100).toString().slice(-2);
+                        self.printJobHistoryTableHelper.queryEndDate(dd + "." + mm + "." + yyyy);
+                    }
+                    self.printJobHistoryTableHelper.reloadItems();
+            });
+        var queryStartViewModel = self.componentFactory.createDateTimePicker("queryStart-date-picker", false);
+        self.printJobHistoryTableHelper.queryStartDate = queryStartViewModel.currentDateTime;
+        self.isQueryStartEnabled = queryStartViewModel.isEnabled;
+        self.isQueryStartEnabled(false);
+
+        var queryEndViewModel = self.componentFactory.createDateTimePicker("queryEnd-date-picker", false);
+        self.printJobHistoryTableHelper.queryEndDate = queryEndViewModel.currentDateTime;
+        self.isQueryEndEnabled = queryEndViewModel.isEnabled;
+        self.isQueryEndEnabled(false);
+
+        // TODO range picker
+
+        // - export csv data
         self.exportUrl = function(exportType) {
             if (self.printJobHistoryTableHelper.items().length > 0) {
-                return self.apiClient.getExportUrl(exportType)
+                var defaultURL =  self.apiClient.getExportUrl(exportType)
+                return defaultURL;
             } else {
                 return false;
             }
         };
+        self.exportedSelectedURL = ko.observable();
 
+        // - delete
+        self.exportUrl = function(exportType) {
+            if (self.printJobHistoryTableHelper.items().length > 0) {
+                var defaultURL =  self.apiClient.getExportUrl(exportType)
+                return defaultURL;
+            } else {
+                return false;
+            }
+        };
+        self.exportedSelectedURL = ko.observable();
 
-//        self.handleAllPrintJobDataResponse = function (allPrintJobs){
-//            // Print Jobs from Backend
-//            var dataRows = ko.utils.arrayMap(allPrintJobs, function (data) {
-//                return new PrintJobItem(data);
-//            });
-//
-//            //self.pureData = data.history;
-//
-//            //self.dataIsStale = false;
-//            self.printJobHistorylistHelper.updateItems(dataRows);
-//        }
+        self.selectedDatabaseIdsAsCSV = "";
+        self.deleteSelectedPrintJobs = function(){
+
+            var result = confirm("Do you really want to delete all selected("+self.printJobHistoryTableHelper.selectedTableItems().length+") printjobs?");
+            if (result == true){
+                self.apiClient.callRemovePrintJob("0?databaseIds="+self.selectedDatabaseIdsAsCSV, function(responseData) {
+
+                    self.printJobHistoryTableHelper.selectedTableItems.removeAll();
+                    self.printJobHistoryTableHelper.reloadItems();
+
+                });
+            }
+            return false;
+
+        }
+
+        self.printJobHistoryTableHelper.selectedTableItems.subscribe(function(newValue) {
+
+            var newCSVUrl = self.apiClient.getExportUrl("CSV");
+            if (newValue != null && newValue.length > 0){
+                var databaseIds = "";
+                for (var itemIndex = 0; itemIndex<newValue.length; itemIndex++){
+                    databaseIds = databaseIds + newValue[itemIndex].databaseId();
+                    if (itemIndex+1 < newValue.length){
+                        databaseIds = databaseIds + ",";
+                    }
+                }
+                newCSVUrl = newCSVUrl + "?databaseIds="+ databaseIds;
+                self.selectedDatabaseIdsAsCSV = databaseIds;
+            }
+
+            self.exportedSelectedURL(newCSVUrl);
+        });
 
         self.sortOrderLabel = function(orderType) {
             var order = "";
@@ -642,14 +782,21 @@ $(function() {
             return "pjh-imageid-" + printJobItem.databaseId();
         }
 
-        self.removePrintJobAction = function(printJobItem) {
-            var result = confirm("Do you really want to delete the print job?");
-            if (result == true){
-                self.apiClient.callRemovePrintJob(printJobItem.databaseId(), function(responseData) {
-                    self.printJobHistoryTableHelper.reloadItems();
-                });
-            }
-        };
+
+
+
+
+
+        ///////////////////////////////////////////////////// END: TABLE BEHAVIOR
+
+//        self.removePrintJobAction = function(printJobItem) {
+//            var result = confirm("Do you really want to delete the print job?");
+//            if (result == true){
+//                self.apiClient.callRemovePrintJob(printJobItem.databaseId(), function(responseData) {
+//                    self.printJobHistoryTableHelper.reloadItems();
+//                });
+//            }
+//        };
 
     }
 
@@ -662,7 +809,8 @@ $(function() {
         // ViewModels your plugin depends on, e.g. loginStateViewModel, settingsViewModel, ...
         dependencies: [
             "loginStateViewModel",
-            "settingsViewModel"
+            "settingsViewModel",
+//            "spoolManagerViewModel"
         ],
         // Elements to bind to, e.g. #settings_plugin_PrintJobHistory, #tab_plugin_PrintJobHistory, ...
         elements: [

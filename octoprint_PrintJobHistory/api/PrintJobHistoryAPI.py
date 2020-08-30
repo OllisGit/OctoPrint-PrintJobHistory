@@ -130,6 +130,14 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		return flask.jsonify([])
 
 
+	#######################################################################################   LOAD STATISTIC BY QUERY
+	@octoprint.plugin.BlueprintPlugin.route("/loadStatisticByQuery", methods=["GET"])
+	def get_statisticByQuery(self):
+
+		tableQuery = flask.request.values
+		statistic = self._databaseManager.calculatePrintJobsStatisticByQuery(tableQuery)
+
+		return flask.jsonify(statistic)
 	#######################################################################################   LOAD ALL JOBS BY QUERY
 	@octoprint.plugin.BlueprintPlugin.route("/loadPrintJobHistoryByQuery", methods=["GET"])
 	def get_printjobhistoryByQuery(self):
@@ -148,10 +156,19 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 	#######################################################################################   DELETE JOB
 	@octoprint.plugin.BlueprintPlugin.route("/removePrintJob/<int:databaseId>", methods=["DELETE"])
 	def delete_printjob(self, databaseId):
-		printJob = self._databaseManager.loadPrintJob(databaseId)
-		snapshotFilename = CameraManager.buildSnapshotFilename(printJob.printStartDateTime)
-		self._cameraManager.deleteSnapshot(snapshotFilename)
-		self._databaseManager.deletePrintJob(databaseId)
+
+		allJobsModels = []
+		if "databaseIds" in flask.request.values:
+			selectedDatabaseIds = flask.request.values["databaseIds"]
+			allJobsModels = self._databaseManager.loadSelectedPrintJobs(selectedDatabaseIds)
+		else:
+			allJobsModels.append(self._databaseManager.loadPrintJob(databaseId))
+
+		for printJob in allJobsModels:
+			self._databaseManager.deletePrintJob(printJob.databaseId)
+			snapshotFilename = CameraManager.buildSnapshotFilename(printJob.printStartDateTime)
+			self._cameraManager.deleteSnapshot(snapshotFilename)
+
 		return flask.jsonify()
 
 	#######################################################################################   UPDATE JOB
@@ -242,7 +259,11 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 	def exportPrintJobHistoryData(self, exportType):
 
 		if exportType == "CSV":
-			allJobsModels = self._databaseManager.loadAllPrintJobs()
+			if "databaseIds" in flask.request.values:
+				selectedDatabaseIds = flask.request.values["databaseIds"]
+				allJobsModels = self._databaseManager.loadSelectedPrintJobs(selectedDatabaseIds)
+			else:
+				allJobsModels = self._databaseManager.loadAllPrintJobs()
 
 			return Response(CSVExportImporter.transform2CSV(allJobsModels),
 							mimetype='text/csv',

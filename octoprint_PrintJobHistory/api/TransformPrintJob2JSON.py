@@ -23,8 +23,8 @@ def transformPrintJobModel(job):
 		filamentDict = allFilaments.__data__
 		filamentDict["usedWeight"] = StringUtils.formatFloatSave("{:.02f}", filamentDict["usedWeight"], "")
 
-		filamentDict["usedLengthFormatted"] = StringUtils.formatFloatSave("{:.02f}", _convertMM2M(filamentDict["usedLength"]), "")
-		filamentDict["calculatedLengthFormatted"] = StringUtils.formatFloatSave("{:.02f}", _convertMM2M(filamentDict["calculatedLength"]), "")
+		filamentDict["usedLengthFormatted"] = StringUtils.formatFloatSave("{:.02f}", convertMM2M(filamentDict["usedLength"]), "")
+		filamentDict["calculatedLengthFormatted"] = StringUtils.formatFloatSave("{:.02f}", convertMM2M(filamentDict["calculatedLength"]), "")
 
 		filamentDict["usedCost"] = StringUtils.formatFloatSave("{:.02f}", filamentDict["usedCost"], "")
 		filamentDict["spoolVendor"] = filamentDict["profileVendor"]
@@ -62,7 +62,7 @@ def transformAllPrintJobModels(allJobsModels):
 	return result
 
 #  convert mm to m
-def _convertMM2M(value):
+def convertMM2M(value):
 	if (value == None or not isinstance(value, float)):
 		return ""
 	floatValue = float(value)

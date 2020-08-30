@@ -179,6 +179,35 @@ def formatFloatSave(pattern, value, defaultString):
 	floatValue = float(value)
 	return pattern.format(floatValue)
 
+def isEmpty(value):
+	if (value == None):
+		return True
+	if (len(str(value)) == 0):
+		return True
+
+	return False
+
+#################### START: copied from octorprint
+def get_formatted_size(num):
+	"""
+	Formats the given byte count as a human readable rounded size expressed in the most pressing unit among B(ytes),
+	K(ilo)B(ytes), M(ega)B(ytes), G(iga)B(ytes) and T(era)B(ytes), with one decimal place.
+
+	Based on http://stackoverflow.com/a/1094933/2028598
+
+	Arguments:
+	    num (int): The byte count to format
+
+	Returns:
+	    string: The formatted byte count.
+	"""
+
+	for x in ["B","KB","MB","GB"]:
+		if num < 1024.0:
+			return "%3.1f%s" % (num, x)
+		num /= 1024.0
+	return "%3.1f%s" % (num, "TB")
+
 #################### START: copied from octorprint 1.4.x for 1.3.x compatible reason
 
 import sys

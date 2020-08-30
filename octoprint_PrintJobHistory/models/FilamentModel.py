@@ -8,7 +8,7 @@ from peewee import CharField, Model, DecimalField, FloatField, DateField, DateTi
 
 class FilamentModel(BaseModel):
 
-	printJob = ForeignKeyField(PrintJobModel, related_name='filaments', on_delete='CASCADE')
+	printJob = ForeignKeyField(PrintJobModel, backref='filaments', on_delete='CASCADE')
 
 	profileVendor = CharField(null=True)
 	diameter = FloatField(null=True)

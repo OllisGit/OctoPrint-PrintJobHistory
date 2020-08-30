@@ -3,24 +3,32 @@
 
     <div class="row-fluid">
         <div class="span4">
-            Total: <b><span data-bind="text: printJobHistoryTableHelper.totalItemCount">Anzahl</span></b>
-            per Page:
-            <select class="input-mini text-right"
-                    data-bind="options: printJobHistoryTableHelper.pageSizeOptions,
-                               value: printJobHistoryTableHelper.selectedPageSize">
-            </select>
-            <a href="#" data-bind="click: printJobHistoryTableHelper.reloadItems" title="Force refresh" ><span class="icon-refresh"></span> Refresh</a>
+
+            <div>
+                <a href="#" data-bind="click: showStatisticDialog" title="Force refresh" ><span class="icon-bar-chart"></span> Statistic</a>
+            </div>
+
+            <div>
+                <a href="#" data-bind="attr: {href: $root.exportUrl('CSV'), css: {disabled: !$root.exportUrl('CSV')}}"> <i class="icon-reorder"></i> CSV Export</a>
+                <span data-bind="visible: printJobHistoryTableHelper.selectedTableItems().length > 0">| <a href="#" data-bind="attr: {href: $root.exportedSelectedURL, css: {disabled: !$root.exportUrl('CSV')}}"> selected (<span data-bind="text: printJobHistoryTableHelper.selectedTableItems().length"></span>)</a> </span>
+            </div>
+            <div>
+                <a href="#" data-bind="visible: printJobHistoryTableHelper.selectedTableItems().length > 0, click:deleteSelectedPrintJobs"> <i class="icon-trash"></i> Delete selected (<span data-bind="text: printJobHistoryTableHelper.selectedTableItems().length">100</span>)</a>
+                <div data-bind="visible: printJobHistoryTableHelper.selectedTableItems().length == 0">&nbsp;</div>
+            </div>
+            <div>Pagesize:
+                <select class="input-mini text-right" style="margin-bottom: 0px;"
+                        data-bind="options: printJobHistoryTableHelper.pageSizeOptions,
+                                   value: printJobHistoryTableHelper.selectedPageSize">
+                </select>
+            </div>
+            <div>
+                Total: <b><span data-bind="text: printJobHistoryTableHelper.totalItemCount">Anzahl</span></b>
+            </div>
+
         </div>
 
         <div class="span8">
-            <div class="row">
-                <div class="text-right">
-                    <small>
-                        Export:
-                        <a href="#" data-bind="attr: {href: $root.exportUrl('CSV'), css: {disabled: !$root.exportUrl('CSV')}}">CSV</a>
-                    </small>
-                </div>
-            </div>
             <div class="pull-right">
                 <small>
                     Sort by:
@@ -35,6 +43,48 @@
                     <a href="#" data-bind="click: function() { printJobHistoryTableHelper.changeFilter('onlySuccess'); }"><i class="icon-ok" data-bind="style: {visibility: printJobHistoryTableHelper.isFilterSelected('onlySuccess') ? 'visible' : 'hidden'}"></i> only successful</a> |
                     <a href="#" data-bind="click: function() { printJobHistoryTableHelper.changeFilter('onlyFailed'); }"><i class="icon-ok" data-bind="style: {visibility: printJobHistoryTableHelper.isFilterSelected('onlyFailed') ? 'visible' : 'hidden'}"></i> only failed</a>
                 </small>
+            </div>
+            <div  >
+                <div >
+
+<div class="pull-right">
+    <span>Timeframe:&nbsp;&nbsp;</span>
+
+    <select class="input-medium pull-right" style="margin-bottom: 2px;"data-bind="options: allTimeFrames,
+                                                                                  optionsValue: 'key',
+                                                                                  optionsText: 'label',
+                                                                                  value: selectedTimeFrame"></select>
+
+<!--<select class="input-medium pull-right" style="margin-bottom: 2px;">-->
+<!--    <option value="all">all</option>-->
+<!--    <option selected value="all">custom</option>-->
+<!--    <option value="10">last Week</option>-->
+<!--    <option value="25">last Month</option>-->
+<!--    <option value="50">last three Month</option>-->
+<!--    <option value="100">last Year</option>-->
+<!--</select>-->
+</div>
+
+<div class="pull-right" style="margin-bottom: 10px;">
+
+    <span class="input-append datetime">
+            <input  id="queryStart-date-picker" type="text"  class="input-small text-right" value="14.02.2020"
+                    data-bind="value: printJobHistoryTableHelper.queryStartDate, disable: (isCustomTimeFrame() == false)"><span class="add-on"><i class="icon-th"></i></span>
+    </span>
+    <span class="input-append datetime" >
+            <input  id="queryEnd-date-picker" type="text"
+                    class="input-small text-right"
+                    data-bind="value: printJobHistoryTableHelper.queryEndDate, disable: (isCustomTimeFrame() == false)" ><span class="add-on" ><i class="icon-th"></i></span>
+    </span>
+
+    <a style="margin-left:10px" href="#" data-bind="click: printJobHistoryTableHelper.reloadItems" title="Force refresh" ><span class="icon-refresh icon-2x"></span></a>
+</div>
+
+
+
+                </div>
+
+
             </div>
         </div>
     </div>
@@ -218,6 +268,7 @@
                 <a href="#" data-bind="click: printJobHistoryTableHelper.nextPage">»</a>
             </li>
         </ul>
+
     </div>
     <!-- END: PAGEINATION BLOCK    -->
 
@@ -225,6 +276,8 @@
     <table id="printjobhistory_main_table" class="table table-striped table-hover table-condensed table-hover" style="clear: both;">
         <thead>
             <tr>
+<!--                <th style="width: 4%; text-align: center;" ><input type="checkbox" data-bind="checked:$root.printJobHistoryTableHelper.allSelected"></th>-->
+                <th style="width: 4%; text-align: center;" ><input type="checkbox" data-bind="checked:$root.printJobHistoryTableHelper.allSelectedCheckbox, click: $root.printJobHistoryTableHelper.selectAll($element.checked)"></th>
                 <th style="width: 4%; text-align: center;" data-bind="visible: tableAttributeVisibility.status"></th>
                 <th style="width: 15%" data-bind="visible: tableAttributeVisibility.user">User</th>
                 <th style="width: 15%" data-bind="visible: tableAttributeVisibility.date">Date</th>
@@ -236,18 +289,20 @@
             </tr>
         </thead>
         <tbody data-bind="foreach: printJobHistoryTableHelper.paginatedItems" >
-            <tr  style="cursor: pointer;"   data-bind="click: function() { $root.showPrintJobDetailsDialogAction($data); }">
+<!--            <tr  style="cursor: pointer;"  data-bind="click: function() { $root.showPrintJobDetailsDialogAction($data); }" >-->
+            <tr  style="cursor: pointer;"   >
                 <!--<td style="text-align: center;"><span data-bind="css: {'icon-ok-sign' : success() == 1, 'icon-exclamation-sign' : success() == 0}, style: { color: success() == 1 ? 'green' : 'red' }"></span></td>-->
-                <td data-bind="visible: $root.tableAttributeVisibility.status" style="text-align: center;"><span data-bind="css: {'icon-ok-sign' : printStatusResult() == 'success', 'icon-exclamation-sign' : printStatusResult() != 'success'}, style: { color: printStatusResult() == 'success' ? 'green' : 'red' }"></span></td>
-                <td data-bind="visible: $root.tableAttributeVisibility.user"><span data-bind="text: userName, attr: { title: userName }"></span></td>
-                <td data-bind="visible: $root.tableAttributeVisibility.date">
+                <td ><input type="checkbox" data-bind="checked: $root.printJobHistoryTableHelper.selectedTableItems, checkedValue: $data, click: $root.printJobHistoryTableHelper.singleSelect($element.checked)"/></td>
+                <td data-bind="click: function() { $root.showPrintJobDetailsDialogAction($data); }, visible: $root.tableAttributeVisibility.status" style="text-align: center;"><span data-bind="css: {'icon-ok-sign' : printStatusResult() == 'success', 'icon-exclamation-sign' : printStatusResult() != 'success'}, style: { color: printStatusResult() == 'success' ? 'green' : 'red' }"></span></td>
+                <td data-bind="click: function() { $root.showPrintJobDetailsDialogAction($data); }, visible: $root.tableAttributeVisibility.user"><span data-bind="text: userName, attr: { title: userName }"></span></td>
+                <td data-bind="click: function() { $root.showPrintJobDetailsDialogAction($data); }, visible: $root.tableAttributeVisibility.date">
                     <span><span data-bind="visible: $root.tableAttributeVisibility.startDateTime, text: printStartDateTimeFormatted, attr: { title: printStartDateTimeFormatted }"></span></span>
                     <div class="additionalInfo">
                         <div><span data-bind="visible: $root.tableAttributeVisibility.endDateTime, text: printEndDateTimeFormatted, attr: { title: printEndDateTimeFormatted }"></span></div>
                         <div data-bind="visible: $root.tableAttributeVisibility.duration">Duration: <span data-bind="text: durationFormatted, attr: { title: durationFormatted }"></span></div>
                     </div>
                 </td>
-                <td data-bind="visible: $root.tableAttributeVisibility.file">
+                <td data-bind="click: function() { $root.showPrintJobDetailsDialogAction($data); }, visible: $root.tableAttributeVisibility.file">
                     <span><span data-bind="visible: $root.tableAttributeVisibility.fileName, text: fileName, attr: { title: fileName }"></span></span>
                     <div class="additionalInfo">
                         <div><span data-bind="visible: $root.tableAttributeVisibility.fileSize, text: fileSize , attr: { title: fileSize }"></span></div>
@@ -257,7 +312,7 @@
                         <div data-bind="visible: $root.tableAttributeVisibility.layer" >Layer: <span data-bind="text: printedLayers, attr: { title: printedLayers }"></span></div>
                     </div>
                 </td>
-                <td data-bind="visible: $root.tableAttributeVisibility.usage">
+                <td data-bind="click: function() { $root.showPrintJobDetailsDialogAction($data); }, visible: $root.tableAttributeVisibility.usage">
                     <span ><span data-bind="visible: $root.tableAttributeVisibility.material, text: material, attr: { title: material }"></span></span>
                     <span ><span data-bind="visible: $root.tableAttributeVisibility.spoolVendor, text: spoolVendor, attr: { title: spoolVendor }"></span></span>
                     <span ><span data-bind="visible: $root.tableAttributeVisibility.spool, text: spoolName, attr: { title: spoolName }"></span></span>
@@ -270,13 +325,13 @@
                         -->
                     </div>
                 </td>
-                <td data-bind="visible: $root.tableAttributeVisibility.note">
+                <td data-bind="click: function() { $root.showPrintJobDetailsDialogAction($data); }, visible: $root.tableAttributeVisibility.note">
 <!--                    <span ><span>Figure</span></span>-->
                     <div class="additionalInfo">
                         <div ><span class="quill-viewer" data-bind="html: noteHtml, attr: { title: noteText }"></span></div>
                     </div>
                 </td>
-                <td data-bind="visible: $root.tableAttributeVisibility.image">
+                <td data-bind="click: function() { $root.showPrintJobDetailsDialogAction($data); }, visible: $root.tableAttributeVisibility.image">
 <!--                    <img src="http://localhost:5000/plugin/PrintJobHistory/static/images/no-image-icon.png" >-->
 <!--                    <img src="http://localhost:5000/plugin/PrintJobHistory/printJobSnapshot/2019-10-11-15-33" >-->
                     <img data-bind="attr: {src: $root.snapshotUrl( $data), id: $root.snapshotImageId( $data ) }" >

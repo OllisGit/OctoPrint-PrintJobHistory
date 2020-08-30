@@ -147,21 +147,43 @@
                                         <input type="text" class="input-large" data-bind="value: printJobForEditing().spoolName" />
                                     </div>
                                 </div>
-                                <div class="control-group no-bottom-gap">
-                                    <label class="control-label">Spool Vendor*</label>
-                                    <div class="controls">
-                                        <input type="text" class="input-large" data-bind="value: printJobForEditing().spoolVendor" />
+
+<!--                                <div data-bind="if: usedNoneOrFilamentManagerPlugin()">-->
+                                    <div class="control-group no-bottom-gap">
+                                        <label class="control-label">Spool Vendor*</label>
+                                        <div class="controls">
+                                            <input type="text" class="input-large" data-bind="value: printJobForEditing().spoolVendor" />
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="control-group no-bottom-gap">
-                                    <label class="control-label">Material *</label>
-                                    <div class="controls">
-                                        <input type="text" class="input-large" data-bind="value: printJobForEditing().material" />
+                                    <div class="control-group no-bottom-gap">
+                                        <label class="control-label">Material *</label>
+                                        <div class="controls">
+                                            <input type="text" class="input-large" data-bind="value: printJobForEditing().material" />
+                                        </div>
                                     </div>
-                                </div>
-                                <div class="" style="margin-left:80px">
-                                    <small><font color="Gray"> * spool values will not be reflected to FilamentManager-Plugin</font></small>
-                                </div>
+                                    <div class="" style="margin-left:80px">
+                                        <small><font color="Gray"> * spool values will not be reflected to FilamentManager-Plugin</font></small>
+                                    </div>
+<!--                                </div>-->
+<!--                                <div data-bind="ifnot: usedNoneOrFilamentManagerPlugin()">-->
+<!--                                    <div class="control-group no-bottom-gap">-->
+<!--                                        <label class="control-label">Spool Vendor*</label>-->
+<!--                                        <div class="controls">-->
+<!--                                            <input type="text" class="input-large" data-bind="value: printJobForEditing().spoolVendor" />-->
+<!--                                        </div>-->
+<!--                                    </div>-->
+<!--                                    <div class="control-group no-bottom-gap">-->
+<!--                                        <label class="control-label">Material *</label>-->
+<!--                                        <div class="controls">-->
+<!--                                            <input type="text" class="input-large" data-bind="value: printJobForEditing().material" />-->
+<!--                                        </div>-->
+<!--                                    </div>-->
+<!--                                    <div class="" style="margin-left:80px">-->
+<!--                                        <small><font color="Gray"> * spool values will not be reflected to FilamentManager-Plugin</font></small>-->
+<!--                                    </div>-->
+<!--                                </div>-->
+
+
                                 <div class="control-group no-bottom-gap">
                                     <label class="control-label">Used length</label>
                                     <div class="controls">
@@ -292,7 +314,7 @@
                                         <span class="input-prepend">
                                             <span class="btn fileinput-button">
                                                 <span>Browse Image:</span>
-                                                <input id="printJobHistory-snapshotUploadButton" type="file" name="file" accept=".jpg">
+                                                <input id="printJobHistory-snapshotUploadButton" type="file" name="file">
                                             </span>
                                             <span class="add-on" data-bind="text: printJobEditDialog.snapshotUploadName"></span><button data-bind="enable: !printJobEditDialog.snapshotUploadInProgress(), click: printJobEditDialog.performSnapshotUpload" class="btn btn-primary"><i class="fa fa-spinner fa-spin" data-bind="visible: printJobEditDialog.snapshotUploadInProgress" style="display: none;"></i>Upload</button>
                                         </span>
@@ -376,5 +398,120 @@
             </div>
         </div>
     </div>
+
+
+    <!-- Statistic Dialog -->
+    <div id="dialog_printJobHistory_statistic" class="modal hide fade">
+        <div class="modal-header">
+            <div class="modal-title"><h3>Print job statistic</h3><h4 data-bind="text:statisticDialog.query"></h4></div>
+        </div>
+        <div class="modal-body">
+
+            <div class="container-fluid">
+                <div class="row-fluid">
+
+                    <div class="row">
+                        <div class="span3">
+                            <div><b>First/Last</b></div>
+                        </div>
+                        <div class="span9">
+                            <span class="text-right" data-bind="text: statisticDialog.fromToDate">1h23m12s</span>
+<!--                            <input disabled class="input-xlarge text-right" type="text" value="1h23m12s">-->
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="span3">
+                            <div><b>Duration</b></div>
+                        </div>
+                        <div class="span9">
+                            <span class="text-right" data-bind="text: statisticDialog.duration">1h23m12s</span>
+<!--                            <input disabled class="input-xlarge text-right" type="text" value="1h23m12s">-->
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="span3">
+                            <div ><b>Used Length</b></div>
+                        </div>
+                        <div class="span9">
+                            <span class="text-right" data-bind="text: statisticDialog.usedLenght">1234.21mm</span>
+<!--                            <div class="input-append" style="margin-bottom:10px">-->
+<!--                                <input disabled type="number" min="1" class="input-xlarge text-right" value="1234.21">-->
+<!--                                <span class="add-on">mm</span>-->
+<!--                            </div>-->
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="span3">
+                            <div><b>Used Weight</b></div>
+                        </div>
+                        <div class="span9">
+                            <span class="text-right" data-bind="text: statisticDialog.usedWeight">321.21g</span>
+<!--                            <div class="input-append" style="margin-bottom:10px">-->
+<!--                                <input disabled type="number" min="1" class="input-xlarge text-right" value="321.21">-->
+<!--                                <span class="add-on">g</span>-->
+<!--                            </div>-->
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="span3">
+                            <div ><b>File Size</b></div>
+                        </div>
+                        <div class="span9">
+                            <span class="text-right" data-bind="text: statisticDialog.fileSize">321KB</span>
+<!--                            <div class="input-append" style="margin-bottom:10px">-->
+<!--                                <input disabled type="number" min="1" class="input-xlarge text-right" value="325">-->
+<!--                                <span class="add-on">kByte</span>-->
+<!--                            </div>-->
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="span3">
+                            <div ><b>Print results</b></div>
+                        </div>
+                        <div class="span9">
+                            <span class="text-right" data-bind="text: statisticDialog.printResults">success (10), canceled (5), failed (1)</span>
+<!--                            <input disabled class="input-xlarge text-right" type="text" value="canceled (5), success (10), failed (1)">-->
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="span3">
+                            <div ><b>Materials</b></div>
+                        </div>
+                        <div class="span9">
+                            <span class="text-right" data-bind="text: statisticDialog.materials">ABS, PETG, PLA</span>
+<!--                            <input disabled class="input-xlarge text-right" type="text" value="ABS, PETG, PLA">-->
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="span3">
+                            <div ><b>Spools</b></div>
+                        </div>
+                        <div class="span9">
+                            <span class="text-right" data-bind="text: statisticDialog.spools">Number 2, Bad Spool</span>
+<!--                            <input disabled class="input-xlarge text-right" type="text" value="Number 2, Bad Spool">-->
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <div class="control-group">
+                <div class="controls">
+                    <button class="btn "  data-bind="click: statisticDialog.closeDialog" style="text-align:right">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
 </span>

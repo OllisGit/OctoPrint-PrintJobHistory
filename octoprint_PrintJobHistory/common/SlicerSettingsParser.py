@@ -158,7 +158,7 @@ class SlicerSettingsParser(object):
 			return line
 		if (filePosition <= lastTopFilePosition):
 			self._logger.debug("We reached the already parsed top-region during reverse-parsing")
-			print("We reached the already parsed top-region during reverse-parsing")
+			# print("We reached the already parsed top-region during reverse-parsing")
 			return line
 
 		while filePosition >= 0:

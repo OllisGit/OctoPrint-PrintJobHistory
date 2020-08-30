@@ -8,9 +8,12 @@ import shutil
 import sqlite3
 
 from octoprint_PrintJobHistory.WrappedLoggingHandler import WrappedLoggingHandler
+from octoprint_PrintJobHistory.api import TransformPrintJob2JSON
+from octoprint_PrintJobHistory.common import StringUtils
 from octoprint_PrintJobHistory.models.FilamentModel import FilamentModel
 from octoprint_PrintJobHistory.models.PrintJobModel import PrintJobModel
 from octoprint_PrintJobHistory.models.PluginMetaDataModel import PluginMetaDataModel
+from octoprint_PrintJobHistory.models.PrintJobSpoolMapModel import PrintJobSpoolMapModel
 from octoprint_PrintJobHistory.models.TemperatureModel import TemperatureModel
 from peewee import *
 
@@ -366,15 +369,165 @@ class DatabaseManager(object):
 				self.sendErrorMessageToClient("PJH-DatabaseManager", "Could not update the printjob ('"+ printJobModel.fileName +"') into the database. See OctoPrint.log for details!")
 			pass
 
+	#
+	def calculatePrintJobsStatisticByQuery(self, tableQuery):
+
+		duration = 0
+		length = 0.0
+		weight = 0.0
+		fileSize = 0
+		statusDict = dict()
+		materialDict = dict()
+		spoolDict = dict()
+		firstDate = None
+		lastDate = None
+		newTableQuery = tableQuery.copy()
+		newTableQuery["sortColumn"] = "printStartDateTime"
+		newTableQuery["sortOrder"] = "asc"
+		allJobModels = self.loadPrintJobsByQuery(newTableQuery)
+
+		for job in allJobModels:
+			if (firstDate == None):
+				firstDate = job.printStartDateTime
+			lastDate = job.printEndDateTime
+			fileSize = fileSize + job.fileSize
+			duration = duration + job.duration
+			statusResult = job.printStatusResult
+
+			if (statusResult in statusDict):
+				currentCount = statusDict[statusResult]
+				currentCount = currentCount + 1
+				statusDict[statusResult] = currentCount
+			else:
+				statusDict[statusResult] = 1
+
+			job.loadFilamentFromAssoziation()
+			allFilaments = job.allFilaments
+			if allFilaments != None:
+				for filla in allFilaments:
+					if (StringUtils.isEmpty(filla.usedLength) == False):
+						length = length + filla.usedLength
+					if (StringUtils.isEmpty(filla.usedWeight) == False):
+						weight = weight + filla.usedWeight
+
+					if (StringUtils.isEmpty(filla.spoolName) == False):
+						# spoolsSet.add(filla.spoolName)
+						if (filla.spoolName in spoolDict):
+							currentCount = spoolDict[filla.spoolName]
+							currentCount = currentCount + 1
+							spoolDict[filla.spoolName] = currentCount
+						else:
+							spoolDict[filla.spoolName] = 1
+
+					if (StringUtils.isEmpty(filla.material) == False):
+						# materialsSet.add(filla.material)
+						if (filla.material in materialDict):
+							currentCount = materialDict[filla.material]
+							currentCount = currentCount + 1
+							materialDict[filla.material] = currentCount
+						else:
+							materialDict[filla.material] = 1
+
+
+
+		# do formatting
+		queryString = self._buildQueryString(tableQuery)
+		fromToString = firstDate.strftime('%d.%m.%Y %H:%M') + " - " + lastDate.strftime('%d.%m.%Y %H:%M')
+		durationString = StringUtils.secondsToText(duration)
+		lengthString = self._buildLengthString(length)
+		weightString = self._buildWeightString(weight)
+		statusString = self._buildStatusString(statusDict)
+		materialString = self._buildDictlString(materialDict)
+		spoolString = self._buildDictlString(spoolDict)
+		fileSizeString = StringUtils.get_formatted_size(fileSize)
+		return {
+			"query": queryString,
+			"fromToDate": fromToString,
+			"duration": durationString,
+			"usedLength": lengthString,
+			"usedWeight": weightString,
+			"fileSize": fileSizeString,
+			"printStatus": statusString,
+		    "material": materialString,
+			"spools": spoolString
+		}
+
+	def _buildLengthString(self, length):
+		lengthString = StringUtils.formatFloatSave("{:.02f}", TransformPrintJob2JSON.convertMM2M(length), "-")
+		if (lengthString != "-"):
+			lengthString = lengthString + "m"
+		return lengthString
+
+	def _buildWeightString(self, weight):
+		weightString = StringUtils.formatFloatSave("{:.02f}", weight, "-")
+		if (weightString != "-"):
+			weightString = weightString + "g"
+		return weightString
+
+	def _buildQueryString(self, tableQuery):
+		result = ""
+		if ("startDate" in tableQuery):
+			startDate = tableQuery["startDate"]
+			endDate = tableQuery["endDate"]
+			if (len(startDate) > 0 and len(endDate) > 0):
+				# EndDay + 1
+				# startDateTime = datetime.datetime.strptime(startDate, "%d.%m.%Y")
+				# endDateTime = datetime.datetime.strptime(endDate, "%d.%m.%Y") + datetime.timedelta(days=1)
+				result = "Timeframe: " + startDate + " - " + endDate + ","
+
+		if (len(result)== 0):
+			result = "Timeframe: all,"
+
+		if (tableQuery["filterName"] == "onlySuccess"):
+			result = result + " Filter: only successful"
+		if (tableQuery["filterName"] == "onlyFailed"):
+			result = result + " Filter: only failed"
+		if (tableQuery["filterName"] == "all"):
+			result = result + " Filter: all"
+
+		return result
+
+	def _buildStatusString(self, statusDict):
+		result = ""
+		if ("success" in statusDict):
+			result = "success(" + str(statusDict["success"]) + ")"
+		if ("canceled" in statusDict):
+			if (len(result) != 0):
+				result += ", "
+			result = result + "canceled(" + str(statusDict["canceled"]) + ")"
+		if ("failed" in statusDict):
+			if (len(result) != 0):
+				result += ", "
+			result = result + "failed(" + str(statusDict["failed"]) + ")"
+
+		return result
+
+	def _buildDictlString(self, myDict):
+		result = ""
+
+		keys = myDict.keys()
+		for key in keys:
+			count = myDict[key]
+			if (len(result) != 0):
+				result = result + ", "
+			result = result + key + "(" + str(count) + ")"
+
+		if (len(result) == 0):
+			result = "-"
+		return result
+
+
 	def countPrintJobsByQuery(self, tableQuery):
 
-		filterName = tableQuery["filterName"]
+		# filterName = tableQuery["filterName"]
 
 		myQuery = PrintJobModel.select()
-		if (filterName == "onlySuccess"):
-			myQuery = myQuery.where(PrintJobModel.printStatusResult == "success")
-		elif (filterName == "onlyFailed"):
-			myQuery = myQuery.where(PrintJobModel.printStatusResult != "success")
+		myQuery = self._addTableQueryToSelect(myQuery, tableQuery)
+		# self._addTableQueryToSelect(myQuery, tableQuery)
+		# if (filterName == "onlySuccess"):
+		# 	myQuery = myQuery.where(PrintJobModel.printStatusResult == "success")
+		# elif (filterName == "onlyFailed"):
+		# 	myQuery = myQuery.where(PrintJobModel.printStatusResult != "success")
 
 		return myQuery.count()
 
@@ -382,11 +535,51 @@ class DatabaseManager(object):
 	def loadPrintJobsByQuery(self, tableQuery):
 		offset = int(tableQuery["from"])
 		limit = int(tableQuery["to"])
+		# sortColumn = tableQuery["sortColumn"]
+		# sortOrder = tableQuery["sortOrder"]
+		# filterName = tableQuery["filterName"]
+
+		myQuery = PrintJobModel.select().offset(offset).limit(limit)
+		myQuery = self._addTableQueryToSelect(myQuery, tableQuery)
+		# if (filterName == "onlySuccess"):
+		# 	myQuery = myQuery.where(PrintJobModel.printStatusResult == "success")
+		# elif (filterName == "onlyFailed"):
+		# 	myQuery = myQuery.where(PrintJobModel.printStatusResult != "success")
+		#
+		# if ("printStartDateTime" == sortColumn):
+		# 	if ("desc" == sortOrder):
+		# 		myQuery = myQuery.order_by(PrintJobModel.printStartDateTime.desc())
+		# 	else:
+		# 		myQuery = myQuery.order_by(PrintJobModel.printStartDateTime)
+		# if ("fileName" == sortColumn):
+		# 	if ("desc" == sortOrder):
+		# 		myQuery = myQuery.order_by(PrintJobModel.fileName.desc())
+		# 	else:
+		# 		myQuery = myQuery.order_by(PrintJobModel.fileName)
+		# if ("startDate" in tableQuery):
+		# 	startDate = tableQuery["startDate"]
+		# 	endDate = tableQuery["endDate"]
+		# 	if (len(startDate) > 0 and len(endDate) > 0):
+		# 		# EndDay + 1
+		# 		startDateTime = datetime.datetime.strptime(startDate, "%d.%m.%Y")
+		# 		endDateTime = datetime.datetime.strptime(endDate, "%d.%m.%Y") + datetime.timedelta(days=1)
+		#
+		# 		# myQuery = myQuery.where( (( PrintJobModel.printStartDateTime == startDate) | ( PrintJobModel.printStartDateTime >  startDate))
+		# 		# 						 &
+		# 		# 						 ((PrintJobModel.printStartDateTime == endDate) | ( PrintJobModel.printStartDateTime <  startDate)) )
+		# 		myQuery = myQuery.where( ( ( PrintJobModel.printStartDateTime > startDateTime) & ( PrintJobModel.printStartDateTime < endDateTime))
+		# 								 )
+
+		return myQuery
+
+
+
+	def _addTableQueryToSelect(self, myQuery, tableQuery):
+
 		sortColumn = tableQuery["sortColumn"]
 		sortOrder = tableQuery["sortOrder"]
 		filterName = tableQuery["filterName"]
 
-		myQuery = PrintJobModel.select().offset(offset).limit(limit)
 		if (filterName == "onlySuccess"):
 			myQuery = myQuery.where(PrintJobModel.printStatusResult == "success")
 		elif (filterName == "onlyFailed"):
@@ -402,7 +595,31 @@ class DatabaseManager(object):
 				myQuery = myQuery.order_by(PrintJobModel.fileName.desc())
 			else:
 				myQuery = myQuery.order_by(PrintJobModel.fileName)
+		if ("startDate" in tableQuery):
+			startDate = tableQuery["startDate"]
+			endDate = tableQuery["endDate"]
+			if (len(startDate) > 0 and len(endDate) > 0):
+				# EndDay + 1
+				startDateTime = datetime.datetime.strptime(startDate, "%d.%m.%Y")
+				endDateTime = datetime.datetime.strptime(endDate, "%d.%m.%Y") + datetime.timedelta(days=1)
+
+				# myQuery = myQuery.where( (( PrintJobModel.printStartDateTime == startDate) | ( PrintJobModel.printStartDateTime >  startDate))
+				# 						 &
+				# 						 ((PrintJobModel.printStartDateTime == endDate) | ( PrintJobModel.printStartDateTime <  startDate)) )
+				myQuery = myQuery.where( ( ( PrintJobModel.printStartDateTime > startDateTime) & ( PrintJobModel.printStartDateTime < endDateTime))
+										 )
 		return myQuery
+
+
+	def loadSelectedPrintJobs(self, selectedDatabaseIds):
+		selectedDatabaseIdsSplitted = selectedDatabaseIds.split(',')
+		databaseArray = []
+
+		for dbId in selectedDatabaseIdsSplitted:
+			databaseArray.append(dbId)
+
+		return PrintJobModel.select().where(PrintJobModel.databaseId << databaseArray).order_by(PrintJobModel.printStartDateTime.desc())
+
 
 	def loadAllPrintJobs(self):
 		return PrintJobModel.select().order_by(PrintJobModel.printStartDateTime.desc())

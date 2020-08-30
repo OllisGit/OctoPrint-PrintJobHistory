@@ -1,18 +1,94 @@
+import pprint
+import unittest
+
 from octoprint_PrintJobHistory import DatabaseManager
+from octoprint_PrintJobHistory.api import TransformPrintJob2JSON
 from octoprint_PrintJobHistory.common import StringUtils
 import logging
 
-databaselocation = "/Users/o0632/Library/Application Support/OctoPrint/data/PrintJobHistory/"
+class TestDatabase(unittest.TestCase):
 
-def clientOutput(message1, message2):
-	print(message1)
-	print(message2)
+	databaselocation = "/Users/o0632/Library/Application Support/OctoPrint/data/PrintJobHistory/"
 
-# logging.basicConfig(level=logging.DEBUG)
-# testLogger = logging.getLogger("testLogger")
-# logging.info("Start Database-Test")
-# databaseManager = DatabaseManager(testLogger, True)
-# databaseManager.initDatabase(databaselocation, clientOutput)
+	def setUp(self):
+		self.init_database()
+
+	def _clientOutput(message1, message2):
+		print(message1)
+		print(message2)
+
+	def init_database(self):
+		logging.basicConfig(level=logging.DEBUG)
+		testLogger = logging.getLogger("testLogger")
+		logging.info("Start Database-Test")
+		self.databaseManager = DatabaseManager(testLogger, True)
+		self.databaseManager.initDatabase(self.databaselocation, self._clientOutput)
+
+	# TimeFrameSelection
+	def _test_queryJobs(self):
+		tableQuery = {
+			"from": 0,
+			"to": 10,
+			"sortColumn": "filename",
+			"sortOrder": "asc",
+			"filterName": "all",
+			"startDate": "20.08.2020",
+			"endDate": "20.08.2020",
+		}
+
+		allJobsModels = self.databaseManager.loadPrintJobsByQuery(tableQuery)
+		print(allJobsModels)
+		allJobsAsList = TransformPrintJob2JSON.transformAllPrintJobModels(allJobsModels)
+
+		pp = pprint.PrettyPrinter(indent=2)
+		# pp.pprint(allJobsAsDict)
+		for jobItem in allJobsAsList:
+			print(str(jobItem["databaseId"]) + "  " + str(jobItem["printStartDateTimeFormatted"]) + "  " + str(jobItem["printEndDateTimeFormatted"]))
+
+		pass
+
+
+	# Statistic
+	def _test_statistics(self):
+		tableQuery = {
+			"from": 0,
+			"to": 100,
+			"sortColumn": "filename",
+			"sortOrder": "asc",
+			"filterName": "all",
+			# "startDate": "20.08.2020",
+			# "endDate": "20.08.2020",
+		}
+
+		stats = self.databaseManager.calculatePrintJobsStatisticByQuery(tableQuery)
+		print(stats)
+		# allJobsAsList = TransformPrintJob2JSON.transformAllPrintJobModels(allJobsModels)
+		#
+		# pp = pprint.PrettyPrinter(indent=2)
+		# # pp.pprint(allJobsAsDict)
+		# for jobItem in allJobsAsList:
+		# 	print(str(jobItem["databaseId"]) + "  " + str(jobItem["printStartDateTimeFormatted"]) + "  " + str(jobItem["printEndDateTimeFormatted"]))
+
+		pass
+
+	def test_loadSelected(self):
+		selectedDatabaseIds = "17,3,21,23,20"
+		allJobsModels = self.databaseManager.loadSelectedPrintJobs(selectedDatabaseIds)
+		print(allJobsModels)
+		allJobsAsList = TransformPrintJob2JSON.transformAllPrintJobModels(allJobsModels)
+
+		pp = pprint.PrettyPrinter(indent=2)
+		# pp.pprint(allJobsAsDict)
+		for jobItem in allJobsAsList:
+			print(str(jobItem["databaseId"]) + "  " + str(jobItem["printStartDateTimeFormatted"]) + "  " + str(jobItem["printEndDateTimeFormatted"]))
+
+		pass
+
+if __name__ == '__main__':
+	print("Start DatabaseManager Test")
+	unittest.main()
+	print("Finished")
+
 #
 # type = "ppostgres"
 # host="localhost"
@@ -22,17 +98,6 @@ def clientOutput(message1, message2):
 # password = "magical_password"
 # result = databaseManager.testConnection(type, host, port, databaseName, username, password)
 # print(result)
-
-def convert(value):
-	result = StringUtils.to_native_str(value)
-	print(result)
-
-# def convert(value):
-# 	result = value  #okay, take str
-# 	if (not isinstance(value, str)):
-# 		# okay, it is not a string. Maybe unicode
-# 		result = value.encode("utf-8")
-# 	return result
 
 
 # printJob = databaseManager.loadPrintJob(1)
@@ -51,5 +116,3 @@ def convert(value):
 # targetScheme = 5
 #
 # databaseManager._upgradeDatabase(currentScheme, targetScheme)
-
-

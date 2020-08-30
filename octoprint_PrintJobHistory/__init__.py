@@ -48,12 +48,14 @@ class PrintJobHistoryPlugin(
 		self._filamentManagerPluginImplementationState = None
 		self._displayLayerProgressPluginImplementation = None
 		self._displayLayerProgressPluginImplementationState = None
+		self._spoolManagerPluginImplementation = None
+		self._spoolManagerPluginImplementationState = None
 		self._ultimakerFormatPluginImplementation = None
 		self._ultimakerFormatPluginImplementationState = None
 		self._prusaSlicerThumbnailsPluginImplementation = None
 		self._prusaSlicerThumbnailsPluginImplementationState = None
 		self._printHistoryPluginImplementation = None
-
+		# self._isMultiSpoolManagerPluginsAvailable = False
 
 		pluginDataBaseFolder = self.get_plugin_data_folder()
 
@@ -113,12 +115,15 @@ class PrintJobHistoryPlugin(
 		self._displayLayerProgressPluginImplementationState  = pluginInfo[0]
 		self._displayLayerProgressPluginImplementation = pluginInfo[1]
 
+		pluginInfo = self._getPluginInformation("SpoolManager")
+		self._spoolManagerPluginImplementationState  = pluginInfo[0]
+		self._spoolManagerPluginImplementation = pluginInfo[1]
+
 		pluginInfo = self._getPluginInformation("UltimakerFormatPackage")
 		self._ultimakerFormatPluginImplementationState  = pluginInfo[0]
 		self._ultimakerFormatPluginImplementation = pluginInfo[1]
 
 		pluginInfo = self._getPluginInformation("prusaslicerthumbnails")
-
 		self._prusaSlicerThumbnailsPluginImplementationState  = pluginInfo[0]
 		self._prusaSlicerThumbnailsPluginImplementation = pluginInfo[1]
 
@@ -128,9 +133,37 @@ class PrintJobHistoryPlugin(
 		else:
 			self._printHistoryPluginImplementation = None
 
+		# if (self._spoolManagerPluginImplementation != None and self._spoolManagerPluginImplementationState == "enabled" and
+		#     self._filamentManagerPluginImplementation != None and self._filamentManagerPluginImplementationState == "enabled"):
+		# 	self._isMultiSpoolManagerPluginsAvailable = True
+		#
+		# 	# assign a default
+		# 	currentPlugin = self._settings.get([SettingsKeys.SETTINGS_KEY_SELECTED_SPOOLMANAGER_PLUGIN])
+		# 	if (currentPlugin == None or currentPlugin == SettingsKeys.KEY_SELECTED_NONE_PLUGIN):
+		# 		self._settings.set([SettingsKeys.SETTINGS_KEY_SELECTED_SPOOLMANAGER_PLUGIN],
+		# 						   SettingsKeys.KEY_SELECTED_SPOOLMANAGER_PLUGIN)
+		# 		self._settings.save()
+		# else:
+		# 	# Only one manager is available or maybe none
+		# 	onlyOne = False
+		# 	if (self._spoolManagerPluginImplementation != None and self._spoolManagerPluginImplementationState == "enabled"):
+		# 		self._settings.set([SettingsKeys.SETTINGS_KEY_SELECTED_SPOOLMANAGER_PLUGIN], SettingsKeys.KEY_SELECTED_SPOOLMANAGER_PLUGIN)
+		# 		onlyOne = True
+		# 	if (self._filamentManagerPluginImplementation != None and self._filamentManagerPluginImplementationState == "enabled"):
+		# 		self._settings.set([SettingsKeys.SETTINGS_KEY_SELECTED_SPOOLMANAGER_PLUGIN], SettingsKeys.KEY_SELECTED_FILAMENTMANAGER_PLUGIN)
+		# 		onlyOne = True
+		# 	if (onlyOne == False):
+		# 		self._settings.set([SettingsKeys.SETTINGS_KEY_SELECTED_SPOOLMANAGER_PLUGIN], SettingsKeys.KEY_SELECTED_NONE_PLUGIN)
+		#
+		# 	self._settings.save()
+
+		# self._logger.info("Selected SpoolManager-Plugin '" + str(
+		# 	self._settings.get([SettingsKeys.SETTINGS_KEY_SELECTED_SPOOLMANAGER_PLUGIN])) + "'")
+
 		self._logger.info("Plugin-State: "
 						  "PreHeat=" + self._preHeatPluginImplementationState + " "
 						  "DisplayLayerProgress=" + self._displayLayerProgressPluginImplementationState + " "
+						  # "SpoolManager=" + self._spoolManagerPluginImplementationState + " "
 						  "filamentmanager=" + self._filamentManagerPluginImplementationState + " "
 						  "ultimakerformat=" + self._ultimakerFormatPluginImplementationState + " "
 						  "PrusaSlicerThumbnails=" + self._ultimakerFormatPluginImplementationState)
@@ -146,6 +179,9 @@ class PrintJobHistoryPlugin(
 
 			if self._displayLayerProgressPluginImplementation == None:
 				missingMessage = missingMessage + "<li>DisplayLayerProgress (<b>" + self._displayLayerProgressPluginImplementationState + "</b>)</li>"
+
+			# if self._spoolManagerPluginImplementation == None:
+			# 	missingMessage = missingMessage + "<li>SpoolManager (<b>" + self._spoolManagerPluginImplementationState + "</b>)</li>"
 
 			if self._ultimakerFormatPluginImplementation == None:
 				missingMessage = missingMessage + "<li>UltimakerFormatPackage (<b>" + self._ultimakerFormatPluginImplementationState + "</b>)</li>"
@@ -214,7 +250,7 @@ class PrintJobHistoryPlugin(
 			self._logger.error("Filamentlength not found for toolId '" + str(toolId) + "'")
 		filemanentModel.calculatedLength = filamentLength
 
-		if self._filamentManagerPluginImplementation != None:
+		if self._filamentManagerPluginImplementation != None and self._filamentManagerPluginImplementationState == "enabled":
 
 			filemanentModel.usedLength = self._filamentManagerPluginImplementation.filamentOdometer.totalExtrusion[0]
 			selectedSpools = self._filamentManagerPluginImplementation.filamentManager.get_all_selections(self._filamentManagerPluginImplementation.client_id)
@@ -537,6 +573,7 @@ class PrintJobHistoryPlugin(
 											databaseFileLocation = databaseFileLocation,
 											snapshotFileLocation = snapshotFileLocation,
 											isPrintHistoryPluginAvailable = self._printHistoryPluginImplementation != None
+											# isMultiSpoolManagerPluginsAvailable = self._isMultiSpoolManagerPluginsAvailable
 											))
 			# Check if all needed Plugins are available, if not modale dialog to User
 			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_PLUGIN_DEPENDENCY_CHECK]):
@@ -619,6 +656,7 @@ class PrintJobHistoryPlugin(
 		settings[SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT_JOB_ID] = None
 		settings[SettingsKeys.SETTINGS_KEY_SHOWPRINTJOBDIALOGAFTERPRINT_MODE] = SettingsKeys.KEY_SHOWPRINTJOBDIALOGAFTERPRINT_MODE_SUCCESSFUL
 		settings[SettingsKeys.SETTINGS_KEY_CAPTURE_PRINTJOBHISTORY_MODE] = SettingsKeys.KEY_CAPTURE_PRINTJOBHISTORY_MODE_SUCCESSFUL
+		# settings[SettingsKeys.SETTINGS_KEY_SELECTED_SPOOLMANAGER_PLUGIN] = SettingsKeys.KEY_SELECTED_SPOOLMANAGER_PLUGIN
 
 		## Camera
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT] = True
@@ -680,11 +718,15 @@ class PrintJobHistoryPlugin(
 				"js/PrintJobHistory-PluginCheckDialog.js",
 				"js/PrintJobHistory-EditJobDialog.js",
 				"js/PrintJobHistory-ImportDialog.js",
+				"js/PrintJobHistory-StatisticDialog.js",
 				"js/PrintJobHistory-ComponentFactory.js",
 				"js/quill.min.js",
+				"js/jquery.datetimepicker.full.min.js",
 				"js/TableItemHelper.js",
 				"js/ResetSettingsUtilV2.js"],
-			css=["css/PrintJobHistory.css",
+			css=[
+				 "css/PrintJobHistory.css",
+				 "css/jquery.datetimepicker.min.css",
 				 "css/quill.snow.css"],
 			less=["less/PrintJobHistory.less"]
 		)
