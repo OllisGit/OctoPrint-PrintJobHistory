@@ -13,7 +13,7 @@ from octoprint_PrintJobHistory.common import StringUtils
 from octoprint_PrintJobHistory.models.FilamentModel import FilamentModel
 from octoprint_PrintJobHistory.models.PrintJobModel import PrintJobModel
 from octoprint_PrintJobHistory.models.PluginMetaDataModel import PluginMetaDataModel
-from octoprint_PrintJobHistory.models.PrintJobSpoolMapModel import PrintJobSpoolMapModel
+# from octoprint_PrintJobHistory.models.PrintJobSpoolMapModel import PrintJobSpoolMapModel
 from octoprint_PrintJobHistory.models.TemperatureModel import TemperatureModel
 from peewee import *
 
