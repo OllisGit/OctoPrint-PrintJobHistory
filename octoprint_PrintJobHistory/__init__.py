@@ -232,11 +232,10 @@ class PrintJobHistoryPlugin(
 		filePath = payload["path"]
 		fileData = self._file_manager.get_metadata(payload["origin"], filePath)
 
-		toolId = None
+		toolId = self._settings.get([SettingsKeys.SETTINGS_KEY_DEFAULT_TOOL_ID])  # "tool0"
 		filamentLength = None
 		if "analysis" in fileData:
 			if "filament" in fileData["analysis"]:
-				toolId = self._settings.get([SettingsKeys.SETTINGS_KEY_DEFAULT_TOOL_ID])  # "tool0"
 				if toolId in fileData["analysis"]["filament"]:
 					filamentLength = fileData["analysis"]["filament"][toolId]['length']
 				else:
