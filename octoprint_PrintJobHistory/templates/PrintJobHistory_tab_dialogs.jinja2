@@ -58,7 +58,17 @@
         <div class="modal-header">
             <div class="row">
                 <div class="span9">
-                    <h4 class="modal-title"><span data-bind="text: printJobForEditing().fileName"></span>&nbsp;&nbsp;(<span data-bind="text:printJobForEditing().fileSize" ></span>)</h4>
+
+                    <h4 class="modal-title">&nbsp;
+                        <a href='' data-bind="click: function(){printJobEditDialog.toggleFullEditMode()}"><i class="icon-pencil"></i></a>
+                        <span data-bind="visible: printJobEditDialog.fullEditMode()==false">
+                            <span data-bind="text: printJobForEditing().fileName"></span>&nbsp;&nbsp;(<span data-bind="text:printJobForEditing().fileSize" ></span>)
+                        </span>
+                        <span data-bind="visible: printJobEditDialog.fullEditMode()==true">
+                            <input type="text" class="input-xxlarge" data-bind="value: printJobForEditing().fileName" />
+<!--                            <input type="text" class="input-small text-right" data-bind="value: printJobForEditing().fileSize" />-->
+                        </span>
+                    </h4>
                 </div>
                 <div class="span3">
                     <!-- Customize Field visiblity -->
@@ -104,7 +114,7 @@
 <!--                    </div>-->
                 </div>
             </div>
-            <div class="row">
+            <div class="row" >
                 <div class="span1" >
                     <div class="span1"><span class="icon-4x" style="cursor: pointer;" data-bind="css: {'icon-ok-sign' : printJobForEditing().printStatusResult() == 'success', 'icon-exclamation-sign' : printJobForEditing().printStatusResult() != 'success'},
                                                                         style: { color: printJobForEditing().printStatusResult() == 'success' ? 'green' : 'red'},
@@ -135,6 +145,41 @@
                     </div>
                 </div>
             </div>
+<!--
+            <div class="row" data-bind="visible: printJobEditDialog.fullEditMode()==true">
+                <div class="span1" >
+                    <div class="span1"><span class="icon-4x" style="cursor: pointer;" data-bind="css: {'icon-ok-sign' : printJobForEditing().printStatusResult() == 'success', 'icon-exclamation-sign' : printJobForEditing().printStatusResult() != 'success'},
+                                                                        style: { color: printJobForEditing().printStatusResult() == 'success' ? 'green' : 'red'},
+                                                                         click: printJobEditDialog.showPrintStatusDialog"></span></div>
+                </div>
+                <div class="span6" >
+                    <div class="row">
+                        <div class="span12">
+                            <div class="row">
+                                <div class="span4"><b>Start</b> <input type="text" class="input-medium" data-bind="value: printJobForEditing().printStartDateTimeFormatted" /> </div>
+                                <div class="span3"><b>Height</b> <input type="text" class="input-small" data-bind="value: printJobForEditing().printedHeight" />mm</div>
+                                <div class="span2"><b>Nozzle</b> <input type="text" class="input-mini" data-bind="value: printJobForEditing().temperatureNozzle" />°C</div>
+                                <div class="span3"></div>
+                            </div>
+                            <div class="row">
+                                <div class="span4"><b>End</b> <input type="text" class="input-medium" data-bind="value: printJobForEditing().printEndDateTimeFormatted" /></div>
+                                <div class="span3"><b>Layer</b> <input type="text" class="input-mini" data-bind="value: printJobForEditing().printedLayers" /></div>
+                                <div class="span2"><b>Bed</b> <input type="text" class="input-mini" data-bind="value: printJobForEditing().temperatureBed" />°C</div>
+                                <div class="span3"></div>
+                            </div>
+                            <div class="row">
+                                <div class="span4"><b>Duration</b> <input type="text" class="input-mini" data-bind="value: printJobForEditing().durationFormatted" /></div>
+                                <div class="span3"></div>
+                                <div class="span2"></div>
+                                <div class="span3"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+-->
+
+
         </div>
         <div class="modal-body" >
             <form id="form_printJobHistory_editPrintJobItem" class="form-horizontal" >
@@ -285,7 +330,7 @@
                                                     <p><strong>Webcam stream not loaded</strong></p>
                                     <!--                <p data-bind="visible: !loginState.isAdmin()"><small>{{ _('It might not be configured correctly or require authentication. To have this fixed, get in touch with an administrator of this OctoPrint instance.') }}</small></p>-->
                                     <!--                <p data-bind="visible: loginState.isAdmin"><small>{{ _('It might not be configured correctly or require authentication. You can change the URL of the stream under "Settings" > "Webcam & Timelapse" > "Webcam" > "Stream URL". If you don\'t have a webcam you can also just disable webcam support there.') }}</small></p>-->
-                                                    <p><small>Currently configured stream UR: <a target="_blank" rel="noreferrer" data-bind="attr: {href: printJobEditDialog.webCamSettings.streamUrl}, text: printJobEditDialog.webCamSettings.streamUrl"></a></small></p>
+                                                    <p><small>Currently configured stream URL: <a target="_blank" rel="noreferrer" data-bind="attr: {href: printJobEditDialog.webCamSettings.streamUrl}, text: printJobEditDialog.webCamSettings.streamUrl"></a></small></p>
                                                 </div>
                                             </div>
                                             <!--  END WEBCAM LOADER   -->

@@ -232,11 +232,10 @@ class PrintJobHistoryPlugin(
 		filePath = payload["path"]
 		fileData = self._file_manager.get_metadata(payload["origin"], filePath)
 
-		toolId = None
+		toolId = self._settings.get([SettingsKeys.SETTINGS_KEY_DEFAULT_TOOL_ID])  # "tool0"
 		filamentLength = None
 		if "analysis" in fileData:
 			if "filament" in fileData["analysis"]:
-				toolId = self._settings.get([SettingsKeys.SETTINGS_KEY_DEFAULT_TOOL_ID])  # "tool0"
 				if toolId in fileData["analysis"]["filament"]:
 					filamentLength = fileData["analysis"]["filament"][toolId]['length']
 				else:
@@ -391,12 +390,13 @@ class PrintJobHistoryPlugin(
 	def _addTemperatureToPrintModel(self, printJobModel, bedTemp, toolId, toolTemp):
 		tempModel = TemperatureModel()
 		tempModel.sensorName = "bed"
-		tempModel.sensorValue = bedTemp
+		# tempModel.sensorValue = bedTemp if bedTemp != None else"-"
+		tempModel.sensorValue = bedTemp if bedTemp != None else "-"
 		printJobModel.addTemperatureModel(tempModel)
 
 		tempModel = TemperatureModel()
 		tempModel.sensorName = toolId #"tool0"
-		tempModel.sensorValue = toolTemp
+		tempModel.sensorValue = toolTemp if toolTemp != None else "-"
 		printJobModel.addTemperatureModel(tempModel)
 
 	#### print job finished
@@ -700,7 +700,7 @@ class PrintJobHistoryPlugin(
 	def get_template_configs(self):
 		return [
 			dict(type="tab", name="Print Job History"),
-			dict(type="settings", custom_bindings=True)
+			dict(type="settings", custom_bindings=True, name="Print Job History")
 		]
 
 	def get_template_vars(self):

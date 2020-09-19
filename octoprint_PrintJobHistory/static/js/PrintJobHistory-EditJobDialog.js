@@ -52,6 +52,7 @@ function PrintJobHistoryEditDialog(){
         }
     });
 
+
     // Image functions
     function _setSnapshotImageSource(snapshotUrl){
         self.lastSnapshotImageSource = self.snapshotImage.attr("src")
@@ -195,6 +196,7 @@ function PrintJobHistoryEditDialog(){
     /////////////////////////////////////////////////////////////////////////////////////////////////// SHOW DIALOG
     this.showDialog = function(printJobItemForEdit, closeDialogHandler){
 
+        self.fullEditMode(false);
         self.printJobItemForEdit = printJobItemForEdit;
         self.closeDialogHandler = closeDialogHandler;
 
@@ -389,7 +391,6 @@ function PrintJobHistoryEditDialog(){
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////// UPLOAD IMAGE
-
     this.performSnapshotUpload = function() {
         if (self.snapshotUploadData === undefined) return;
 
@@ -410,6 +411,14 @@ function PrintJobHistoryEditDialog(){
 
 //        self.selectedSnapshotlFilenameUrl = ko.observable();
 //        self.selectedUploaadSnapshotlUrl =  ko.observable();
+
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////// TOGGLE FULL EDIT MODE
+    this.fullEditMode = ko.observable(false);
+
+    self.toggleFullEditMode = function() {
+        self.fullEditMode(!this.fullEditMode());
+    };
 
 
 }

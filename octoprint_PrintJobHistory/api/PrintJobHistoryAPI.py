@@ -35,6 +35,10 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 	def _updatePrintJobFromJson(self, printJobModel,  jsonData):
 
+		printJobModel.fileName = self._getValueFromDictOrNone("fileName", jsonData)
+		# printJobModel.filePathName = self._getValueFromDictOrNone("fileName", jsonData) # pech
+		# printJobModel.filePathName = self._getValueFromDictOrNone("fileName", jsonData) # pech
+
 		# changable...
 		printJobModel.printStatusResult = self._getValueFromDictOrNone("printStatusResult", jsonData)
 		printJobModel.noteText = self._getValueFromDictOrNone("noteText", jsonData)
