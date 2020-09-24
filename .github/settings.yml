@@ -48,6 +48,7 @@ labels:
   - name: "type: question"
     description: "Further information is requested"
     color: d876e3
+
   - name: "status: analysing"
     color: d3d847
   - name: "status: inProgress"
@@ -68,6 +69,18 @@ labels:
     description: "Issue will be closed automatically"
     color: ed6d75
 
+  - name: "feature: multiTool"
+    description: "Issue is releated to this feature"
+    color: f9d0c4
+  - name: "feature: database"
+    description: "Issue is releated to this feature"
+    color: f9d0c4
+  - name: "feature: spoolmanager"
+    description: "Issue is releated to this feature"
+    color: f9d0c4
+  - name: "feature: on roadmap"
+    description: "Issue is added to the project roadmap"
+    color: f9d0c4
 
 # Collaborators: give specific users access to this repository.
 #collaborators:
