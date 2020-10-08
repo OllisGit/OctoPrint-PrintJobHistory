@@ -22,6 +22,7 @@ from werkzeug.datastructures import Headers
 from octoprint_PrintJobHistory import PrintJobModel, TemperatureModel, FilamentModel
 from octoprint_PrintJobHistory.api import TransformPrintJob2JSON
 
+from octoprint_PrintJobHistory.common import StringUtils
 from octoprint_PrintJobHistory.common.SettingsKeys import SettingsKeys
 
 from octoprint_PrintJobHistory.CameraManager import CameraManager
@@ -34,36 +35,70 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 
 	def _updatePrintJobFromJson(self, printJobModel,  jsonData):
-
-		printJobModel.fileName = self._getValueFromDictOrNone("fileName", jsonData)
-		# printJobModel.filePathName = self._getValueFromDictOrNone("fileName", jsonData) # pech
-		# printJobModel.filePathName = self._getValueFromDictOrNone("fileName", jsonData) # pech
+		# transfer header values
+		printJobModel.fileName = self._getValueFromJSONOrNone("fileName", jsonData)
+		# printJobModel.filePathName = self._getValueFromJSONOrNone("fileName", jsonData) # pech
+		printJobModel.printStartDateTime = StringUtils.transformToDateTimeOrNone(self._getValueFromJSONOrNone("printStartDateTimeFormatted", jsonData))
+		printJobModel.printEndDateTime = StringUtils.transformToDateTimeOrNone(self._getValueFromJSONOrNone("printEndDateTimeFormatted", jsonData))
+		printJobModel.duration = self._getValueFromJSONOrNone("duration", jsonData)
+		printJobModel.printedHeight = self._getValueFromJSONOrNone("printedHeight", jsonData)
+		printJobModel.printedLayers = self._getValueFromJSONOrNone("printedLayers", jsonData)
 
 		# changable...
-		printJobModel.printStatusResult = self._getValueFromDictOrNone("printStatusResult", jsonData)
-		printJobModel.noteText = self._getValueFromDictOrNone("noteText", jsonData)
-		printJobModel.noteDeltaFormat = json.dumps(self._getValueFromDictOrNone("noteDeltaFormat", jsonData))
-		printJobModel.noteHtml = self._getValueFromDictOrNone("noteHtml", jsonData)
-		printJobModel.printedLayers = self._getValueFromDictOrNone("printedLayers", jsonData)
-		printJobModel.printedHeight = self._getValueFromDictOrNone("printedHeight", jsonData)
+		printJobModel.printStatusResult = self._getValueFromJSONOrNone("printStatusResult", jsonData)
+		printJobModel.noteText = self._getValueFromJSONOrNone("noteText", jsonData)
+		printJobModel.noteDeltaFormat = json.dumps(self._getValueFromJSONOrNone("noteDeltaFormat", jsonData))
+		printJobModel.noteHtml = self._getValueFromJSONOrNone("noteHtml", jsonData)
+		printJobModel.printedLayers = self._getValueFromJSONOrNone("printedLayers", jsonData)
+		printJobModel.printedHeight = self._getValueFromJSONOrNone("printedHeight", jsonData)
 
-		filamentModel = printJobModel.loadFilamentFromAssoziation()
-		filamentModel.profileVendor = self._getValueFromDictOrNone("spoolVendor", jsonData)
-		filamentModel.spoolName = self._getValueFromDictOrNone("spoolName", jsonData)
-		filamentModel.material = self._getValueFromDictOrNone("material", jsonData)
-		filamentModel.usedLength = self._convertM2MM(self._getValueFromDictOrNone("usedLengthFormatted", jsonData))
-		filamentModel.calculatedLength = self._convertM2MM(self._getValueFromDictOrNone("calculatedLengthFormatted", jsonData))
-		filamentModel.usedWeight = self._getValueFromDictOrNone("usedWeight", jsonData)
-		filamentModel.usedCost = self._getValueFromDictOrNone("usedCost", jsonData)
+		if (printJobModel.databaseId != None):
+			filamentModel = printJobModel.loadFilamentFromAssoziation()
+		else:
+			filamentModel = printJobModel.allFilaments[0]
+		filamentModel.profileVendor = self._getValueFromJSONOrNone("spoolVendor", jsonData)
+		filamentModel.spoolName = self._getValueFromJSONOrNone("spoolName", jsonData)
+		filamentModel.material = self._getValueFromJSONOrNone("material", jsonData)
+		filamentModel.usedLength = self._convertM2MM(self._getValueFromJSONOrNone("usedLengthFormatted", jsonData))
+		filamentModel.calculatedLength = self._convertM2MM(self._getValueFromJSONOrNone("calculatedLengthFormatted", jsonData))
+		filamentModel.usedWeight = self._getValueFromJSONOrNone("usedWeight", jsonData)
+		filamentModel.usedCost = self._getValueFromJSONOrNone("usedCost", jsonData)
 
 		# temperatureModel = TemperatureModel
+		if (printJobModel.databaseId != None):
+			allTemperaturesModels = printJobModel.loadTemperaturesFromAssoziation()
+		else:
+			allTemperaturesModels = printJobModel.allTemperatures
+		for tempModel in allTemperaturesModels:
+			sensorName = StringUtils.to_native_str(tempModel.sensorName)
+			if (sensorName == "bed"):
+				newBedTemp = self._getValueFromJSONOrNone("temperatureBed", jsonData)
+				tempModel.sensorValue = newBedTemp
+				continue
+			if (sensorName.startswith("tool")):
+				newToolTemp = self._getValueFromJSONOrNone("temperatureNozzle", jsonData)
+				tempModel.sensorValue = newToolTemp
 
 		return printJobModel
 
-	def _getValueFromDictOrNone(self, key, values):
+	def _getValueFromJSONOrNone(self, key, values):
 		if key in values:
 			return values[key]
 		return None
+
+	def _toIntFromJSONOrNone(self, key, json):
+		value = self._getValueFromJSONOrNone(key, json)
+		if (value != None):
+			if (StringUtils.isNotEmpty(value)):
+				try:
+					value = int(value)
+				except Exception as e:
+					errorMessage = str(e)
+					self._logger.error("could not transform value '"+str(value)+"' for key '"+key+"' to int:" + errorMessage)
+					value = None
+			else:
+				value = None
+		return value
 
 	#  convert m to mm
 	def _convertM2MM(self, value):
@@ -142,6 +177,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		statistic = self._databaseManager.calculatePrintJobsStatisticByQuery(tableQuery)
 
 		return flask.jsonify(statistic)
+
 	#######################################################################################   LOAD ALL JOBS BY QUERY
 	@octoprint.plugin.BlueprintPlugin.route("/loadPrintJobHistoryByQuery", methods=["GET"])
 	def get_printjobhistoryByQuery(self):
@@ -176,14 +212,68 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		return flask.jsonify()
 
 	#######################################################################################   UPDATE JOB
-	@octoprint.plugin.BlueprintPlugin.route("/updatePrintJob/<int:databaseId>", methods=["PUT"])
+	@octoprint.plugin.BlueprintPlugin.route("/storePrintJob/<databaseId>", methods=["PUT"])
 	def put_printjob(self, databaseId):
 		jsonData = request.json
-		printJobModel = self._databaseManager.loadPrintJob(databaseId)
+
+		printJobModel = None
+		oldStartDateTimeIfChanged = None
+		newStartDateTime = None
+		if (databaseId == 'null'):
+			printJobModel = PrintJobModel()
+
+			filemanentModel = FilamentModel()
+			printJobModel.addFilamentModel(filemanentModel)
+
+			tempModel = TemperatureModel()
+			tempModel.sensorName = "bed"
+			printJobModel.addTemperatureModel(tempModel)
+
+			tempModel = TemperatureModel()
+			tempModel.sensorName = self._settings.get([SettingsKeys.SETTINGS_KEY_DEFAULT_TOOL_ID])
+			printJobModel.addTemperatureModel(tempModel)
+
+		else:
+			printJobModel = self._databaseManager.loadPrintJob(databaseId)
+			# check if the startDate is changed, if true -> change snapshot image as well
+			currentStartDateTime = printJobModel.printStartDateTime
+			newStartDateTime = StringUtils.transformToDateTimeOrNone(self._getValueFromJSONOrNone("printStartDateTimeFormatted", jsonData))
+			changed = currentStartDateTime != newStartDateTime
+			if (changed):
+				oldStartDateTimeIfChanged = currentStartDateTime
+				try:
+					self._cameraManager.renameSnapshotFilename(oldStartDateTimeIfChanged, newStartDateTime)
+				except (Exception) as error:
+					self._logger.error(error)
+					message = errorMessage = str(error)
+					self._sendDataToClient(dict(action="errorPopUp",
+												title= "could not rename snapshot image to new startdatetime",
+												message=message))
+
+
+		def imageRollbackHandler():
+			if (oldStartDateTimeIfChanged != None):
+				# do rollback on snapshotimage filename
+				try:
+					self._cameraManager.renameSnapshotFilename(newStartDateTime, oldStartDateTimeIfChanged)
+				except (Exception) as error:
+					self._logger.error(error)
+					message = errorMessage = str(error)
+					self._sendDataToClient(dict(action="errorPopUp",
+												title= "could not rename snapshot image to new startdatetime",
+												message=message))
+				pass
+			pass
+
+
+		# transfer values from ui to the model
 		self._updatePrintJobFromJson(printJobModel, jsonData)
-		self._databaseManager.updatePrintJob(printJobModel)
-		# response = self.get_printjobhistory()
-		# return response
+
+		if (databaseId == 'null'):
+			self._databaseManager.insertPrintJob(printJobModel)
+		else:
+
+			self._databaseManager.updatePrintJob(printJobModel, imageRollbackHandler)
 
 		return flask.jsonify()
 

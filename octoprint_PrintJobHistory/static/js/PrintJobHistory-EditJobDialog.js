@@ -194,9 +194,13 @@ function PrintJobHistoryEditDialog(){
 
 
     /////////////////////////////////////////////////////////////////////////////////////////////////// SHOW DIALOG
-    this.showDialog = function(printJobItemForEdit, closeDialogHandler){
+    this.showDialog = function(printJobItemForEdit, closeDialogHandler, fullEditMode){
 
-        self.fullEditMode(false);
+        if (fullEditMode != null){
+            self.fullEditMode(fullEditMode);
+        } else {
+            self.fullEditMode(false);
+        }
         self.printJobItemForEdit = printJobItemForEdit;
         self.closeDialogHandler = closeDialogHandler;
 
@@ -224,7 +228,37 @@ function PrintJobHistoryEditDialog(){
         slicerSettingsPresent = self.printJobItemForEdit.slicerSettingsAsText();
         if (slicerSettingsPresent != null && slicerSettingsPresent.length != 0){
             self.isSlicerSettingsPresent(true);
-    }
+        }
+
+        // some magic, if in edit mode
+
+
+        calcDuration = function(){
+            // update duration only in edit-mode
+            if (self.fullEditMode() == false){
+                return;
+            }
+            var noDatetime = isEmpty(self.printJobItemForEdit.printStartDateTimeFormatted()) || isEmpty(self.printJobItemForEdit.printEndDateTimeFormatted());
+            if (noDatetime){
+                self.printJobItemForEdit.duration(0);
+            } else {
+                const startDateTime = Date.parse(self.printJobItemForEdit.printStartDateTimeFormatted());
+                const endDateTime = Date.parse(self.printJobItemForEdit.printEndDateTimeFormatted());
+                const duration = (endDateTime - startDateTime) / 1000;
+                if (duration > 0){
+                    self.printJobItemForEdit.duration(duration);
+                } else {
+                    self.printJobItemForEdit.duration(0);
+                }
+            }
+        }
+        self.printJobItemForEdit.printStartDateTimeFormatted.subscribe(function(newValue){
+            calcDuration();
+        });
+        self.printJobItemForEdit.printEndDateTimeFormatted.subscribe(function(newValue){
+            calcDuration();
+        });
+
 
         self.editPrintJobItemDialog.modal({
             //minHeight: function() { return Math.max($.fn.modal.defaults.maxHeight() - 80, 250); }
@@ -255,7 +289,32 @@ function PrintJobHistoryEditDialog(){
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////// SAVE PRINT JOB ITEM
+    isEmpty = function(value){
+        if (value == null){
+            return true;
+        }
+        value = "" + value;
+        if (value.trim().length == 0 || value.replace(/\s/g,"") == ""){
+            return true;
+        }
+        return false;
+    }
+
     this.savePrintJobItem  = function(){
+
+        // check for mandatory fields
+        if (
+            isEmpty(self.printJobItemForEdit.fileName()) ||
+            isEmpty(self.printJobItemForEdit.printStartDateTimeFormatted()) ||
+            isEmpty(self.printJobItemForEdit.printEndDateTimeFormatted()) ||
+            isEmpty(self.printJobItemForEdit.duration())
+
+        ){
+            alert("fields are required: filename, start/end datetime, duration")
+            return;
+        }
+
+
         var noteText = self.noteEditor.getText();
         var noteDeltaFormat = self.noteEditor.getContents();
         var noteHtml = self.noteEditor.getHtml();
@@ -263,7 +322,7 @@ function PrintJobHistoryEditDialog(){
         self.printJobItemForEdit.noteDeltaFormat(noteDeltaFormat);
         self.printJobItemForEdit.noteHtml(noteHtml);
 
-        self.apiClient.callUpdatePrintJob(self.printJobItemForEdit.databaseId(), self.printJobItemForEdit, function(allPrintJobsResponse){
+        self.apiClient.callStorePrintJob(self.printJobItemForEdit.databaseId(), self.printJobItemForEdit, function(allPrintJobsResponse){
             self.editPrintJobItemDialog.modal('hide');
             self.closeDialogHandler(true);
         });

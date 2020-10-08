@@ -11,5 +11,5 @@ class TemperatureModel(BaseModel):
 	printJob = ForeignKeyField(PrintJobModel, related_name='temperatures', on_delete='CASCADE')
 
 	sensorName = CharField(null=False)
-	sensorValue = CharField(null=False)
+	sensorValue = CharField(null=False)	# TODO needs to be refactored to float
 

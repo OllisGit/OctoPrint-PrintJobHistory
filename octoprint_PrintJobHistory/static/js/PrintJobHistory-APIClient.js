@@ -107,12 +107,12 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
     }
 
     // remove PrintJob-Item
-    this.callUpdatePrintJob = function (databaseId, printJobItem, responseHandler){
+    this.callStorePrintJob = function (databaseId, printJobItem, responseHandler){
         jsonPayload = ko.toJSON(printJobItem)
 
         $.ajax({
             //url: API_BASEURL + "plugin/"+PLUGIN_ID+"/loadPrintJobHistory",
-            url: this.baseUrl + "plugin/" + this.pluginId + "/updatePrintJob/" + databaseId,
+            url: this.baseUrl + "plugin/" + this.pluginId + "/storePrintJob/" + databaseId,
             dataType: "json",
             contentType: "application/json; charset=UTF-8",
             data: jsonPayload,

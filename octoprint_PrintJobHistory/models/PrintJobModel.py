@@ -64,7 +64,7 @@ class PrintJobModel(BaseModel):
 			self.allTemperatures = []
 		return self.allTemperatures
 
-	def getTemperaturesFromAssoziation(self):
+	def loadTemperaturesFromAssoziation(self):
 		result = []
 		allTemps = self.temperatures
 		allTemperaturesCount = len(allTemps)

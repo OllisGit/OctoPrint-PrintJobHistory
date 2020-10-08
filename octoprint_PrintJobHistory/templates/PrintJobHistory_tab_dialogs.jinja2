@@ -114,7 +114,10 @@
 <!--                    </div>-->
                 </div>
             </div>
-            <div class="row" >
+            <!--
+            VIEW Header
+            -->
+            <div class="row" data-bind="visible: printJobEditDialog.fullEditMode()==false">
                 <div class="span1" >
                     <div class="span1"><span class="icon-4x" style="cursor: pointer;" data-bind="css: {'icon-ok-sign' : printJobForEditing().printStatusResult() == 'success', 'icon-exclamation-sign' : printJobForEditing().printStatusResult() != 'success'},
                                                                         style: { color: printJobForEditing().printStatusResult() == 'success' ? 'green' : 'red'},
@@ -125,7 +128,7 @@
                         <div class="span12">
                             <div class="row">
                                 <div class="span4"><b>Start</b> <span data-bind="text: printJobForEditing().printStartDateTimeFormatted" /></div>
-                                <div class="span3"><b>Height</b> <span data-bind="text: printJobForEditing().printedHeight" ></span>mm</div>
+                                <div class="span3"><b>Height</b> <span data-bind="text: printJobForEditing().printedHeight"></span>mm</div>
                                 <div class="span2"><b>Nozzle</b> <span data-bind="text: printJobForEditing().temperatureNozzle" ></span>°C</div>
                                 <div class="span3"></div>
                             </div>
@@ -145,7 +148,9 @@
                     </div>
                 </div>
             </div>
-<!--
+            <!--
+            EDIT Header
+            -->
             <div class="row" data-bind="visible: printJobEditDialog.fullEditMode()==true">
                 <div class="span1" >
                     <div class="span1"><span class="icon-4x" style="cursor: pointer;" data-bind="css: {'icon-ok-sign' : printJobForEditing().printStatusResult() == 'success', 'icon-exclamation-sign' : printJobForEditing().printStatusResult() != 'success'},
@@ -156,28 +161,62 @@
                     <div class="row">
                         <div class="span12">
                             <div class="row">
-                                <div class="span4"><b>Start</b> <input type="text" class="input-medium" data-bind="value: printJobForEditing().printStartDateTimeFormatted" /> </div>
-                                <div class="span3"><b>Height</b> <input type="text" class="input-small" data-bind="value: printJobForEditing().printedHeight" />mm</div>
-                                <div class="span2"><b>Nozzle</b> <input type="text" class="input-mini" data-bind="value: printJobForEditing().temperatureNozzle" />°C</div>
-                                <div class="span3"></div>
+<!--                                <div class="span4">Start <input type="text" class="input-medium" data-bind="value: printJobForEditing().printStartDateTimeFormatted" /> </div>-->
+                                <div class="span4">
+                                    Start
+                                    <span class="input-append datetime">
+                                        <input id="printStartDateTime-picker" type="text" data-bind="value:printJobForEditing().printStartDateTimeFormatted" class="input-medium text-right"><span class="add-on"><i class="icon-th"></i></span>
+                                    </span>
+                                </div>
+                                <div class="span3">
+                                    Height
+                                    <span class="input-append">
+                                        <input type="text" class="input-small" data-bind="value: printJobForEditing().printedHeight" /><span class="add-on">mm</span>
+                                    </span>
+                                </div>
+                                <div class="span3">
+                                    Nozzle
+                                    <span class="input-append">
+                                        <input type="number" step="0.1" min="0.0" class="input-mini" data-bind="value: printJobForEditing().temperatureNozzle" /><span class="add-on">°C</span>
+                                    </span>
+                                </div>
+                                <div class="span2"></div>
                             </div>
                             <div class="row">
-                                <div class="span4"><b>End</b> <input type="text" class="input-medium" data-bind="value: printJobForEditing().printEndDateTimeFormatted" /></div>
-                                <div class="span3"><b>Layer</b> <input type="text" class="input-mini" data-bind="value: printJobForEditing().printedLayers" /></div>
-                                <div class="span2"><b>Bed</b> <input type="text" class="input-mini" data-bind="value: printJobForEditing().temperatureBed" />°C</div>
-                                <div class="span3"></div>
+<!--                                <div class="span4">End <input type="text" class="input-medium" data-bind="value: printJobForEditing().printEndDateTimeFormatted" /></div>-->
+                                <div class="span4">End
+                                    <span class="input-append datetime">
+                                            <input id="printEndDateTime-picker" type="text" data-bind="value:printJobForEditing().printEndDateTimeFormatted" class="input-medium text-right"><span class="add-on"><i class="icon-th"></i></span>
+                                    </span>
+                                </div>
+                                <div class="span3">
+                                    Layer
+                                    <input type="text" class="input-mini" data-bind="value: printJobForEditing().printedLayers" />
+                                </div>
+                                <div class="span3">
+                                    Bed
+                                    <span class="input-append">
+                                        <input type="number" step="0.1" min="0.0" class="input-mini" data-bind="value: printJobForEditing().temperatureBed" /><span class="add-on">°C</span>
+                                    </span>
+                                </div>
+                                <div class="span2"></div>
                             </div>
                             <div class="row">
-                                <div class="span4"><b>Duration</b> <input type="text" class="input-mini" data-bind="value: printJobForEditing().durationFormatted" /></div>
+                                <div class="span4">
+                                    Duration
+                                    <span class="input-append">
+                                        <input type="number" min="0" step="1" class="input-mini" data-bind="value: printJobForEditing().duration" /><span class="add-on">s</span>
+                                    </span>
+                                </div>
+                                <div class="span3"></div>
                                 <div class="span3"></div>
                                 <div class="span2"></div>
-                                <div class="span3"></div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
--->
+
 
 
         </div>
@@ -454,6 +493,15 @@
 
             <div class="container-fluid">
                 <div class="row-fluid">
+
+                    <div class="row">
+                        <div class="span3">
+                            <div><b>Print job count</b></div>
+                        </div>
+                        <div class="span9">
+                            <span class="text-right" data-bind="text: statisticDialog.printJobCount">1h23m12s</span>
+                        </div>
+                    </div>
 
                     <div class="row">
                         <div class="span3">

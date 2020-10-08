@@ -298,13 +298,13 @@ class PrintJobHistoryPlugin(
 		printJob.addFilamentModel(filemanentModel)
 		pass
 
-	def _updatePrintJobModelWithLayerHeightInfos(self, payload):
-		totalLayers = payload["totalLayer"]
-		currentLayer = payload["currentLayer"]
+	def _updatePrintJobModelWithLayerHeightInfos(self, dlpPayload):
+		totalLayers = dlpPayload["totalLayer"]
+		currentLayer = dlpPayload["currentLayer"]
 		self._currentPrintJobModel.printedLayers = currentLayer + " / " + totalLayers
 
-		totalHeight = payload["totalHeight"]
-		currentHeight = payload["currentHeight"]
+		totalHeight = dlpPayload["totalHeightFormatted"]
+		currentHeight = dlpPayload["currentHeightFormatted"]
 		self._currentPrintJobModel.printedHeight = currentHeight + " / " + totalHeight
 
 	def _createPrintJobModel(self, payload):
@@ -355,8 +355,6 @@ class PrintJobHistoryPlugin(
 			# readTemperatureFromPrinter
 			# because temperature is 0 at the beginning, we need to wait a couple of seconds (maybe 3)
 			self._readAndAssignCurrentTemperatureDelayed(self._currentPrintJobModel)
-
-
 
 
 	def _readCurrentTemperatureFromPrinterAsync(self, printer, printJobModel, addTemperatureToPrintModel):
@@ -538,8 +536,6 @@ class PrintJobHistoryPlugin(
 			self._logger.warn("Thumbnail not found in print metadata")
 
 		return thumbnailPresent
-
-
 
 	#######################################################################################   OP - HOOKs
 	def on_after_startup(self):

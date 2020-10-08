@@ -13,7 +13,8 @@ $(function() {
 //        return result
 //    }
 
-
+    var global = this;
+    global.componentFactory = new PrintJobComponentFactory();
     ////////////////////////////////////////////////////////////
     var PrintJobItem = function(data) {
 
@@ -23,11 +24,19 @@ $(function() {
 		this.fileName = ko.observable();
 		this.filePathName = ko.observable();
 		this.fileSize = ko.observable();
+
+        var printStartDateTimeViewModel = global.componentFactory.createDateTimePicker("printStartDateTime-picker");
+		this.printStartDateTimeFormatted = printStartDateTimeViewModel.currentDateTime;
 		this.printStartDateTime = ko.observable();
+//		this.printStartDateTimeFormatted = ko.observable();
+
+        var printEndDateTimeViewModel = global.componentFactory.createDateTimePicker("printEndDateTime-picker");
+		this.printEndDateTimeFormatted = printEndDateTimeViewModel.currentDateTime;
 		this.printEndDateTime = ko.observable();
-		this.printStartDateTimeFormatted = ko.observable();
-		this.printEndDateTimeFormatted = ko.observable();
+//		this.printEndDateTimeFormatted = ko.observable();
+
 		this.printStatusResult = ko.observable();
+		this.duration = ko.observable();
 		this.durationFormatted = ko.observable();
 		this.noteText = ko.observable();
 		this.noteDeltaFormat = ko.observable();
@@ -85,6 +94,7 @@ $(function() {
         this.printStartDateTimeFormatted(updateData.printStartDateTimeFormatted);
         this.printEndDateTimeFormatted(updateData.printEndDateTimeFormatted);
         this.printStatusResult(updateData.printStatusResult);
+        this.duration(updateData.duration);
         this.durationFormatted(updateData.durationFormatted);
         this.noteText(updateData.noteText);
         this.noteDeltaFormat(updateData.noteDeltaFormat);
@@ -189,6 +199,34 @@ $(function() {
         var self = this;
 
 /// START MOCK MODEL
+        var emptyPrintJobItemAsJson = {
+                "databaseId" : null,
+                "printStartDateTimeFormatted" : "",
+                "printEndDateTimeFormatted" : "",
+                "printStatusResult" : "success",
+                "duration" : "",
+                "durationFormatted" : "",
+                "fileName" : "",
+                "fileSize" : "",
+                "temperatureBed" : "0.0",
+                "temperatureNozzle" : "0.0",
+                "printedHeight" : "0.0 / 0.0",
+                "printedLayers" : "0 / 0",
+                "spoolName" : "",
+                "spoolCost" : "",
+                "spoolCostUnit" : "TODO",
+                "material" : "",
+                "usedLengthFormatted" : "",
+                "calculatedLengthFormatted" : "",
+                "usedWeight" : "",
+                "usedCost" : "",
+                "noteText" : "",
+                "noteDeltaFormat" : null,
+                "noteHtml" : "",
+                "snapshotFilename" : "empty",
+                "slicerSettingsAsText" : ""
+        }
+
         var printHistoryJobItems = [
              {
                 "databaseId" : ko.observable(1),
@@ -196,6 +234,7 @@ $(function() {
                 "printStartDateTimeFormatted" : "19.09.2019 16:25",
                 "printEndDateTimeFormatted" : "19.09.2019 17:25",
                 "printStatusResult" : ko.observable("success"),
+                "duration" : "123",
                 "durationFormatted" : "1h12min",
                 "fileName" : "Legolas.gcode",
                 "fileSize" : "134KB",
@@ -223,6 +262,7 @@ $(function() {
                 "printStartDateTimeFormatted" : "20.09.2019 15:25",
                 "printEndDateTimeFormatted" : "20.09.2019 17:25",
                 "printStatusResult" : ko.observable("fail"),
+                "duration" : "321",
                 "durationFormatted" : "2h34min",
                 "fileName" : "Benchy3D.gcode",
                 "fileSize" : "324KB",
@@ -514,49 +554,59 @@ $(function() {
         }
 
 
+        printJobDialogCloseHandler = function(shouldTableReload){
+            // refresh snapshotImage
+            printJob = self.printJobForEditing();
+            var snapshotImageId = "#"+self.snapshotImageId(printJob);
+            var snapshotImage = $(snapshotImageId);
+            var snapshotUrl = snapshotImage.attr("src");
+            snapshotImage.attr("src", snapshotUrl+"?" + new Date().getTime()); // cache - break
+
+            if (shouldTableReload == true){
+                self.printJobHistoryTableHelper.reloadItems();
+            }
+
+            if (self.printJobToShowAfterStartup != null){
+                // PrintJob was presented to user and user confirmed
+                self.printJobToShowAfterStartup = null;
+                payload = {
+                    "showPrintJobDialogAfterPrint_jobId": null
+                };
+                OctoPrint.settings.savePluginSettings(PLUGIN_ID, payload);
+            }
+        }
+
         self.showPrintJobDetailsDialogAction = function(selectedPrintJobItem, forceCloseDialog) {
 
             if (forceCloseDialog == null){
                 forceCloseDialog = false;
             }
             self.printJobForEditing(new PrintJobItem(ko.mapping.toJS(selectedPrintJobItem)));
-
+//            self.printJobEditDialog.showDialog(self.printJobForEditing(), printJobDialogCloseHandler);
             self.printJobEditDialog.showDialog(self.printJobForEditing(), function(shouldTableReload){
-                // refresh snapshotImage
-                printJob = self.printJobForEditing();
-                var snapshotImageId = "#"+self.snapshotImageId(printJob);
-                var snapshotImage = $(snapshotImageId);
-                var snapshotUrl = snapshotImage.attr("src");
-                snapshotImage.attr("src", snapshotUrl+"?" + new Date().getTime()); // cache - break
-
-                if (shouldTableReload == true){
-                    self.printJobHistoryTableHelper.reloadItems();
-                }
-
-                if (self.printJobToShowAfterStartup != null){
-                    // PrintJob was presented to user and user confirmed
-                    self.printJobToShowAfterStartup = null;
-                    payload = {
-                        "showPrintJobDialogAfterPrint_jobId": null
-                    };
-                    OctoPrint.settings.savePluginSettings(PLUGIN_ID, payload);
-                }
-
+                // delegate to default close handler
+                printJobDialogCloseHandler(shouldTableReload);
                 if (forceCloseDialog == true){
 
                     self.apiClient.callForceCloseEditDialog(function(responseData){
                         // do nothing
                     });
-
                 }
             });
         };
 
         ///////////////////////////////////////////////////// END: DIALOG Stuff
 
+        self.addNewPrintJobItem = function(){
+//            debugger
+            var emptyItem = new PrintJobItem(emptyPrintJobItemAsJson);
+            self.printJobForEditing(emptyItem);
 
+            self.printJobEditDialog.showDialog(self.printJobForEditing(), printJobDialogCloseHandler, true);
+        }
 
         ///////////////////////////////////////////////////// STAR: TABLE BEHAVIOR
+
         initTableVisibilities = function(){
             // load all settings from browser storage
             if (!Modernizr.localstorage) {

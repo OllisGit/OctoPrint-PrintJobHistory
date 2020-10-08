@@ -8,6 +8,7 @@ function StatisticDialog(){
     self.statisticDialog = null;
     self.closeDialogHandler = null;
 
+    self.printJobCount = ko.observable();
     self.query = ko.observable();
     self.fromToDate = ko.observable();
     self.duration = ko.observable();
@@ -55,6 +56,7 @@ function StatisticDialog(){
     self.loadStatistics = function(){
         self.apiClient.callLoadStatisticsByQuery(self.tableQuery, function(responseData){
 
+                self.printJobCount(responseData["printJobCount"]);
                 self.query(responseData["query"]);
                 self.fromToDate(responseData["fromToDate"]);
                 self.duration(responseData["duration"]);

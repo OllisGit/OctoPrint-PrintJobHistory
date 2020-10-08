@@ -31,7 +31,7 @@ def transformPrintJobModel(job):
 
 		jobAsDict['filamentModel'] = filamentDict
 
-	allTemperatures = job.getTemperaturesFromAssoziation()
+	allTemperatures = job.loadTemperaturesFromAssoziation()
 	if not allTemperatures == None and len(allTemperatures) > 0:
 		allTempsAsList = list()
 

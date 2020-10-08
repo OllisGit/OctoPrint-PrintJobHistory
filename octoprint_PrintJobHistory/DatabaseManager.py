@@ -346,7 +346,7 @@ class DatabaseManager(object):
 
 		return databaseId
 
-	def updatePrintJob(self, printJobModel):
+	def updatePrintJob(self, printJobModel, rollbackHandler = None):
 		with self._database.atomic() as transaction:  # Opens new transaction.
 			try:
 				printJobModel.save()
@@ -366,12 +366,14 @@ class DatabaseManager(object):
 				# to rollback().
 				transaction.rollback()
 				self._logger.exception("Could not update printJob into database:" + str(e))
+				rollbackHandler()
 				self.sendErrorMessageToClient("PJH-DatabaseManager", "Could not update the printjob ('"+ printJobModel.fileName +"') into the database. See OctoPrint.log for details!")
 			pass
 
 	#
 	def calculatePrintJobsStatisticByQuery(self, tableQuery):
 
+		printJobCount = 0
 		duration = 0
 		length = 0.0
 		weight = 0.0
@@ -384,9 +386,12 @@ class DatabaseManager(object):
 		newTableQuery = tableQuery.copy()
 		newTableQuery["sortColumn"] = "printStartDateTime"
 		newTableQuery["sortOrder"] = "asc"
+		newTableQuery["from"] = 0
+		newTableQuery["to"] = 999999
 		allJobModels = self.loadPrintJobsByQuery(newTableQuery)
 
 		for job in allJobModels:
+			printJobCount = printJobCount + 1
 			if (firstDate == None):
 				firstDate = job.printStartDateTime
 			lastDate = job.printEndDateTime
@@ -441,6 +446,7 @@ class DatabaseManager(object):
 		spoolString = self._buildDictlString(spoolDict)
 		fileSizeString = StringUtils.get_formatted_size(fileSize)
 		return {
+			"printJobCount": printJobCount,
 			"query": queryString,
 			"fromToDate": fromToString,
 			"duration": durationString,

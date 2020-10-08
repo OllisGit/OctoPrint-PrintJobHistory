@@ -74,12 +74,23 @@ class CameraManager(object):
 
 		if os.path.isfile(imageLocation):
 			return imageLocation
+
 		if returnDefaultImage:
 			# defaultImageSnapshotName = self._pluginBaseFolder + "/static/images/no-photo-icon.jpg"
 			defaultImageSnapshotName = self._pluginBaseFolder + "/static/images/no-image-icon-big.png"
 			return defaultImageSnapshotName
 		return imageLocation
 
+
+	def renameSnapshotFilename(self, oldStartDateTime, newStartDateTime):
+		oldFilename = CameraManager.buildSnapshotFilename(oldStartDateTime)
+		oldFilenameLocation = self.buildSnapshotFilenameLocation(oldFilename, False)
+		newFilename = CameraManager.buildSnapshotFilename(newStartDateTime)
+		newFilenameLocation = self.buildSnapshotFilenameLocation(newFilename, False)
+
+		# only rename is source file exists
+		if os.path.isfile(oldFilenameLocation):
+			os.rename(oldFilenameLocation, newFilenameLocation)
 
 	def deleteSnapshot(self, snapshotFilename):
 		imageLocation= self.buildSnapshotFilenameLocation(snapshotFilename, False)

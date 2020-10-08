@@ -1,7 +1,7 @@
 # coding=utf-8
 from __future__ import absolute_import
 
-
+import datetime
 import re
 
 # see https://www.safaribooksonline.com/library/view/python-cookbook-2nd/0596007973/ch01s19.html
@@ -171,6 +171,15 @@ def compactTimeDeltaFormatter(tdelta, inputtype='timedelta'):
 		result = str(s[0]) + "s"
 	return result
 
+def transformToDateTimeOrNone(dateTimeString):
+	if dateTimeString != None and len(dateTimeString) != 0:
+		index = dateTimeString.find(" ")
+		if (index != -1):
+			return datetime.datetime.strptime(dateTimeString, '%d.%m.%Y %H:%M')
+		return datetime.datetime.strptime(dateTimeString, '%d.%m.%Y')
+	return None
+
+
 FLOAT_DEFAULT_FORMAT = "{:.02f}"
 
 def formatFloatSave(pattern, value, defaultString):
@@ -180,12 +189,12 @@ def formatFloatSave(pattern, value, defaultString):
 	return pattern.format(floatValue)
 
 def isEmpty(value):
-	if (value == None):
+	if (value == None or len(str(value).strip())==0 ):
 		return True
-	if (len(str(value)) == 0):
-		return True
-
 	return False
+
+def isNotEmpty(value):
+	return isEmpty(value) == False
 
 #################### START: copied from octorprint
 def get_formatted_size(num):
