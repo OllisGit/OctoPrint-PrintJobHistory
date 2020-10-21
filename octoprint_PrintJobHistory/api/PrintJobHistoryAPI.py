@@ -311,7 +311,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 			# file was uploaded
 			sourceLocation = flask.request.values[input_upload_path]
 			targetLocation = self._cameraManager.buildSnapshotFilenameLocation(snapshotFilename, False)
-			os.rename(sourceLocation, targetLocation)
+			shutil.move(sourceLocation, targetLocation)
 			pass
 
 		return flask.jsonify({
@@ -569,5 +569,3 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		return Response(CSVExportImporter.transform2CSV(allJobsModels),
 						mimetype='text/csv',
 						headers={'Content-Disposition': 'attachment; filename=PrintHistory.csv'})
-
-

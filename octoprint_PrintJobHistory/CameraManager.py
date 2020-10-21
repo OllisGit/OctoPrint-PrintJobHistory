@@ -88,9 +88,9 @@ class CameraManager(object):
 		newFilename = CameraManager.buildSnapshotFilename(newStartDateTime)
 		newFilenameLocation = self.buildSnapshotFilenameLocation(newFilename, False)
 
-		# only rename is source file exists
+		# only rename if source file exists
 		if os.path.isfile(oldFilenameLocation):
-			os.rename(oldFilenameLocation, newFilenameLocation)
+			shutil.move(oldFilenameLocation, newFilenameLocation)
 
 	def deleteSnapshot(self, snapshotFilename):
 		imageLocation= self.buildSnapshotFilenameLocation(snapshotFilename, False)
