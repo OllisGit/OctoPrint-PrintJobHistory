@@ -292,8 +292,45 @@ class PrintJobHistoryPlugin(
 
 					filemanentModel.usedWeight = usedWeight
 					filemanentModel.usedCost = spoolCost / spoolWeight * usedWeight
+		else if self._spoolManagerPluginImplementation != None and self._spoolManagerPluginImplementationState == "enabled":
+
+			filemanentModel.usedLength = self._spoolManagerPluginImplementation.filamentOdometer.totalExtrusion[0]
+			selectedSpool = self._spoolManagerPluginImplementation.filamentManager.loadSelectedSpool()
+            toolId = 0 #TODO multi extruder support in SpoolManager
+			if  selectedSpool != None:
+				spoolData = selectedSpool
+				if (spoolData == None):
+					self._logger.error("SpoolManager data could not be found for toolId '" + toolId + "'")
+				else:
+					spoolName = spoolData.name
+					spoolCost = spoolData.cost
+					spoolCostUnit = self._spoolManagerPluginImplementation._settings.get(["currencySymbol"])
+					spoolWeight = spoolData.totalWeight
+
+					profileData = spoolData.profile
+					diameter = spoolData.diameter
+					material = spoolData.material
+					vendor = spoolData.vendor
+					density = spoolData.density
+
+					filemanentModel.spoolName = spoolName
+					filemanentModel.spoolCost = spoolCost
+					filemanentModel.spoolCostUnit = spoolCostUnit
+					filemanentModel.spoolWeight = spoolWeight
+
+					filemanentModel.profileVendor = vendor
+					filemanentModel.diameter = diameter
+					filemanentModel.density = density
+					filemanentModel.material = material
+
+					radius = diameter / 2.0
+					volume = filemanentModel.usedLength * math.pi * radius * radius / 1000.0
+					usedWeight = volume * density
+
+					filemanentModel.usedWeight = usedWeight
+					filemanentModel.usedCost = spoolCost / spoolWeight * usedWeight
 		else:
-			self._logger.info("Empty filamentModel, because Filamentmanager not installed!")
+			self._logger.info("Empty filamentModel, because neither FilamentManager or SpoolManager installed!")
 
 		printJob.addFilamentModel(filemanentModel)
 		pass

@@ -53,6 +53,8 @@ If you like it, I would be thankful about a cup of coffee :)
 
 - [PreHeat](https://plugins.octoprint.org/plugins/preheat/)
     - Starting Temperature
+- [SpoolManager](https://plugins.octoprint.org/plugins/spoolmanager/)
+    - Spool Management
 - [FillamentManager](https://plugins.octoprint.org/plugins/filamentmanager/)
     - Spool - Informations
 - [DisplayLayerProgress](https://plugins.octoprint.org/plugins/DisplayLayerProgress/)
