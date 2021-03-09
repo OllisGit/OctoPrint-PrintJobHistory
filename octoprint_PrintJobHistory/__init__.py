@@ -251,7 +251,7 @@ class PrintJobHistoryPlugin(
 
 		if self._filamentManagerPluginImplementation != None and self._filamentManagerPluginImplementationState == "enabled":
 
-			filemanentModel.usedLength = self._filamentManagerPluginImplementation.filamentOdometer.totalExtrusion[0]
+			filemanentModel.usedLength = self._filamentManagerPluginImplementation.myFilamentOdometer.totalExtrusion[0]
 			selectedSpools = self._filamentManagerPluginImplementation.filamentManager.get_all_selections(self._filamentManagerPluginImplementation.client_id)
 			if  selectedSpools != None and len(selectedSpools) > 0:
 				spoolData = None
