@@ -28,28 +28,47 @@ class PrintJobModel(BaseModel):
 	allFilaments = None
 	allTemperatures = None
 
+	filamentModelsByToolId = {}
+
+	def printFila(self):
+		for f in self.filaments:
+			print(f)
 
 	# Because I don't know how to add relation-models to peewee I use a temp-array
 	def addFilamentModel(self, filamentModel):
 		if self.allFilaments == None:
 			self.allFilaments = []
 		self.allFilaments.append(filamentModel)
+		self.filamentModelsByToolId[filamentModel.toolId] = filamentModel
 		pass
 
+
+	def getFilamentModelByToolId(self, toolId):
+		# load and init dict
+		if (len(self.filamentModelsByToolId) == 0):
+			self.loadFilamentsFromAssoziation()
+		if (toolId in self.filamentModelsByToolId):
+			return self.filamentModelsByToolId[toolId]
+		return None
+
 	def getFilamentModels(self):
+		if self.allFilaments == None:
+			self.allFilaments = []
 		return self.allFilaments
 
+	def getFilamentModelsFromAsso(self):
+		return self.filaments	# fieldname from 'backref' in FilamentModel-Class
+
 	# Current UI implementation could only handle one filament-spool, but databasemodel support multiple spools
-	def loadFilamentFromAssoziation(self):
-		result = None
+	def loadFilamentsFromAssoziation(self):
+		self.filamentModelsByToolId = {}
 		allFilaments = self.filaments
 		allFilamentsCount = len(allFilaments)
 		if allFilamentsCount != 0:
 			for filament in allFilaments:
 				result = filament
 				self.addFilamentModel(result)
-				break
-		return result
+		return self.allFilaments
 
 
 	# Because I don't know how to add relation-models to peewee I use a temp-array

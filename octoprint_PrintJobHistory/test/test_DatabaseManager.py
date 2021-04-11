@@ -1,10 +1,17 @@
 import pprint
 import unittest
 
+import peewee
+
 from octoprint_PrintJobHistory import DatabaseManager
-from octoprint_PrintJobHistory.api import TransformPrintJob2JSON
+from octoprint_PrintJobHistory.api import TransformPrintJob2JSON, TransformSlicerSettings2JSON
 from octoprint_PrintJobHistory.common import StringUtils
 import logging
+
+from octoprint_PrintJobHistory.models.PrintJobModel import PrintJobModel
+from octoprint_PrintJobHistory.models.FilamentModel import FilamentModel
+from octoprint_PrintJobHistory.services.SlicerSettingsService import SlicerSettingsService
+
 
 class TestDatabase(unittest.TestCase):
 
@@ -25,15 +32,17 @@ class TestDatabase(unittest.TestCase):
 		self.databaseManager.initDatabase(self.databaselocation, self._clientOutput)
 
 	# TimeFrameSelection
-	def _test_queryJobs(self):
+	def test_queryJobs(self):
+
+		# http: // localhost:5000 / plugin / PrintJobHistory / loadPrintJobHistoryByQuery?from=0 & to = 25 & sortColumn = printStartDateTime & sortOrder = desc & filterName = all & startDate = & endDate =
 		tableQuery = {
 			"from": 0,
-			"to": 10,
-			"sortColumn": "filename",
-			"sortOrder": "asc",
+			"to": 250,
+			"sortColumn": "fileName",
+			"sortOrder": "desc",
 			"filterName": "all",
-			"startDate": "20.08.2020",
-			"endDate": "20.08.2020",
+			"startDate": "",
+			"endDate": "",
 		}
 
 		allJobsModels = self.databaseManager.loadPrintJobsByQuery(tableQuery)
@@ -42,8 +51,11 @@ class TestDatabase(unittest.TestCase):
 
 		pp = pprint.PrettyPrinter(indent=2)
 		# pp.pprint(allJobsAsDict)
+		jobCount = 0
 		for jobItem in allJobsAsList:
-			print(str(jobItem["databaseId"]) + "  " + str(jobItem["printStartDateTimeFormatted"]) + "  " + str(jobItem["printEndDateTimeFormatted"]))
+			jobCount = jobCount + 1
+
+			print(str(jobCount) + " " + jobItem["fileName"] +" " +str(jobItem["databaseId"]) + "  " + str(jobItem["printStartDateTimeFormatted"]) + "  " + str(jobItem["printEndDateTimeFormatted"]))
 
 		pass
 
@@ -71,7 +83,7 @@ class TestDatabase(unittest.TestCase):
 
 		pass
 
-	def test_loadSelected(self):
+	def _test_loadSelected(self):
 		selectedDatabaseIds = "17,3,21,23,20"
 		allJobsModels = self.databaseManager.loadSelectedPrintJobs(selectedDatabaseIds)
 		print(allJobsModels)
@@ -83,6 +95,51 @@ class TestDatabase(unittest.TestCase):
 			print(str(jobItem["databaseId"]) + "  " + str(jobItem["printStartDateTimeFormatted"]) + "  " + str(jobItem["printEndDateTimeFormatted"]))
 
 		pass
+
+	def _test_loadJobSettings(self):
+		# selectedDatabaseIds = "17,3,21,23,20"
+		# selectedDatabaseIds = "21, 17"
+		selectedDatabaseIds = "102, 97"
+		allJobsModels = self.databaseManager.loadSelectedPrintJobs(selectedDatabaseIds)
+		print(allJobsModels)
+		slicerSettingssJobToCompareList = []
+		for job in allJobsModels:
+			settingsForCompare = SlicerSettingsService.SlicerSettingsJob()
+			settingsForCompare.databaseId = job.databaseId
+			settingsForCompare.fileName = job.fileName
+			settingsForCompare.slicerSettingsAsText = job.slicerSettingsAsText
+
+			# print(settingsForCompare.slicerSettingsAsText)
+
+			slicerSettingssJobToCompareList.append(settingsForCompare)
+
+		slicerService = SlicerSettingsService()
+		compareResult = slicerService.compareSlicerSettings(slicerSettingssJobToCompareList)
+
+		compoareResultAsJson = TransformSlicerSettings2JSON.transformSlicerSettingsCompareResult(compareResult)
+		print(compoareResultAsJson)
+		pass
+
+	def _test_deletePrinjob(self):
+		self.databaseManager.deletePrintJob(105)
+
+	def _test_something(self):
+		db = peewee.SqliteDatabase(self.databaselocation+'/printJobHistory.db')
+		singlePrintJob = PrintJobModel.select().join(FilamentModel).where(PrintJobModel.databaseId == 109).get()
+		print(singlePrintJob)
+		print(singlePrintJob.fileName)
+
+		singlePrintJob.printFila()
+		# for fila in singlePrintJob.filaments:
+		# 	print(fila)
+		newFilaModel = FilamentModel()
+		newFilaModel.material = "MeinMaterial"
+
+		newFilaModel = FilamentModel.create(printJob = singlePrintJob)
+		# singlePrintJob.filaments.append(newFilaModel)
+		# singlePrintJob.save()
+		pass
+
 
 if __name__ == '__main__':
 	print("Start DatabaseManager Test")

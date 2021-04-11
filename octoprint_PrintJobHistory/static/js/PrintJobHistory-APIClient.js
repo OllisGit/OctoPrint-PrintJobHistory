@@ -38,7 +38,6 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
         return _addApiKeyIfNecessary("./plugin/" + this.pluginId + "/downloadDatabase");
     }
 
-
     this.getSampleCSVUrl = function(){
         return _addApiKeyIfNecessary("./plugin/" + this.pluginId + "/sampleCSV");
     }
@@ -83,6 +82,20 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
         urlToCall = this.baseUrl + "plugin/"+this.pluginId+"/loadStatisticByQuery?"+query;
         $.ajax({
             //url: API_BASEURL + "plugin/"+PLUGIN_ID+"/loadPrintJobHistory",
+            url: urlToCall,
+            type: "GET"
+        }).done(function( data ){
+            responseHandler(data)
+            //shoud be done by the server to make sure the server is informed countdownDialog.modal('hide');
+            //countdownDialog.modal('hide');
+            //countdownCircle = null;
+        });
+    }
+
+    // load COMPARE SlicerSettigs
+    this.callCompareSlicerSettings = function (selectedJobDatabaseIds, responseHandler){
+        urlToCall = this.baseUrl + "plugin/"+this.pluginId+"/compareSlicerSettings/?databaseIds="+selectedJobDatabaseIds;
+        $.ajax({
             url: urlToCall,
             type: "GET"
         }).done(function( data ){

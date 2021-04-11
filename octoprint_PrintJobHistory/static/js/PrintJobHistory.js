@@ -58,11 +58,13 @@ $(function() {
 		this.spoolWeight = ko.observable();
 		this.usedLengthFormatted = ko.observable();
 		this.calculatedLengthFormatted = ko.observable();
-		this.usedWeight = ko.observable();
+		this.usedWeight = ko.observable(""); // empty sting, because length-check is needed in PringHistory_tab.jinja2
 		this.usedCost = ko.observable();
 
 		this.snapshotFilename = ko.observable();
 		this.slicerSettingsAsText = ko.observable();
+
+		this.isMultiToolPrint = ko.observable(false);
 /*
         this.successful = ko.computed(function() {
             return this.success() == 1;
@@ -127,39 +129,54 @@ $(function() {
 //            this.spoolItem = null;
 //        }
 
-
         //Filament
-        if (updateData.filamentModel != null){
-            this.diameter(updateData.filamentModel.diameter);
-            this.density(updateData.filamentModel.density);
-            this.material(updateData.filamentModel.material);
-            this.spoolVendor(updateData.filamentModel.profileVendor);
-            this.spoolName(updateData.filamentModel.spoolName);
-            this.spoolCost(updateData.filamentModel.spoolCost);
-            this.spoolCostUnit(updateData.filamentModel.spoolCostUnit);
-            this.spoolWeight(updateData.filamentModel.spoolWeight);
-//            this.usedLength( formatFilamentLength(updateData.filamentEntity.usedLength) );
-//            this.calculatedLength( formatFilamentLength(updateData.filamentEntity.calculatedLength) );
-            this.usedLengthFormatted( updateData.filamentModel.usedLengthFormatted );
-            this.calculatedLengthFormatted( updateData.filamentModel.calculatedLengthFormatted );
-            this.usedWeight( updateData.filamentModel.usedWeight );
-            this.usedCost( updateData.filamentModel.usedCost );
-        } else {
-            this.diameter(updateData.diameter);
-            this.density(updateData.density);
-            this.material(updateData.material);
-            this.spoolVendor(updateData.spoolVendor);
-            this.spoolName(updateData.spoolName);
-            this.spoolCost(updateData.spoolCost);
-            this.spoolCostUnit(updateData.spoolCostUnit);
-            this.spoolWeight(updateData.spoolWeight);
-//            this.usedLength( formatFilamentLength(updateData.filamentEntity.usedLength) );
-//            this.calculatedLength( formatFilamentLength(updateData.filamentEntity.calculatedLength) );
-            this.usedLengthFormatted( updateData.usedLengthFormatted );
-            this.calculatedLengthFormatted( updateData.calculatedLengthFormatted );
-            this.usedWeight( updateData.usedWeight );
-            this.usedCost( updateData.usedCost );
+        if (updateData.filamentModels == null){
+            if (updateData.allFilamentModels != null) {
+                updateData.filamentModels = updateData.allFilamentModels;
+            }
         }
+        if (updateData.filamentModels != null){
+            // result from backend
+
+            this.allFilamentModels = updateData.filamentModels;
+            this.jsonArray = ko.observable(this.allFilamentModels);
+            this.allToolKeys = Object.keys(this.allFilamentModels);
+            this.isMultiToolPrint(Object.keys(this.allFilamentModels).length > 1)
+
+            totalFilamentModel = updateData.filamentModels["total"];    // should always be present
+            this.diameter(totalFilamentModel.diameter);
+            this.density(totalFilamentModel.density);
+            this.material(totalFilamentModel.material);
+            this.spoolVendor(totalFilamentModel.profileVendor);
+            this.spoolName(totalFilamentModel.spoolName);
+            this.spoolCost(totalFilamentModel.spoolCost);
+            this.spoolCostUnit(totalFilamentModel.spoolCostUnit);
+            this.spoolWeight(totalFilamentModel.spoolWeight);
+//            this.usedLength( formatFilamentLength(updateData.filamentEntity.usedLength) );
+//            this.calculatedLength( formatFilamentLength(updateData.filamentEntity.calculatedLength) );
+            this.usedLengthFormatted(totalFilamentModel.usedLengthFormatted );
+            this.calculatedLengthFormatted(totalFilamentModel.calculatedLengthFormatted );
+            this.usedWeight(totalFilamentModel.usedWeight );
+            this.usedCost(totalFilamentModel.usedCost );
+        }
+//         else {
+//
+//             debugger
+//             this.diameter(updateData.diameter);
+//             this.density(updateData.density);
+//             this.material(updateData.material);
+//             this.spoolVendor(updateData.spoolVendor);
+//             this.spoolName(updateData.spoolName);
+//             this.spoolCost(updateData.spoolCost);
+//             this.spoolCostUnit(updateData.spoolCostUnit);
+//             this.spoolWeight(updateData.spoolWeight);
+// //            this.usedLength( formatFilamentLength(updateData.filamentEntity.usedLength) );
+// //            this.calculatedLength( formatFilamentLength(updateData.filamentEntity.calculatedLength) );
+//             this.usedLengthFormatted( updateData.usedLengthFormatted );
+//             this.calculatedLengthFormatted( updateData.calculatedLengthFormatted );
+//             this.usedWeight( updateData.usedWeight );
+//             this.usedCost( updateData.usedCost );
+//         }
 
 		this.snapshotFilename(updateData.snapshotFilename);
 		this.slicerSettingsAsText(updateData.slicerSettingsAsText)
@@ -304,6 +321,7 @@ $(function() {
         self.printJobEditDialog = new PrintJobHistoryEditDialog(null, null);
         self.pluginCheckDialog = new PrintJobHistoryPluginCheckDialog();
         self.statisticDialog = new StatisticDialog();
+        self.compareSlicerSettingsDialog = new CompareSlicerSettingsDialog();
 
         self.printJobForEditing = ko.observable();
         self.printJobForEditing(new PrintJobItem(printHistoryJobItems[0]));
@@ -318,7 +336,7 @@ $(function() {
         self.csvImportInProgress = ko.observable(false);
 
         self.isPrintHistoryPluginAvailable = ko.observable(false);
-//        self.isMultiSpoolManagerPluginsAvailable = ko.observable(false);
+        self.isMultiSpoolManagerPluginsAvailable = ko.observable(false);
 
         self.databaseFileLocation = ko.observable();
         self.snapshotFileLocation = ko.observable();
@@ -336,8 +354,25 @@ $(function() {
 
         ////////////////////////////////////////////////////// Knockout model-binding/observer
 
+        ///////////////////////////////////////////////////// START: HELPER
+        self.showPopUp = function(popupType, popupTitle, message){
+            var title = popupType.toUpperCase() + ": " + popupTitle;
+            var popupId = (title+message).replace(/([^a-z0-9]+)/gi, '-');
+            if($("."+popupId).length <1) {
+                new PNotify({
+                    title: title,
+                    text: message,
+                    type: popupType,
+                    hide: false,
+                    addclass: popupId
+                });
+            }
+        };
+        ///////////////////////////////////////////////////// END: HELPER
 
         ///////////////////////////////////////////////////// START: SETTINGS
+        self.busyIndicatorActive = ko.observable(false);
+
         self.downloadDatabaseUrl = ko.observable();
         self.takeSnapshotAfterPrintDisabled = ko.observable(false);
         self.takeSnapshotOnGCodeCommndDisabled = ko.observable(false);
@@ -440,11 +475,12 @@ $(function() {
             self.pluginCheckDialog.init(self.apiClient, self.pluginSettings);
             self.csvImportDialog.init(self.apiClient);
             self.statisticDialog.init(self.apiClient);
+            self.compareSlicerSettingsDialog.init(self.apiClient, self.busyIndicatorActive);
 
             initTableVisibilities();
 
             // resetSettings-Stuff
-             new ResetSettingsUtilV2(self.pluginSettings).assignResetSettingsFeature(PLUGIN_ID, function(data){
+             new ResetSettingsUtilV3(self.pluginSettings).assignResetSettingsFeature(PLUGIN_ID, function(data){
                 // no additional reset function
              });
 
@@ -475,7 +511,7 @@ $(function() {
                 self.databaseFileLocation(data.databaseFileLocation);
                 self.snapshotFileLocation(data.snapshotFileLocation);
                 self.isPrintHistoryPluginAvailable(data.isPrintHistoryPluginAvailable);
-//                self.isMultiSpoolManagerPluginsAvailable(data.isMultiSpoolManagerPluginsAvailable);
+                self.isMultiSpoolManagerPluginsAvailable(data.isMultiSpoolManagerPluginsAvailable);
                 return;
             }
 
@@ -522,15 +558,8 @@ $(function() {
                 self.csvImportDialog.updateText(data);
             }
 
-//            self.csvImportInProgress(false);
             if ("errorPopUp" == data.action){
-                new PNotify({
-                    title: 'ERROR:' + data.title,
-                    text: data.message,
-                    type: "error",
-                    hide: false
-                    });
-
+                self.showPopUp("error", 'ERROR:' + data.title, data.message);
                 return;
             }
         }
@@ -605,7 +634,7 @@ $(function() {
             self.printJobEditDialog.showDialog(self.printJobForEditing(), printJobDialogCloseHandler, true);
         }
 
-        ///////////////////////////////////////////////////// STAR: TABLE BEHAVIOR
+        ///////////////////////////////////////////////////// START: TABLE BEHAVIOR
 
         initTableVisibilities = function(){
             // load all settings from browser storage
@@ -761,20 +790,31 @@ $(function() {
         };
         self.exportedSelectedURL = ko.observable();
 
+        // Will be filled by table-item checkbox-subscriber
         self.selectedDatabaseIdsAsCSV = "";
+
         self.deleteSelectedPrintJobs = function(){
+            if (self.selectedDatabaseIdsAsCSV.trim().length >1) {
+                var result = confirm("Do you really want to delete all selected(" + self.printJobHistoryTableHelper.selectedTableItems().length + ") printjobs?");
+                if (result == true) {
+                    self.apiClient.callRemovePrintJob("0?databaseIds=" + self.selectedDatabaseIdsAsCSV, function (responseData) {
 
-            var result = confirm("Do you really want to delete all selected("+self.printJobHistoryTableHelper.selectedTableItems().length+") printjobs?");
-            if (result == true){
-                self.apiClient.callRemovePrintJob("0?databaseIds="+self.selectedDatabaseIdsAsCSV, function(responseData) {
+                        self.printJobHistoryTableHelper.selectedTableItems.removeAll();
+                        self.printJobHistoryTableHelper.reloadItems();
 
-                    self.printJobHistoryTableHelper.selectedTableItems.removeAll();
-                    self.printJobHistoryTableHelper.reloadItems();
-
-                });
+                    });
+                }
             }
             return false;
+        }
 
+        self.compareSelectedPrintJobs = function(){
+            if (self.selectedDatabaseIdsAsCSV.split(",").length >=2){
+                self.compareSlicerSettingsDialog.showDialog(self.selectedDatabaseIdsAsCSV, function(shouldTableReload){
+                    // nothing special to do here
+                    });
+            }
+            return false;
         }
 
         self.printJobHistoryTableHelper.selectedTableItems.subscribe(function(newValue) {

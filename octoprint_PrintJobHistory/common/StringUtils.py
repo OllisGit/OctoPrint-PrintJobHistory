@@ -189,6 +189,7 @@ def formatFloatSave(pattern, value, defaultString):
 	return pattern.format(floatValue)
 
 def isEmpty(value):
+	value = to_native_str(value)
 	if (value == None or len(str(value).strip())==0 ):
 		return True
 	return False

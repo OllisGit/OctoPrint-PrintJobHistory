@@ -41,7 +41,7 @@ If you like it, I would be thankful about a cup of coffee :)
 - [x] Sort history table (printdate, filename)
 - [x] Table column visibility
 - [x] Capture image after print
-- [x] Take Thumbnail from [UltimakerFormatPackage](https://plugins.octoprint.org/plugins/UltimakerFormatPackage/) and [PrusaSlicer Thumbnails](https://plugins.octoprint.org/plugins/prusaslicerthumbnails/)
+- [x] Take Thumbnail from [Cura Thumbnails](https://plugins.octoprint.org/plugins/UltimakerFormatPackage/) and [PrusaSlicer Thumbnails](https://plugins.octoprint.org/plugins/prusaslicerthumbnails/)
 - [x] Export all printjobs as CSV
 - [x] Import printjobs from CSV
 - [x] Better error-feedback (more then just the "happy-path")
@@ -53,13 +53,13 @@ If you like it, I would be thankful about a cup of coffee :)
 
 - [PreHeat](https://plugins.octoprint.org/plugins/preheat/)
     - Starting Temperature
-- [SpoolManager](https://plugins.octoprint.org/plugins/spoolmanager/)
+- [SpoolManager](https://plugins.octoprint.org/plugins/SpoolManager/)
     - Spool Management
 - [FillamentManager](https://plugins.octoprint.org/plugins/filamentmanager/)
     - Spool - Informations
 - [DisplayLayerProgress](https://plugins.octoprint.org/plugins/DisplayLayerProgress/)
     - Layer and Height
-- [UltimakerFormatPackage](https://plugins.octoprint.org/plugins/UltimakerFormatPackage/)
+- [Cura-Thumbnails](https://plugins.octoprint.org/plugins/UltimakerFormatPackage/)
     - Thumbnail
 - [PrusaSlicer-Thumbnail](https://plugins.octoprint.org/plugins/prusaslicerthumbnails/)
     - Thumbnail

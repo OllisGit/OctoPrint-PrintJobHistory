@@ -55,6 +55,9 @@
 
     <!-- PrintJobItem-Dialog -->
     <div id="dialog_printJobHistory_editPrintJobItem" class="modal hide fade large" >
+        <!--
+            Edit - Header
+        -->
         <div class="modal-header">
             <div class="row">
                 <div class="span9">
@@ -216,108 +219,136 @@
                     </div>
                 </div>
             </div>
-
-
-
         </div>
+        <!--
+            Edit - Body
+        -->
         <div class="modal-body" >
             <form id="form_printJobHistory_editPrintJobItem" class="form-horizontal" >
                 <div class="row">
                     <div class="row">
+                        <!--
+                            LEFT - SIDE
+                        -->
                         <div class="span6" style="">
-                                <div class="control-group">
-                                    <label class="control-label">Spool *</label>
-                                    <div class="controls">
-                                        <input type="text" class="input-large" data-bind="value: printJobForEditing().spoolName" />
-                                    </div>
-                                </div>
 
-<!--                                <div data-bind="if: usedNoneOrFilamentManagerPlugin()">-->
-                                    <div class="control-group no-bottom-gap">
-                                        <label class="control-label">Spool Vendor*</label>
-                                        <div class="controls">
-                                            <input type="text" class="input-large" data-bind="value: printJobForEditing().spoolVendor" />
-                                        </div>
-                                    </div>
-                                    <div class="control-group no-bottom-gap">
-                                        <label class="control-label">Material *</label>
-                                        <div class="controls">
-                                            <input type="text" class="input-large" data-bind="value: printJobForEditing().material" />
-                                        </div>
-                                    </div>
-                                    <div class="" style="margin-left:80px">
-                                        <small><font color="Gray"> * spool values will not be reflected to FilamentManager-Plugin</font></small>
-                                    </div>
-<!--                                </div>-->
-<!--                                <div data-bind="ifnot: usedNoneOrFilamentManagerPlugin()">-->
-<!--                                    <div class="control-group no-bottom-gap">-->
-<!--                                        <label class="control-label">Spool Vendor*</label>-->
-<!--                                        <div class="controls">-->
-<!--                                            <input type="text" class="input-large" data-bind="value: printJobForEditing().spoolVendor" />-->
-<!--                                        </div>-->
-<!--                                    </div>-->
-<!--                                    <div class="control-group no-bottom-gap">-->
-<!--                                        <label class="control-label">Material *</label>-->
-<!--                                        <div class="controls">-->
-<!--                                            <input type="text" class="input-large" data-bind="value: printJobForEditing().material" />-->
-<!--                                        </div>-->
-<!--                                    </div>-->
-<!--                                    <div class="" style="margin-left:80px">-->
-<!--                                        <small><font color="Gray"> * spool values will not be reflected to FilamentManager-Plugin</font></small>-->
-<!--                                    </div>-->
-<!--                                </div>-->
+                            <!-- Total / Details - TABs -->
+                            <div class="tabbable" style="margin-left:40px"> <!-- Only required for left/right tabs -->
 
+                                <ul class="nav nav-tabs">
+                                    <li class="active"><a href="#tab-pjh-editjob-total" data-toggle="tab">General</a></li>
+                                    <li data-bind="visible: printJobForEditing().isMultiToolPrint"><a href="#tab-pjh-editjob-details" data-toggle="tab">Tool measurement</a></li>
+                                </ul>
+                                <div class="tab-content">
+                                    <!-- Total - TAB -->
+                                    <div class="tab-pane active" id="tab-pjh-editjob-total">
 
-                                <div class="control-group no-bottom-gap">
-                                    <label class="control-label">Used length</label>
-                                    <div class="controls">
-                                        <div class="input-append">
-                                            <input type="number" step="0.01" min="0" class="input-small text-right" data-bind="value: printJobForEditing().usedLengthFormatted"/>
-                                            <span class="add-on">m</span>
+                                        <div class="control-group">
+                                            <label class="control-label">Spool *</label>
+                                            <div class="controls">
+                                                <input type="text" class="input-large" data-bind="value: printJobForEditing().spoolName" />
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                                <div class="control-group ">
-                                    <label class="control-label">Calculated length</label>
-                                    <div class="controls">
-                                        <div class="input-append">
-                                            <input type="number" step="0.01" min="0" class="input-small text-right" data-bind="value: printJobForEditing().calculatedLengthFormatted"/>
-                                            <span class="add-on">m</span>
+                                        <div class="control-group no-bottom-gap">
+                                            <label class="control-label">Spool Vendor*</label>
+                                            <div class="controls">
+                                                <input type="text" class="input-large" data-bind="value: printJobForEditing().spoolVendor" />
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                                <div class="control-group">
-                                    <label class="control-label">Used Weight</label>
-                                    <div class="controls">
-                                        <div class="input-append">
-                                            <input type="number" step="0.01" min="0" class="input-small text-right" data-bind="value: printJobForEditing().usedWeight" />
-                                            <span class="add-on">g</span>
+                                        <div class="control-group no-bottom-gap">
+                                            <label class="control-label">Material *</label>
+                                            <div class="controls">
+                                                <input type="text" class="input-large" data-bind="value: printJobForEditing().material" />
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                                <div class="control-group">
-                                    <label class="control-label">Filament Cost</label>
-                                    <div class="controls">
-                                        <div class="input-append">
-                                            <input type="number" step="0.01" min="0" class="input-small text-right" data-bind="value: printJobForEditing().usedCost"/>
-                                            <span class="add-on" data-bind="text: printJobForEditing().spoolCostUnit"></span>
+                                        <div class="" style="margin-left:80px">
+                                            <small><font color="Gray"> * spool values will not be reflected to FilamentManager-Plugin</font></small>
                                         </div>
-                                    </div>
-                                </div>
-                                <div class="" style="margin-left:40px">
-                                    <div class="">
-                                        <div class="note-quill-editor-container">
-                                            <div id="note-quill-editor"></div>
+                                        <div class="control-group no-bottom-gap">
+                                            <label class="control-label">Used length</label>
+                                            <div class="controls">
+                                                <div class="input-append">
+                                                    <input type="number" step="0.01" min="0" class="input-small text-right" data-bind="value: printJobForEditing().usedLengthFormatted"/>
+                                                    <span class="add-on">m</span>
+                                                </div>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
-                                <div class="" style="margin-left:40px">
+                                        <div class="control-group ">
+                                            <label class="control-label">Calculated length</label>
+                                            <div class="controls">
+                                                <div class="input-append">
+                                                    <input type="number" step="0.01" min="0" class="input-small text-right" data-bind="value: printJobForEditing().calculatedLengthFormatted"/>
+                                                    <span class="add-on">m</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label">Used Weight</label>
+                                            <div class="controls">
+                                                <div class="input-append">
+                                                    <input type="number" step="0.01" min="0" class="input-small text-right" data-bind="value: printJobForEditing().usedWeight" />
+                                                    <span class="add-on">g</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label">Filament Cost</label>
+                                            <div class="controls">
+                                                <div class="input-append">
+                                                    <input type="number" step="0.01" min="0" class="input-small text-right" data-bind="value: printJobForEditing().usedCost"/>
+                                                    <span class="add-on" data-bind="text: printJobForEditing().spoolCostUnit"></span>
+                                                </div>
+                                            </div>
+                                        </div>
 
-                                    <a href='' data-bind="visible:printJobEditDialog.isSlicerSettingsPresent, click: printJobEditDialog.showSlicerSettingsDialog" style="text-align:right">Show Slicer Settings</a>
-<!--                                    <button class="btn btn-primary" data-bind="click: printJobEditDialog.showSlicerSettingsDialog" style="text-align:right">showSlicerSettingsDialog</button>-->
+                                    </div>
+                                    <!-- Details - TAB -->
+                                    <div class="tab-pane" id="tab-pjh-editjob-details">
+                                        <table id="" class="table table-striped table-hover table-condensed table-hover" style="clear: both;">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 15%" >Tool</th>
+                                                    <th style="width: 15%" >Spool</th>
+                                                    <th style="width: 15%" >Material</th>
+                                                    <th style="width: 15%" >Used [mm]</th>
+                                                    <th style="width: 15%" >Calculated [mm]</th>
+                                                    <th style="width: 15%" >Used weight [g]</th>
+                                                    <th style="width: 10%" >Cost [E]</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody data-bind="foreach:printJobForEditing().allToolKeys">
+                                                <tr data-bind="style: { 'font-weight':  $index() == ($root.printJobForEditing().allToolKeys.length - 1) ? 'bold' : 'normal' }">
+                                                    <td data-bind="text:$root.printJobForEditing().allFilamentModels[$data].toolId">Toolo0</td>
+                                                    <td data-bind="text:$root.printJobForEditing().allFilamentModels[$data].spoolName">My Best</td>
+                                                    <td data-bind="text:$root.printJobForEditing().allFilamentModels[$data].material">PLA</td>
+                                                    <td data-bind="text:$root.printJobForEditing().allFilamentModels[$data].usedLengthFormatted">123.4</td>
+                                                    <td data-bind="text:$root.printJobForEditing().allFilamentModels[$data].calculatedLengthFormatted">4321.1</td>
+                                                    <td data-bind="text:$root.printJobForEditing().allFilamentModels[$data].usedWeight">3423.2</td>
+                                                    <td data-bind="text:$root.printJobForEditing().allFilamentModels[$data].usedCost">12</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+
+                                    </div>
                                 </div>
+                            </div>
+                            <!-- Notes -->
+                            <div class="" style="margin-left:40px">
+                                <div class="">
+                                    <div class="note-quill-editor-container">
+                                        <div id="note-quill-editor"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="" style="margin-left:40px">
+                                <a href='' data-bind="visible:printJobEditDialog.isSlicerSettingsPresent, click: printJobEditDialog.showSlicerSettingsDialog" style="text-align:right">Show Slicer Settings</a>
+                            </div>
+
                         </div>
-                        <!-- WEB CAM - STUFF -->
+                        <!--
+                            LEFT - SIDE
+                                WEB CAM - STUFF
+                        -->
                         <div class="span6">
                             <div class="">
 
@@ -416,7 +447,9 @@
                 </div>
             </form>
         </div>
-
+        <!--
+            Edit - Footer
+        -->
         <div class="modal-footer">
             <div class="control-group">
                 <div class="controls row-fluid">
@@ -431,7 +464,6 @@
             </div>
         </div>
     </div>
-
 
     <!-- SlicerSettings View - Dialog -->
     <div id="dialog_printJobHistory_slicerSettings" class="modal hide fade">
@@ -601,6 +633,63 @@
             <div class="control-group">
                 <div class="controls">
                     <button class="btn "  data-bind="click: statisticDialog.closeDialog" style="text-align:right">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- SlicerSettingsCompare Dialog -->
+    <div id="dialog_printJobHistory_compareSlicerSettings" class="modal hide fade">
+        <div class="modal-header">
+            <div class="modal-title"><h3>Compare SlicerSettings</h3></div>
+        </div>
+        <div class="modal-body">
+
+            <div class="container-fluid">
+                <div class="row-fluid">
+<!--
+                    <div class="row">
+                        <div class="span3">
+                            <div><b>Print job count</b></div>
+                        </div>
+                        <div class="span9">
+                        </div>
+                    </div>
+-->
+
+                    <div class="row">
+                        <div class="span12">
+
+<!--                            <table data-bind='visible: compareSlicerSettingsDialog.compareResultTableItems().length > 0'>-->
+                            <table class="table table-striped table-hover table-condensed table-hover">
+                                <thead>
+                                    <tr data-bind='foreach: compareSlicerSettingsDialog.compareResultTableHeaders'>
+                                        <th style="position: sticky;background: white;top: -20px;"><span data-bind="text: fileName"></span></th>
+                                    </tr>
+                                </thead>
+                                <tbody data-bind='foreach: compareSlicerSettingsDialog.compareResultTableItems'>
+                                    <tr data-bind="foreach: row">
+
+                                        <td data-bind="visible: $index()==0"><b><span data-bind="text: value, style: { color: $root.compareSlicerSettingsDialog.getDiffColor($data) }"></span></b></td>
+                                        <td data-bind="visible: $index()!=0"><span data-bind="text: value, style: { color: $root.compareSlicerSettingsDialog.getDiffColor($data) }"></span></td>
+<!--                                        <td data-bind="ifnot: $index==0"><span data-bind="text: value, style: { color: $root.compareSlicerSettingsDialog.getDiffColor($data) }"></span></td>-->
+<!--                                        <td><input class='required' data-bind='value: name, uniqueName: true' /></td>-->
+<!--                                        <td><input class='required number' data-bind='value: price, uniqueName: true' /></td>-->
+<!--                                        <td><a href='#' data-bind='click: $root.removeGift'>Delete</a></td>-->
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <div class="control-group">
+                <div class="controls">
+                    <button class="btn "  data-bind="click: compareSlicerSettingsDialog.closeDialog" style="text-align:right">Close</button>
                 </div>
             </div>
         </div>

@@ -19,9 +19,9 @@ from peewee import *
 
 
 FORCE_CREATE_TABLES = False
-# SQL_LOGGING = True
+SQL_LOGGING = True
 
-CURRENT_DATABASE_SCHEME_VERSION = 3
+CURRENT_DATABASE_SCHEME_VERSION = 4
 
 # List all Models
 MODELS = [PluginMetaDataModel, PrintJobModel, FilamentModel, TemperatureModel]
@@ -30,6 +30,7 @@ MODELS = [PluginMetaDataModel, PrintJobModel, FilamentModel, TemperatureModel]
 class DatabaseManager(object):
 
 	def __init__(self, parentLogger, sqlLoggingEnabled):
+
 		self.sqlLoggingEnabled = sqlLoggingEnabled
 		self._logger = logging.getLogger(parentLogger.name + "." + self.__class__.__name__)
 		self._sqlLogger = logging.getLogger(parentLogger.name + "." + self.__class__.__name__ + ".SQL")
@@ -85,6 +86,30 @@ class DatabaseManager(object):
 
 	def _upgradeFrom3To4(self):
 		self._logger.info(" Starting 3 -> 4")
+		# What is changed:
+		# - FilamentModel:
+		# 	- add toolId = CharField(null=True) # since V4	--> old values must be total, because no information about single tool
+
+		connection = sqlite3.connect(self._databaseFileLocation)
+		cursor = connection.cursor()
+
+		sql = """
+		PRAGMA foreign_keys=off;
+		BEGIN TRANSACTION;
+
+			ALTER TABLE 'pjh_filamentmodel' ADD 'toolId' VARCHAR(255);
+			UPDATE 'pjh_filamentmodel' SET toolId='total';
+
+			UPDATE 'pjh_pluginmetadatamodel' SET value=4 WHERE key='databaseSchemeVersion';
+		COMMIT;
+		PRAGMA foreign_keys=on;
+		"""
+		cursor.executescript(sql)
+
+		connection.close()
+		self._logger.info(" Successfully 3 -> 4")
+		pass
+
 
 	def _upgradeFrom2To3(self):
 		self._logger.info(" Starting 2 -> 3")
@@ -339,6 +364,7 @@ class DatabaseManager(object):
 				# new transaction will begin automatically after the call
 				# to rollback().
 				transaction.rollback()
+				databaseId = None
 				self._logger.exception("Could not insert printJob into database:" + str(e))
 
 				self.sendErrorMessageToClient("PJH-DatabaseManager", "Could not insert the printjob into the database. See OctoPrint.log for details!")
@@ -395,7 +421,10 @@ class DatabaseManager(object):
 			if (firstDate == None):
 				firstDate = job.printStartDateTime
 			lastDate = job.printEndDateTime
-			fileSize = fileSize + job.fileSize
+			tempJobFileSize = job.fileSize
+			if (tempJobFileSize == None):
+				tempJobFileSize = 0
+			fileSize = fileSize + tempJobFileSize
 			duration = duration + job.duration
 			statusResult = job.printStatusResult
 
@@ -406,7 +435,7 @@ class DatabaseManager(object):
 			else:
 				statusDict[statusResult] = 1
 
-			job.loadFilamentFromAssoziation()
+			job.loadFilamentsFromAssoziation()
 			allFilaments = job.allFilaments
 			if allFilaments != None:
 				for filla in allFilaments:
@@ -545,6 +574,7 @@ class DatabaseManager(object):
 		# sortOrder = tableQuery["sortOrder"]
 		# filterName = tableQuery["filterName"]
 
+		# dont use join "Kartesischs-Produkt" myQuery = PrintJobModel.select().join(FilamentModel).offset(offset).limit(limit)
 		myQuery = PrintJobModel.select().offset(offset).limit(limit)
 		myQuery = self._addTableQueryToSelect(myQuery, tableQuery)
 		# if (filterName == "onlySuccess"):
@@ -598,9 +628,9 @@ class DatabaseManager(object):
 				myQuery = myQuery.order_by(PrintJobModel.printStartDateTime)
 		if ("fileName" == sortColumn):
 			if ("desc" == sortOrder):
-				myQuery = myQuery.order_by(PrintJobModel.fileName.desc())
+				myQuery = myQuery.order_by(fn.Lower(PrintJobModel.fileName).desc())
 			else:
-				myQuery = myQuery.order_by(PrintJobModel.fileName)
+				myQuery = myQuery.order_by(fn.Lower(PrintJobModel.fileName))
 		if ("startDate" in tableQuery):
 			startDate = tableQuery["startDate"]
 			endDate = tableQuery["endDate"]

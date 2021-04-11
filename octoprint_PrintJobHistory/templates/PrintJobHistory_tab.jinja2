@@ -2,7 +2,16 @@
 <div id="tab_printJobHistory">
 
     <div class="row-fluid">
-        <div class="span4">
+        <div class="span5">
+
+            <div data-bind="visible: busyIndicatorActive">
+                <i class='fa fa-spinner fa-spin' ></i>
+            </div>
+
+            <div >
+<!--                <button title="Add new Printjob" class="btn" data-bind="click: addNewPrintJobItem"><i class="fa fa-plus"></i> Add Printjob</button>-->
+                <a href="#" data-bind="click: addNewPrintJobItem" title="Force refresh" ><span class="fa fa-plus"></span> Add Printjob</a>
+            </div>
 
             <div>
                 <a href="#" data-bind="click: showStatisticDialog" title="Force refresh" ><span class="icon-bar-chart"></span> Statistic</a>
@@ -10,11 +19,13 @@
 
             <div>
                 <a href="#" data-bind="attr: {href: $root.exportUrl('CSV'), css: {disabled: !$root.exportUrl('CSV')}}"> <i class="icon-reorder"></i> CSV Export</a>
-                <span data-bind="visible: printJobHistoryTableHelper.selectedTableItems().length > 0">| <a href="#" data-bind="attr: {href: $root.exportedSelectedURL, css: {disabled: !$root.exportUrl('CSV')}}"> selected (<span data-bind="text: printJobHistoryTableHelper.selectedTableItems().length"></span>)</a> </span>
+                <span data-bind="visible: printJobHistoryTableHelper.selectedTableItems().length > 0">| <a href="#" data-bind="attr: {href: $root.exportedSelectedURL, css: {disabled: !$root.exportUrl('CSV')}}"> only selected (<span data-bind="text: printJobHistoryTableHelper.selectedTableItems().length"></span>)</a> </span>
             </div>
             <div>
-                <a href="#" data-bind="visible: printJobHistoryTableHelper.selectedTableItems().length > 0, click:deleteSelectedPrintJobs"> <i class="icon-trash"></i> Delete selected (<span data-bind="text: printJobHistoryTableHelper.selectedTableItems().length">100</span>)</a>
-                <div data-bind="visible: printJobHistoryTableHelper.selectedTableItems().length == 0">&nbsp;</div>
+                <a href="#" data-bind="click:compareSelectedPrintJobs"> <i class="icon-columns"></i> Compare selected (<span data-bind="text: printJobHistoryTableHelper.selectedTableItems().length">100</span>)</a>
+            </div>
+            <div>
+                <a href="#" data-bind="click:deleteSelectedPrintJobs"> <i class="icon-trash"></i> Delete selected (<span data-bind="text: printJobHistoryTableHelper.selectedTableItems().length">100</span>)</a>
             </div>
             <div>Pagesize:
                 <select class="input-mini text-right" style="margin-bottom: 0px;"
@@ -25,13 +36,10 @@
             <div>
                 Total: <b><span data-bind="text: printJobHistoryTableHelper.totalItemCount">Anzahl</span></b>
             </div>
-            <div class="pull-left">
-                <button title="Add new Printjob" class="btn" data-bind="click: addNewPrintJobItem"><i class="fa fa-plus"></i> Add Printjob</button>
-            </div>
 
         </div>
 
-        <div class="span8">
+        <div class="span7">
             <div class="pull-right">
                 <small>
                     Sort by:
@@ -333,7 +341,7 @@
                 <td data-bind="click: function() { $root.showPrintJobDetailsDialogAction($data); }, visible: $root.tableAttributeVisibility.image">
 <!--                    <img src="http://localhost:5000/plugin/PrintJobHistory/static/images/no-image-icon.png" >-->
 <!--                    <img src="http://localhost:5000/plugin/PrintJobHistory/printJobSnapshot/2019-10-11-15-33" >-->
-                    <img data-bind="attr: {src: $root.snapshotUrl( $data), id: $root.snapshotImageId( $data ) }" >
+                    <img loading="lazy" data-bind="attr: {src: $root.snapshotUrl( $data), id: $root.snapshotImageId( $data ) }" >
                 </td>
 <!--                <td>-->
 <!--                    <div class="btn-group action-buttons" >-->

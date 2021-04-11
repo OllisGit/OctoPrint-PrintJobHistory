@@ -22,3 +22,4 @@ class FilamentModel(BaseModel):
 	calculatedLength = FloatField(null=True)
 	usedWeight = FloatField(null=True)
 	usedCost = FloatField(null=True)
+	toolId = CharField(null=True) # since V4

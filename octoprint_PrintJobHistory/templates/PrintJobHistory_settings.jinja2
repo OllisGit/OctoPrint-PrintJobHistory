@@ -33,6 +33,7 @@
                         </label>
                     </div>
                 </div>
+                <hr/>
                 <div class="control-group">
                     <div class="controls">
                         <label class="checkbox">
@@ -43,25 +44,35 @@
                                 <label class="radio">
                                         <input type="radio" name="showPrintJobDialogAfterPrintMode" value="successful" data-bind="checked: pluginSettings.showPrintJobDialogAfterPrintMode, enable: pluginSettings.showPrintJobDialogAfterPrint"> only on successful prints
                                 </label>
+                                <label class="radio">
+                                        <input type="radio" name="showPrintJobDialogAfterPrintMode" value="failed" data-bind="checked: pluginSettings.showPrintJobDialogAfterPrintMode, enable: pluginSettings.showPrintJobDialogAfterPrint"> only on canceled/failed prints
+                                </label>
 
                         </label>
                     </div>
                 </div>
-<!--
+                <hr/>
+                <div class="control-group">
+                    <div class="controls">
+                        <label class="" >
+                            Filament tracking is done by: <span data-bind="text: pluginSettings.selectedFilamentTrackerPlugin"></span>
+                        </label>
+                    </div>
+                </div>
                 <div class="control-group" data-bind="visible: isMultiSpoolManagerPluginsAvailable">
                     <div class="controls">
                         <label class="">
-                            Select prefered filament manager:
+                            Select preferred filament tracker:
                                 <label class="checkbox">
-                                    <input  style="margin-top:-4px" type="radio" name="selectedSpoolManagerPlugin" value="spoolManagerPlugin" data-bind="checked: pluginSettings.selectedSpoolManagerPlugin"> SpoolManager-Plugin</span>
+                                    <input  style="margin-top:-4px" type="radio" name="selectedFilamentTrackerPlugin" value="SpoolManager Plugin" data-bind="checked: pluginSettings.selectedFilamentTrackerPlugin"> SpoolManager-Plugin (Version 1.4.0+)</span>
                                 </label>
                                 <label class="checkbox">
-                                    <input  style="margin-top:-4px" type="radio" name="selectedSpoolManagerPlugin" value="filamentManagerPlugin" data-bind="checked: pluginSettings.selectedSpoolManagerPlugin"> FilamentManager-Plugin</span>
+                                    <input  style="margin-top:-4px" type="radio" name="selectedFilamentTrackerPlugin" value="FilamentManager Plugin" data-bind="checked: pluginSettings.selectedFilamentTrackerPlugin"> FilamentManager-Plugin (Version 1.7.2+)</span>
                                 </label>
                         </label>
                     </div>
                 </div>
--->
+                <hr/>
                 <div class="control-group">
                     <div class="controls">
                         <label class="checkbox">
@@ -126,7 +137,7 @@
                         <div class="help-inline">
                             Currently tested thumbnail plugins:
                             <ul>
-                                <li>Ultimaker Format Package (if uploaded in ufp format)</li>
+                                <li>Cura Thumbnails (if uploaded in ufp format)</li>
                                 <li>PrusaSlicer Thumbnails </li>
                             </ul>
                         </div>

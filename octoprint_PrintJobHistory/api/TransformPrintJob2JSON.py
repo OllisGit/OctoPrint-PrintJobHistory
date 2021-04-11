@@ -18,18 +18,22 @@ def transformPrintJobModel(job):
 	durationFormatted = StringUtils.secondsToText(duration)
 	jobAsDict["durationFormatted"] = durationFormatted
 
-	allFilaments = job.loadFilamentFromAssoziation()
+	allFilaments = job.loadFilamentsFromAssoziation()
 	if allFilaments != None:
-		filamentDict = allFilaments.__data__
-		filamentDict["usedWeight"] = StringUtils.formatFloatSave("{:.02f}", filamentDict["usedWeight"], "")
+		allFilamentDict = {}
+		for filament in allFilaments:
 
-		filamentDict["usedLengthFormatted"] = StringUtils.formatFloatSave("{:.02f}", convertMM2M(filamentDict["usedLength"]), "")
-		filamentDict["calculatedLengthFormatted"] = StringUtils.formatFloatSave("{:.02f}", convertMM2M(filamentDict["calculatedLength"]), "")
+			filamentDict = filament.__data__
+			filamentDict["usedWeight"] = StringUtils.formatFloatSave("{:.02f}", filamentDict["usedWeight"], "")
 
-		filamentDict["usedCost"] = StringUtils.formatFloatSave("{:.02f}", filamentDict["usedCost"], "")
-		filamentDict["spoolVendor"] = filamentDict["profileVendor"]
+			filamentDict["usedLengthFormatted"] = StringUtils.formatFloatSave("{:.02f}", convertMM2M(filamentDict["usedLength"]), "")
+			filamentDict["calculatedLengthFormatted"] = StringUtils.formatFloatSave("{:.02f}", convertMM2M(filamentDict["calculatedLength"]), "")
 
-		jobAsDict['filamentModel'] = filamentDict
+			filamentDict["usedCost"] = StringUtils.formatFloatSave("{:.02f}", filamentDict["usedCost"], "")
+			filamentDict["spoolVendor"] = filamentDict["profileVendor"]
+			allFilamentDict[filamentDict["toolId"]] = filamentDict
+
+		jobAsDict['filamentModels'] = allFilamentDict
 
 	allTemperatures = job.loadTemperaturesFromAssoziation()
 	if not allTemperatures == None and len(allTemperatures) > 0:
@@ -48,7 +52,7 @@ def transformPrintJobModel(job):
 	del jobAsDict["printStartDateTime"]
 	del jobAsDict["printEndDateTime"]
 	del jobAsDict["created"]
-	del jobAsDict["filamentModel"]["created"]
+	# del jobAsDict["filamentModel"]["created"]
 
 	return jobAsDict
 

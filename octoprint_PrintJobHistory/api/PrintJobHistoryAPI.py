@@ -20,17 +20,21 @@ from datetime import timedelta
 from werkzeug.datastructures import Headers
 
 from octoprint_PrintJobHistory import PrintJobModel, TemperatureModel, FilamentModel
-from octoprint_PrintJobHistory.api import TransformPrintJob2JSON
+from octoprint_PrintJobHistory.api import TransformPrintJob2JSON, TransformSlicerSettings2JSON
 
 from octoprint_PrintJobHistory.common import StringUtils
 from octoprint_PrintJobHistory.common.SettingsKeys import SettingsKeys
 
 from octoprint_PrintJobHistory.CameraManager import CameraManager
 from octoprint_PrintJobHistory.common import CSVExportImporter
+from octoprint_PrintJobHistory.services.SlicerSettingsService import SlicerSettingsService
 
 #############################################################
 # Internal API for all Frontend communications
 #############################################################
+
+
+
 class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 
@@ -53,7 +57,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		printJobModel.printedHeight = self._getValueFromJSONOrNone("printedHeight", jsonData)
 
 		if (printJobModel.databaseId != None):
-			filamentModel = printJobModel.loadFilamentFromAssoziation()
+			filamentModel = printJobModel.loadFilamentsFromAssoziation()
 		else:
 			filamentModel = printJobModel.allFilaments[0]
 		filamentModel.profileVendor = self._getValueFromJSONOrNone("spoolVendor", jsonData)
@@ -177,6 +181,36 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		statistic = self._databaseManager.calculatePrintJobsStatisticByQuery(tableQuery)
 
 		return flask.jsonify(statistic)
+
+
+	#######################################################################################   COMPARE Slicer Settings
+	@octoprint.plugin.BlueprintPlugin.route("/compareSlicerSettings/", methods=["GET"])
+	def get_compareSlicerSettings(self):
+
+		if "databaseIds" in flask.request.values:
+			selectedDatabaseIds = flask.request.values["databaseIds"]
+
+			# selectedDatabaseIds = "21, 17"
+			allJobsModels = self._databaseManager.loadSelectedPrintJobs(selectedDatabaseIds)
+
+			slicerSettingssJobToCompareList = []
+			for job in allJobsModels:
+				settingsForCompare = SlicerSettingsService.SlicerSettingsJob()
+				settingsForCompare.databaseId = job.databaseId
+				settingsForCompare.fileName = job.fileName
+				settingsForCompare.slicerSettingsAsText = job.slicerSettingsAsText
+
+				slicerSettingssJobToCompareList.append(settingsForCompare)
+
+			slicerService = SlicerSettingsService()
+			compareResult = slicerService.compareSlicerSettings(slicerSettingssJobToCompareList)
+			compoareResultAsJson = TransformSlicerSettings2JSON.transformSlicerSettingsCompareResult(compareResult)
+
+			return flask.jsonify(compoareResultAsJson)
+
+		return flask.jsonify()
+
+
 
 	#######################################################################################   LOAD ALL JOBS BY QUERY
 	@octoprint.plugin.BlueprintPlugin.route("/loadPrintJobHistoryByQuery", methods=["GET"])
@@ -311,7 +345,8 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 			# file was uploaded
 			sourceLocation = flask.request.values[input_upload_path]
 			targetLocation = self._cameraManager.buildSnapshotFilenameLocation(snapshotFilename, False)
-			os.rename(sourceLocation, targetLocation)
+			# os.rename(sourceLocation, targetLocation)
+			shutil.move(sourceLocation, targetLocation)
 			pass
 
 		return flask.jsonify({
@@ -389,8 +424,6 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		return Response(CSVExportImporter.transform2CSV(allJobsModels),
 						mimetype='text/csv',
 						headers={'Content-Disposition': 'attachment; filename=PrintJobHistory-SAMPLE.csv'})
-
-
 
 	######################################################################################   UPLOAD CSV FILE (in Thread)
 
