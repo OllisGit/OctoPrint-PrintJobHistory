@@ -5,7 +5,7 @@
 ![GitHub Releases (by Release)](https://img.shields.io/github/downloads/OllisGit/OctoPrint-PrintJobHistory/latest/total.svg)
 
 The OctoPrint-Plugin stores all print-job informations of a print in a local database.
-These informations were collected from OctoPrint itself, but also from other plugins. See [below](#Optional-Plugins) for more information abaut these plugins.
+These informations were collected from OctoPrint itself, but also from other plugins. See [below](#Optional-Plugins) for more information about these plugins.
 
 #### Support my Efforts
 
@@ -36,15 +36,16 @@ If you like it, I would be thankful about a cup of coffee :)
 ### UI features
 - [x] List all printjobs
 - [x] Edit single printjob
+- [x] Add single printjob
 - [x] Capture/Upload Image
-- [x] Filter history table (only print result)
-- [x] Sort history table (printdate, filename)
+- [x] Filter history table
+- [x] Sort history table
 - [x] Table column visibility
 - [x] Capture image after print
 - [x] Take Thumbnail from [Cura Thumbnails](https://plugins.octoprint.org/plugins/UltimakerFormatPackage/) and [PrusaSlicer Thumbnails](https://plugins.octoprint.org/plugins/prusaslicerthumbnails/)
 - [x] Export all printjobs as CSV
 - [x] Import printjobs from CSV
-- [x] Better error-feedback (more then just the "happy-path")
+- [x] Compare Slicer-Settings
 
 ### Not included
 - No report diagramms
@@ -64,12 +65,6 @@ If you like it, I would be thankful about a cup of coffee :)
 - [PrusaSlicer-Thumbnail](https://plugins.octoprint.org/plugins/prusaslicerthumbnails/)
     - Thumbnail
 
-
-## Planning Release #2, ...
-.. see:
-- Poll: "What is the next big thing?" https://github.com/OllisGit/OctoPrint-PrintJobHistory/issues/6
-- Planning Board: https://github.com/OllisGit/OctoPrint-PrintJobHistory/projects/1
-
 ## Screenshots
 ![plugin-tab](screenshots/plugin-tab.png "Plugin-Tab")
 ![editPrintJob-dialog](screenshots/editPrintJob-dialog.png "EditPrintJob-Dialog")
@@ -77,7 +72,6 @@ If you like it, I would be thankful about a cup of coffee :)
 ![statistics-dialog](screenshots/statistics-dialog.png "Print Statistics")
 ![plugin-settings](screenshots/plugin-settings.png "Plugin-Settings")
 ![missingplugins-dialog](screenshots/missingPlugins-dialog.png "MissingPlugins-Dialog")
-
 
 ## Setup
 
