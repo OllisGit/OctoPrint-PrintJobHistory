@@ -227,9 +227,16 @@ class PrintJobHistoryPlugin(
 		selectedSpoolDataDict = self._getSelectedSpools()
 		# isMultiToolPrint = len(filamentCalculatedDict) > 1
 
+		# - add always "total"
+		calculatedTotalLength = 0.0
+
+		totalFilamentModel = FilamentModel()
+		totalFilamentModel.toolId = "total"
+		printJob.addFilamentModel(totalFilamentModel)
+
 		# - assign calculated values
 		if (filamentCalculatedDict != None):
-			calculatedTotalLength = 0.0
+
 			for toolId in filamentCalculatedDict:
 				filamentModel = FilamentModel()
 				filamentModel.toolId = toolId
@@ -242,10 +249,8 @@ class PrintJobHistoryPlugin(
 				printJob.addFilamentModel(filamentModel)
 				pass
 
-			filamentModel = FilamentModel()
-			filamentModel.toolId = "total"
-			filamentModel.calculatedLength = calculatedTotalLength
-			printJob.addFilamentModel(filamentModel)
+		totalFilamentModel.calculatedLength = calculatedTotalLength
+
 		# - assign measured values
 		if (filamentExtrusionArray != None):
 			usedTotalLength = 0.0
