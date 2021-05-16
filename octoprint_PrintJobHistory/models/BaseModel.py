@@ -19,6 +19,19 @@ class BaseModel(Model):
 	databaseId = AutoField()
 	created = DateTimeField(default=datetime.datetime.now)
 
+	# def __init__(self):
+	# 	# try:
+	# 	# 	self.initialize()
+	# 	# except AttributeError as ae:
+	# 	# 	errorMessage = str(ae)
+	# 	# 	if ("object has no attribute \'initialize\'" in errorMessage):
+	# 	# 		raise NotImplemented("You need to implement initialize-methode in your database model classes")
+	# 	# 	else:
+	# 	# 		raise ae
+	# 	# 	pass
+	# 	pass
+
+
 	class Meta:
 		table_function = make_table_name
 		pass

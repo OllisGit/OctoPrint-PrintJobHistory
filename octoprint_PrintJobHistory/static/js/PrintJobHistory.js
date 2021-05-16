@@ -51,11 +51,11 @@ $(function() {
 		this.diameter = ko.observable();
 		this.density = ko.observable();
 		this.material = ko.observable();
-        this.spoolVendor = ko.observable();
+        this.vendor = ko.observable();
 		this.spoolName = ko.observable();
 		this.spoolCost = ko.observable();
 		this.spoolCostUnit = ko.observable();
-		this.spoolWeight = ko.observable();
+		this.weight = ko.observable();
 		this.usedLengthFormatted = ko.observable();
 		this.calculatedLengthFormatted = ko.observable();
 		this.usedWeight = ko.observable(""); // empty sting, because length-check is needed in PringHistory_tab.jinja2
@@ -135,7 +135,7 @@ $(function() {
                 updateData.filamentModels = updateData.allFilamentModels;
             }
         }
-        if (updateData.filamentModels != null){
+        if (updateData.filamentModels != null && Object.keys(updateData.filamentModels).length != 0){
             // result from backend
 
             this.allFilamentModels = updateData.filamentModels;
@@ -147,11 +147,11 @@ $(function() {
             this.diameter(totalFilamentModel.diameter);
             this.density(totalFilamentModel.density);
             this.material(totalFilamentModel.material);
-            this.spoolVendor(totalFilamentModel.profileVendor);
+            this.vendor(totalFilamentModel.vendor);
             this.spoolName(totalFilamentModel.spoolName);
             this.spoolCost(totalFilamentModel.spoolCost);
             this.spoolCostUnit(totalFilamentModel.spoolCostUnit);
-            this.spoolWeight(totalFilamentModel.spoolWeight);
+            this.weight(totalFilamentModel.weight);
 //            this.usedLength( formatFilamentLength(updateData.filamentEntity.usedLength) );
 //            this.calculatedLength( formatFilamentLength(updateData.filamentEntity.calculatedLength) );
             this.usedLengthFormatted(totalFilamentModel.usedLengthFormatted );
@@ -159,24 +159,6 @@ $(function() {
             this.usedWeight(totalFilamentModel.usedWeight );
             this.usedCost(totalFilamentModel.usedCost );
         }
-//         else {
-//
-//             debugger
-//             this.diameter(updateData.diameter);
-//             this.density(updateData.density);
-//             this.material(updateData.material);
-//             this.spoolVendor(updateData.spoolVendor);
-//             this.spoolName(updateData.spoolName);
-//             this.spoolCost(updateData.spoolCost);
-//             this.spoolCostUnit(updateData.spoolCostUnit);
-//             this.spoolWeight(updateData.spoolWeight);
-// //            this.usedLength( formatFilamentLength(updateData.filamentEntity.usedLength) );
-// //            this.calculatedLength( formatFilamentLength(updateData.filamentEntity.calculatedLength) );
-//             this.usedLengthFormatted( updateData.usedLengthFormatted );
-//             this.calculatedLengthFormatted( updateData.calculatedLengthFormatted );
-//             this.usedWeight( updateData.usedWeight );
-//             this.usedCost( updateData.usedCost );
-//         }
 
 		this.snapshotFilename(updateData.snapshotFilename);
 		this.slicerSettingsAsText(updateData.slicerSettingsAsText)
@@ -199,7 +181,7 @@ $(function() {
         this.layer = ko.observable(true);
         this.usage = ko.observable(true);
         this.material = ko.observable(true);
-        this.spoolVendor = ko.observable(true);
+        this.vendor = ko.observable(true);
         this.spool = ko.observable(true);
         this.usedLength = ko.observable(true);
         this.usedWeight = ko.observable(true);
@@ -343,18 +325,31 @@ $(function() {
 
         self.csvImportDialog = new PrintJobHistoryImportDialog();
 
-//        self.usedNoneOrFilamentManagerPlugin = function(){
-//            var usedPlugin = self.printJobForEditing().usedSpoolManagerPlugin();
-//            if (usedPlugin == null || usedPlugin == "nonePlugin" || usedPlugin == "filamentManagerPlugin"){
-//                return true;
-//            }
-//            return false;
-//        }
-
-
         ////////////////////////////////////////////////////// Knockout model-binding/observer
 
         ///////////////////////////////////////////////////// START: HELPER
+        loadSettingsFromBrowserStore = function(){
+            initTableVisibilities();
+
+
+            // TODO maybe in a separate js-file
+            // load all settings from browser storage
+            if (!Modernizr.localstorage) {
+                // damn!!!
+                return false;
+            }
+            var storageKey = "pjh.table.selectedPageSize";
+            if (localStorage[storageKey] == null){
+                localStorage[storageKey] = "25"; // default page size
+            } else {
+                self.printJobHistoryTableHelper.selectedPageSize(localStorage[storageKey]);
+            }
+            self.printJobHistoryTableHelper.selectedPageSize.subscribe(function(newValue){
+                localStorage[storageKey] = newValue;
+            });
+        }
+
+
         self.showPopUp = function(popupType, popupTitle, message){
             var title = popupType.toUpperCase() + ": " + popupTitle;
             var popupId = (title+message).replace(/([^a-z0-9]+)/gi, '-');
@@ -368,6 +363,7 @@ $(function() {
                 });
             }
         };
+
         ///////////////////////////////////////////////////// END: HELPER
 
         ///////////////////////////////////////////////////// START: SETTINGS
@@ -477,10 +473,11 @@ $(function() {
             self.statisticDialog.init(self.apiClient);
             self.compareSlicerSettingsDialog.init(self.apiClient, self.busyIndicatorActive);
 
-            initTableVisibilities();
+            // load browser stored settings
+            loadSettingsFromBrowserStore();
 
             // resetSettings-Stuff
-             new ResetSettingsUtilV3(self.pluginSettings).assignResetSettingsFeature(PLUGIN_ID, function(data){
+            new ResetSettingsUtilV3(self.pluginSettings).assignResetSettingsFeature(PLUGIN_ID, function(data){
                 // no additional reset function
              });
 
@@ -573,8 +570,6 @@ $(function() {
 
         ///////////////////////////////////////////////////// END: OctoPrint Hooks
 
-
-
         ///////////////////////////////////////////////////// START: DIALOG Stuff
 
         self.showStatisticDialog = function(){
@@ -626,14 +621,6 @@ $(function() {
 
         ///////////////////////////////////////////////////// END: DIALOG Stuff
 
-        self.addNewPrintJobItem = function(){
-//            debugger
-            var emptyItem = new PrintJobItem(emptyPrintJobItemAsJson);
-            self.printJobForEditing(emptyItem);
-
-            self.printJobEditDialog.showDialog(self.printJobForEditing(), printJobDialogCloseHandler, true);
-        }
-
         ///////////////////////////////////////////////////// START: TABLE BEHAVIOR
 
         initTableVisibilities = function(){
@@ -670,12 +657,20 @@ $(function() {
             assignVisibility("layer");
             assignVisibility("usage");
             assignVisibility("material");
-            assignVisibility("spoolVendor");
+            assignVisibility("vendor");
             assignVisibility("spool");
             assignVisibility("usedLength");
             assignVisibility("usedWeight");
             assignVisibility("note");
             assignVisibility("image");
+        }
+
+        self.addNewPrintJobItem = function(){
+//            debugger
+            var emptyItem = new PrintJobItem(emptyPrintJobItemAsJson);
+            self.printJobForEditing(emptyItem);
+
+            self.printJobEditDialog.showDialog(self.printJobForEditing(), printJobDialogCloseHandler, true);
         }
 
         loadJobFunction = function(tableQuery, observableTableModel, observableTotalItemCount, observableCurrentItemCount){
@@ -766,8 +761,6 @@ $(function() {
         self.isQueryEndEnabled = queryEndViewModel.isEnabled;
         self.isQueryEndEnabled(false);
 
-        // TODO range picker
-
         // - export csv data
         self.exportUrl = function(exportType) {
             if (self.printJobHistoryTableHelper.items().length > 0) {
@@ -846,7 +839,6 @@ $(function() {
             return order;
         };
 
-
         self.changeSortOrder = function(columnToSort) {
             if ("fileName" == columnToSort){
                 if (self.printJobHistorylistHelper.currentSorting() == "fileNameAsc") {
@@ -872,21 +864,19 @@ $(function() {
             return "pjh-imageid-" + printJobItem.databaseId();
         }
 
+        // - tableSearch
+        self.clearTableSearchQuery = function () {
+            self.printJobHistoryTableHelper.searchQuery("");
+            self.printJobHistoryTableHelper.reloadItems();
+        };
 
-
-
-
+        self.printJobHistoryTableHelper.searchQuery.subscribe(function(newValue){
+                    if (newValue != null && newValue.length > 3){
+                        self.printJobHistoryTableHelper.reloadItems();
+                    }
+                });
 
         ///////////////////////////////////////////////////// END: TABLE BEHAVIOR
-
-//        self.removePrintJobAction = function(printJobItem) {
-//            var result = confirm("Do you really want to delete the print job?");
-//            if (result == true){
-//                self.apiClient.callRemovePrintJob(printJobItem.databaseId(), function(responseData) {
-//                    self.printJobHistoryTableHelper.reloadItems();
-//                });
-//            }
-//        };
 
     }
 

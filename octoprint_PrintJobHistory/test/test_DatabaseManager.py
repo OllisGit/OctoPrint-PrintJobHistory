@@ -32,7 +32,7 @@ class TestDatabase(unittest.TestCase):
 		self.databaseManager.initDatabase(self.databaselocation, self._clientOutput)
 
 	# TimeFrameSelection
-	def test_queryJobs(self):
+	def _test_queryJobs(self):
 
 		# http: // localhost:5000 / plugin / PrintJobHistory / loadPrintJobHistoryByQuery?from=0 & to = 25 & sortColumn = printStartDateTime & sortOrder = desc & filterName = all & startDate = & endDate =
 		tableQuery = {
@@ -114,7 +114,7 @@ class TestDatabase(unittest.TestCase):
 			slicerSettingssJobToCompareList.append(settingsForCompare)
 
 		slicerService = SlicerSettingsService()
-		compareResult = slicerService.compareSlicerSettings(slicerSettingssJobToCompareList)
+		compareResult = slicerService.compareSlicerSettings(slicerSettingssJobToCompareList, ";(.*)=(.*)\n;   (.*),(.*)")
 
 		compoareResultAsJson = TransformSlicerSettings2JSON.transformSlicerSettingsCompareResult(compareResult)
 		print(compoareResultAsJson)
@@ -140,6 +140,15 @@ class TestDatabase(unittest.TestCase):
 		# singlePrintJob.save()
 		pass
 
+	def _test_loadPringJobWithAssos(self):
+		printJobModel = self.databaseManager.loadPrintJob(1010)
+		print(printJobModel.fileName)
+		allFilamentModels = printJobModel._getFilamentModelsFromAsso()
+
+		for filamentModel in allFilamentModels:
+			print(filamentModel.toolId)
+
+		print("ende")
 
 if __name__ == '__main__':
 	print("Start DatabaseManager Test")

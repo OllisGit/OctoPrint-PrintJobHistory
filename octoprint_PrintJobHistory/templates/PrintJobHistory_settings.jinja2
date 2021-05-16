@@ -72,6 +72,18 @@
                         </label>
                     </div>
                 </div>
+
+                <hr/>
+                <div class="control-group">
+                    <label class="">Slicer Settings expressions&nbsp;
+                        <textarea rows="3" cols="60" data-bind="value: pluginSettings.slicerSettingsKeyValueExpression"></textarea>
+                    </label>
+                    <div class="help-inline">
+                        Here you can define expression which are useed for parsing the slicersettings from gcode.<br>
+                        Your expression needs two groups (brackets). First group is the key and the second group is the value.
+                    </div>
+                </div>
+
                 <hr/>
                 <div class="control-group">
                     <div class="controls">
@@ -423,7 +435,7 @@
                 <div class="control-group">
                     <label class="control-label">Database Backupname</label>
                     <div class="controls">
-                        e.g.<code>printJobHistory-backup-20191207-0924.db</code>
+                        e.g.<code>printJobHistory-backup-V2-20191207-0924.db</code>
                     </div>
                 </div>
 <!--                <div class="control-group">-->

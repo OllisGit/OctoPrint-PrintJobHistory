@@ -13,6 +13,7 @@ import flask
 import os
 import shutil
 import tempfile
+import json
 
 from octoprint_PrintJobHistory.common import CSVExportImporter
 from octoprint_PrintJobHistory.models.FilamentModel import FilamentModel
@@ -262,6 +263,7 @@ class PrintJobHistoryPlugin(
 				filamentModel = printJob.getFilamentModelByToolId(toolId)
 				if (filamentModel == None):
 					filamentModel = FilamentModel()
+					filamentModel.toolId = toolId
 					printJob.addFilamentModel(filamentModel)
 
 				filamentModel.toolId = toolId
@@ -272,7 +274,7 @@ class PrintJobHistoryPlugin(
 					spoolData = selectedSpoolDataDict[toolId]
 
 					filamentModel.spoolName = spoolData["spoolName"]
-					filamentModel.profileVendor = spoolData["vendor"]
+					filamentModel.vendor = spoolData["vendor"]
 					filamentModel.material = spoolData["material"]
 					filamentModel.diameter = spoolData["diameter"]
 					# filamentModel.spoolCostUnit = TODO
@@ -281,8 +283,8 @@ class PrintJobHistoryPlugin(
 					usedTotaWeight = usedTotaWeight + filamentModel.usedWeight
 
 					filamentModel.spoolCost = spoolData["spoolCost"]
-					filamentModel.spoolWeight = spoolData["spoolWeight"]
-					filamentModel.usedCost = filamentModel.spoolCost / filamentModel.spoolWeight * filamentModel.usedWeight
+					filamentModel.weight = spoolData["weight"]
+					filamentModel.usedCost = filamentModel.spoolCost / filamentModel.weight * filamentModel.usedWeight
 					usedTotalCost = usedTotalCost + filamentModel.usedCost
 
 				toolIndex = toolIndex + 1
@@ -290,106 +292,39 @@ class PrintJobHistoryPlugin(
 			filamentModel = printJob.getFilamentModelByToolId("total")
 			if (filamentModel == None):
 				filamentModel = FilamentModel()
-
+				filamentModel.toolId = "total"
 				printJob.addFilamentModel(filamentModel)
-			filamentModel.toolId = "total"
+
 			filamentModel.usedLength = usedTotalLength
 			filamentModel.usedWeight = usedTotaWeight
 			filamentModel.usedCost = usedTotalCost
+			# - assign all spool informations to total
+			allSpoolNames = ""
+			allVendors = ""
+			allMaterials = ""
+			allFilamentsWithoutTotal = printJob.getFilamentModels(withoutTotal=True)
+			for filament in allFilamentsWithoutTotal:
+				if ((filament.spoolName in allSpoolNames) == False):
+					if (allSpoolNames != ""):
+						allSpoolNames = allSpoolNames + ", "
+					allSpoolNames = allSpoolNames + filament.spoolName
 
-			# self._logger.info("Total"
+				if ((filament.vendor in allVendors) == False):
+					if (allVendors != ""):
+						allVendors = allVendors + ", "
+					allVendors = allVendors + filament.vendor
 
-	# 		if "analysis" in fileData:
-# 			if "filament" in fileData["analysis"]:
-# 				# {u'tool4': {u'volume': 185.20129656279946, u'length': 76997.75167999369},
-# 				#  u'tool3': {u'volume': 0.0, u'length': 0.0}, u'tool2': {u'volume': 0.0, u'length': 0.0},
-# 				#  u'tool1': {u'volume': 0.0, u'length': 0.0}, u'tool0': {u'volume': 0.0, u'length': 0.0}}
-#
-# 				filamentAnalyseDict = fileData["analysis"]["filament"]
-# 				isMultiToolPrint = len(filamentAnalyseDict) > 1
-#
-# 				for toolId in filamentAnalyseDict:
-# 					# build filament model for each tool
-#
-# 					calculatedLength = filamentAnalyseDict[toolId]["length"]
-# 					calculatedVolumne = filamentAnalyseDict[toolId]["volume"]
-#
-# 					# get some data from the selected filament tracker plugin
-# 					filamentTrackerPlugin = self._settings.get([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN])
-# 					if (SettingsKeys.KEY_SELECTED_SPOOLMANAGER_PLUGIN == filamentTrackerPlugin):
-# 						# get data from SPOOLMANAGER
-# 						# TODO
-# 						pass
-# 					elif (SettingsKeys.KEY_SELECTED_FILAMENTMANAGER_PLUGIN == filamentTrackerPlugin):
-#
-# 						# get data from FILAMENTMANAGER
-#
-# 						usedLengthAllTools = self._filamentManagerPluginImplementation.myFilamentOdometer.totalExtrusion[0]
-# 						filemanentModel.usedLength = \
-#
-# 						selectedSpools = self._filamentManagerPluginImplementation.filamentManager.get_all_selections(
-# 							self._filamentManagerPluginImplementation.client_id)
-# 						if selectedSpools != None and len(selectedSpools) > 0:
-# 							spoolData = None
-# 							defaultToolNumber = toolId[-1]
-# 							for currentSpoolData in selectedSpools:
-# 								toolNumber = str(currentSpoolData["tool"])
-# 								if (defaultToolNumber == toolNumber):
-# 									spoolData = currentSpoolData["spool"]
-# 									break
-#
-# 							if (spoolData == None):
-# 								self._logger.error(
-# 									"Filamentmanager Spooldata could not be found for toolId '" + toolId + "'")
-# 							else:
-# 								spoolName = spoolData["name"]
-# 								spoolCost = spoolData["cost"]
-# 								spoolCostUnit = self._filamentManagerPluginImplementation._settings.get(
-# 									["currencySymbol"])
-# 								spoolWeight = spoolData["weight"]
-#
-# 								profileData = spoolData["profile"]
-# 								diameter = profileData["diameter"]
-# 								material = profileData["material"]
-# 								vendor = profileData["vendor"]
-# 								density = profileData["density"]
-#
-# 								filemanentModel.spoolName = spoolName
-# 								filemanentModel.spoolCost = spoolCost
-# 								filemanentModel.spoolCostUnit = spoolCostUnit
-# 								filemanentModel.spoolWeight = spoolWeight
-#
-# 								filemanentModel.profileVendor = vendor
-# 								filemanentModel.diameter = diameter
-# 								filemanentModel.density = density
-# 								filemanentModel.material = material
-#
-# 								radius = diameter / 2.0
-# 								volume = filemanentModel.usedLength * math.pi * radius * radius / 1000.0
-# 								usedWeight = volume * density
-#
-# 								filemanentModel.usedWeight = usedWeight
-# 								filemanentModel.usedCost = spoolCost / spoolWeight * usedWeight
-#
-# 						pass
-# 					else:
-# 						self._logger.info("There is active filamenttracker plugin. no tracking of filament")
-#
-# 					filemanentModel = FilamentModel()
-# 					filemanentModel.tool = toolId
-# 					filemanentModel.calculatedLength = filamentLength
-#
-# 					printJob.addFilamentModel(filemanentModel)
-# 			else:
-# 				self._logger.error("MetaFile of '" + str(filePath) + "' doesnt include 'filament'")
-# 		else:
-# 			self._logger.error("MetaFile of '" + str(filePath) + "' doesnt include 'analysis'")
-#
-# 		if (filamentLength == None):
-# 			self._logger.error("Filament-Length not found!")
+				if ((filament.material in allMaterials) == False):
+					if (allMaterials != ""):
+						allMaterials = allMaterials + ", "
+					allMaterials = allMaterials + filament.material
+
+			filamentModel.spoolName = allSpoolNames
+			filamentModel.vendor = allVendors
+			filamentModel.material = allMaterials
 
 
-		# printJob.addFilamentModel(filemanentModel)
+
 
 	# read the total extrusion of each tool, like this
 	# return [123.123, 234.234, 0, 0]
@@ -425,7 +360,7 @@ class PrintJobHistoryPlugin(
 
 	# read the selected tools
 	# return  {
-	# 'tool0': {'databaseId': 4711, 'spoolName': 'NewSpool', 'spoolWeight': 2000.0, 'spoolCost': 123.2, 'material': 'PLA', 'vendor: 'MaterMost', 'density': 4.25, 'diameter': 1.75, },
+	# 'tool0': {'databaseId': 4711, 'spoolName': 'NewSpool', 'weight': 2000.0, 'spoolCost': 123.2, 'material': 'PLA', 'vendor: 'MaterMost', 'density': 4.25, 'diameter': 1.75, },
 	# 'tool1': {}
 	# },
 	def _getSelectedSpools(self):
@@ -447,7 +382,7 @@ class PrintJobHistoryPlugin(
 					spoolData = currentSpoolData["spool"]
 					databaseId = spoolData["id"]
 					spoolName = spoolData["name"]
-					spoolWeight = spoolData["weight"]
+					weight = spoolData["weight"]
 					spoolCost = spoolData["cost"]
 
 					profileData = spoolData["profile"]
@@ -464,7 +399,7 @@ class PrintJobHistoryPlugin(
 					    "density": density,
 					  	"diameter":  diameter,
 						"spoolCost": spoolCost,
-						"spoolWeight": spoolWeight
+						"weight": weight
 					}
 
 					pass
@@ -538,7 +473,7 @@ class PrintJobHistoryPlugin(
 
 		if (tempFound == True):
 			self._logger.info(
-				"... Temperature found '" + str(tempBed) + "' ' Tool '" + toolId + "' '" + str(tempTool) + "'")
+				"... Temperature found '" + str(tempBed) + "' Tool '" + toolId + "' '" + str(tempTool) + "'")
 			self._addTemperatureToPrintModel(self._currentPrintJobModel, tempBed, toolId, tempTool)
 		else:
 			# readTemperatureFromPrinter
@@ -589,6 +524,7 @@ class PrintJobHistoryPlugin(
 
 
 	#### print job finished
+	# printStatus = "success", "failed", "canceled"
 	def _printJobFinished(self, printStatus, payload):
 		captureMode = self._settings.get([SettingsKeys.SETTINGS_KEY_CAPTURE_PRINTJOBHISTORY_MODE])
 		if (captureMode == SettingsKeys.KEY_CAPTURE_PRINTJOBHISTORY_MODE_NONE):
@@ -616,9 +552,11 @@ class PrintJobHistoryPlugin(
 			# - Slicer Settings
 			selectedFilename = payload.get("path")
 			selectedFile = self._file_manager.path_on_disk(payload.get("origin"), selectedFilename)
-			slicerSettings = SlicerSettingsParser(self._logger).extractSlicerSettings(selectedFile)
-			if (slicerSettings.settingsAsText != None and len(slicerSettings.settingsAsText) != 0):
-				self._currentPrintJobModel.slicerSettingsAsText = slicerSettings.settingsAsText
+			slicerSettingsExpressions = self._settings.get([SettingsKeys.SETTINGS_KEY_SLICERSETTINGS_KEYVALUE_EXPRESSION])
+			if (slicerSettingsExpressions != None and len(slicerSettingsExpressions) != 0):
+				slicerSettings = SlicerSettingsParser(self._logger).extractSlicerSettings(selectedFile, slicerSettingsExpressions)
+				if (slicerSettings.settingsAsText != None and len(slicerSettings.settingsAsText) != 0):
+					self._currentPrintJobModel.slicerSettingsAsText = slicerSettings.settingsAsText
 
 			# - Image / Thumbnail
 			self._grabImage(payload)
@@ -658,7 +596,7 @@ class PrintJobHistoryPlugin(
 					# always
 					printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel)
 
-			# inform client for a reload
+			# inform client for a reload (and show dialog)
 			payload = {
 				"action": "printFinished",
 				"printJobItem": printJobItem  # if present then the editor dialog is shown
@@ -749,6 +687,7 @@ class PrintJobHistoryPlugin(
 			gcodePattern = self._settings.get([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_GCODE_COMMAND_PATTERN])
 			commandAsString = StringUtils.to_native_str(cmd)
 			if (commandAsString.startswith(gcodePattern)):
+				self._logger.info("M117 mesaage for taking snapshot detected. Try to capture image!")
 				self._cameraManager.takeSnapshotAsync(
 					CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime),
 					self._sendErrorMessageToClient
@@ -863,6 +802,7 @@ class PrintJobHistoryPlugin(
 		settings[SettingsKeys.SETTINGS_KEY_CAPTURE_PRINTJOBHISTORY_MODE] = SettingsKeys.KEY_CAPTURE_PRINTJOBHISTORY_MODE_SUCCESSFUL
 		# settings[SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN] = SettingsKeys.KEY_SELECTED_SPOOLMANAGER_PLUGIN
 		settings[SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN] = SettingsKeys.KEY_SELECTED_FILAMENTMANAGER_PLUGIN
+		settings[SettingsKeys.SETTINGS_KEY_SLICERSETTINGS_KEYVALUE_EXPRESSION] = ";(.*)=(.*)\n;   (.*),(.*)"
 
 		## Camera
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT] = True

@@ -23,6 +23,8 @@ class SettingsKeys():
 	KEY_SELECTED_FILAMENTMANAGER_PLUGIN = "FilamentManager Plugin"	# visible inn plugin-settings
 	KEY_SELECTED_NONE_PLUGIN = "no plugin installed/enabled"
 
+	SETTINGS_KEY_SLICERSETTINGS_KEYVALUE_EXPRESSION = "slicerSettingsKeyValueExpression"
+
 	## Camera
 	SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT = "takeSnapshotAfterPrint"
 	SETTINGS_KEY_TAKE_PLUGIN_THUMBNAIL_AFTER_PRINT = "takePluginThumbnailAfterPrint"

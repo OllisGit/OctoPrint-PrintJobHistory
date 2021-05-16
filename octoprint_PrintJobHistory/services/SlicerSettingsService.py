@@ -1,8 +1,9 @@
 # coding=utf-8
 from __future__ import absolute_import
 
-
-
+import logging
+import os
+import re
 
 class SlicerSettingsService(object):
 
@@ -17,22 +18,14 @@ class SlicerSettingsService(object):
 		slicerSettingsJobList = []
 		pass
 
-	# - loop through the compare result
-	# for currentKey in compareResult.allKeys:
-	# 	compareLine = ""
-	# 	index = 0
-	# 	for slicerSettingsJob in compareResult.slicerSettingsJobList:
-	# 		keyValueDiff = slicerSettingsJob.keyValuesSettings[currentKey]
-	# 		if (index == 0):
-	# 			compareLine = currentKey + "::" + keyValueDiff["value"]
-	# 			index = index + 1
-	# 			continue
-	# 		else:
-	# 			compareLine = compareLine + "##" + keyValueDiff["value"] + "("+str(keyValueDiff["isDiffernt"])+")"
-	# 			index = index + 1
-	#
-	# 	print (compareLine)
-	def compareSlicerSettings(self, slicerSettingsJobList):
+	def __init__(self, parentLogger):
+		self._logger = logging.getLogger(parentLogger.name + "." + self.__class__.__name__)
+		# self._logger.setLevel(logging.DEBUG)
+		self._allSlicerPatterns = []
+
+	def compareSlicerSettings(self, slicerSettingsJobList, slicerSettingsExpressions):
+
+		self._parseSlicerExpressions(slicerSettingsExpressions)
 
 		allKeys = []
 		for slicerSettingsJob in slicerSettingsJobList:
@@ -48,23 +41,31 @@ class SlicerSettingsService(object):
 		if (jobSettings != None):
 			settingsLines = jobSettings.splitlines(False)
 			for line in settingsLines:
-				# KeyValue extraction
-				if ('=' in line):
-					keyValue = line.split('=', 1)  # 1 == only the first =
-					key = keyValue[0][1:].strip()
-					value = keyValue[1].strip()
-					# keyValueSettings[key] = value
-					keyValueSettings[key] = {"key": key, "value":value }
-					# keyValueSettings["value"] = value
-					#
-					# keyValueSettings["key"] = key
-					# keyValueSettings["value"] = value
 
-					if ( (key in allKeys) == False):
-						allKeys.append(key)
-					# print("Key:" + key)
-					# print("Value:" + value)
-					# print()
+				# KeyValue extraction
+				# ;   (.*),(.*)
+				# ;(.*)=(.*)
+				for slicerPattern in self._allSlicerPatterns:
+					matched = slicerPattern.match(line)
+					if (matched):
+						# if ('=' in line):
+						# 	keyValue = line.split('=', 1) # 1 == only the first =
+						# 	key = keyValue[0].strip()
+						# 	value = keyValue[1].strip()
+						key = str(matched.group(1)).strip()
+						value = str(matched.group(2)).strip()
+
+						keyValueSettings[key] = {"key": key, "value":value }
+						# keyValueSettings["value"] = value
+						#
+						# keyValueSettings["key"] = key
+						# keyValueSettings["value"] = value
+
+						if ( (key in allKeys) == False):
+							allKeys.append(key)
+						# print("Key:" + key)
+						# print("Value:" + value)
+						# print()
 		return keyValueSettings
 
 	def markDiff(self, allKeys, slicerSettingsJobList):
@@ -111,3 +112,17 @@ class SlicerSettingsService(object):
 					pass
 
 		return compareResult
+
+	def _parseSlicerExpressions(self, slicerSettingsExpressions):
+		self._allSlicerPatterns = []
+		# slicerSettingsExpressions = ;(.*)=(.*)\n;   (.*),(.*)
+		lines = slicerSettingsExpressions.split("\n")
+		try:
+			for line in lines:
+				if (len(line.strip()) == 0):
+					continue
+				slicerExpression = re.compile(line)
+				self._allSlicerPatterns.append(slicerExpression)
+		except (ValueError, RuntimeError) as error:
+			self._logger.exception(""+str(error))
+		pass

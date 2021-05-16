@@ -58,38 +58,43 @@
             <div  >
                 <div >
 
-<div class="pull-right">
-    <span>Timeframe:&nbsp;&nbsp;</span>
+                    <div class="pull-right">
+                        <span>Timeframe:&nbsp;&nbsp;</span>
 
-    <select class="input-medium pull-right" style="margin-bottom: 2px;"data-bind="options: allTimeFrames,
-                                                                                  optionsValue: 'key',
-                                                                                  optionsText: 'label',
-                                                                                  value: selectedTimeFrame"></select>
+                        <select class="input-medium pull-right" style="margin-bottom: 2px;"data-bind="options: allTimeFrames,
+                                                                                                      optionsValue: 'key',
+                                                                                                      optionsText: 'label',
+                                                                                                      value: selectedTimeFrame"></select>
 
-<!--<select class="input-medium pull-right" style="margin-bottom: 2px;">-->
-<!--    <option value="all">all</option>-->
-<!--    <option selected value="all">custom</option>-->
-<!--    <option value="10">last Week</option>-->
-<!--    <option value="25">last Month</option>-->
-<!--    <option value="50">last three Month</option>-->
-<!--    <option value="100">last Year</option>-->
-<!--</select>-->
-</div>
+                    <!--<select class="input-medium pull-right" style="margin-bottom: 2px;">-->
+                    <!--    <option value="all">all</option>-->
+                    <!--    <option selected value="all">custom</option>-->
+                    <!--    <option value="10">last Week</option>-->
+                    <!--    <option value="25">last Month</option>-->
+                    <!--    <option value="50">last three Month</option>-->
+                    <!--    <option value="100">last Year</option>-->
+                    <!--</select>-->
+                    </div>
 
-<div class="pull-right" style="margin-bottom: 10px;">
+                    <div class="pull-right" style="margin-bottom: 10px;">
 
-    <span class="input-append datetime">
-            <input  id="queryStart-date-picker" type="text"  class="input-small text-right" value="14.02.2020"
-                    data-bind="value: printJobHistoryTableHelper.queryStartDate, disable: (isCustomTimeFrame() == false)"><span class="add-on"><i class="icon-th"></i></span>
-    </span>
-    <span class="input-append datetime" >
-            <input  id="queryEnd-date-picker" type="text"
-                    class="input-small text-right"
-                    data-bind="value: printJobHistoryTableHelper.queryEndDate, disable: (isCustomTimeFrame() == false)" ><span class="add-on" ><i class="icon-th"></i></span>
-    </span>
+                        <span class="input-append datetime">
+                                <input  id="queryStart-date-picker" type="text"  class="input-small text-right" value="14.02.2020"
+                                        data-bind="value: printJobHistoryTableHelper.queryStartDate, disable: (isCustomTimeFrame() == false)"><span class="add-on"><i class="icon-th"></i></span>
+                        </span>
+                        <span class="input-append datetime" >
+                                <input  id="queryEnd-date-picker" type="text"
+                                        class="input-small text-right"
+                                        data-bind="value: printJobHistoryTableHelper.queryEndDate, disable: (isCustomTimeFrame() == false)" ><span class="add-on" ><i class="icon-th"></i></span>
+                        </span>
 
-    <a style="margin-left:10px" href="#" data-bind="click: printJobHistoryTableHelper.reloadItems" title="Force refresh" ><span class="icon-refresh icon-2x"></span></a>
-</div>
+                        <a style="margin-left:10px" href="#" data-bind="click: printJobHistoryTableHelper.reloadItems" title="Force refresh" ><span class="icon-refresh icon-2x"></span></a>
+                    </div>
+
+                    <div style="margin-top:-10px" class="pull-right search-query-with-clear" data-bind="css: {'active-clear': printJobHistoryTableHelper.searchQuery}">
+                        <input type="search" class="input-block search-query" data-bind="value: printJobHistoryTableHelper.searchQuery, valueUpdate: 'input'" placeholder="{{ _('Search...')|edq }}">
+                        <span class="search-clear" data-bind="click: clearTableSearchQuery"><i class="fas fa-times"></i></span>
+                    </div>
 
                 </div>
             </div>
@@ -217,7 +222,7 @@
                                     <input type="checkbox" data-bind="checked: tableAttributeVisibility.material"> Material
                                 </label>
                                 <label class="checkbox" style="margin-left:10px">
-                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.spoolVendor"> Spool Vendor
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.vendor"> Spool Vendor
                                 </label>
                                 <label class="checkbox" style="margin-left:10px">
                                     <input type="checkbox" data-bind="checked: tableAttributeVisibility.spool"> Spool Name
@@ -321,7 +326,7 @@
                 </td>
                 <td data-bind="click: function() { $root.showPrintJobDetailsDialogAction($data); }, visible: $root.tableAttributeVisibility.usage">
                     <span ><span data-bind="visible: $root.tableAttributeVisibility.material, text: material, attr: { title: material }"></span></span>
-                    <span ><span data-bind="visible: $root.tableAttributeVisibility.spoolVendor, text: spoolVendor, attr: { title: spoolVendor }"></span></span>
+                    <span ><span data-bind="visible: $root.tableAttributeVisibility.vendor, text: vendor, attr: { title: vendor }"></span></span>
                     <span ><span data-bind="visible: $root.tableAttributeVisibility.spool, text: spoolName, attr: { title: spoolName }"></span></span>
                     <div class="additionalInfo">
                         <div data-bind="visible: $root.tableAttributeVisibility.usedLength" >Length: <span data-bind="text: usedLengthFormatted, attr: { title: usedLengthFormatted }"></span>m / <span data-bind="text: calculatedLengthFormatted, attr: { title: calculatedLengthFormatted }"></span>m</div>

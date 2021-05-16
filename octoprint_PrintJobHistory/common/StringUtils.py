@@ -171,6 +171,7 @@ def compactTimeDeltaFormatter(tdelta, inputtype='timedelta'):
 		result = str(s[0]) + "s"
 	return result
 
+# format: 12.03.2012 or 12.03.2013 14:45
 def transformToDateTimeOrNone(dateTimeString):
 	if dateTimeString != None and len(dateTimeString) != 0:
 		index = dateTimeString.find(" ")
@@ -261,6 +262,14 @@ def to_native_str(s_or_u):
 	else:
 		return to_unicode(s_or_u)
 
+
+
+def printMethodeFromClass(myclass):
+	import inspect
+
+	method_list = [func[0] for func in inspect.getmembers(myclass, predicate=inspect.isroutine) if
+				   callable(getattr(myclass, func[0]))]
+	print(method_list)
 
 # bla = unicode('1')
 #

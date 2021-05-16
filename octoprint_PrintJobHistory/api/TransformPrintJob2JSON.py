@@ -18,7 +18,7 @@ def transformPrintJobModel(job):
 	durationFormatted = StringUtils.secondsToText(duration)
 	jobAsDict["durationFormatted"] = durationFormatted
 
-	allFilaments = job.loadFilamentsFromAssoziation()
+	allFilaments = job.getFilamentModels()
 	if allFilaments != None:
 		allFilamentDict = {}
 		for filament in allFilaments:
@@ -30,12 +30,14 @@ def transformPrintJobModel(job):
 			filamentDict["calculatedLengthFormatted"] = StringUtils.formatFloatSave("{:.02f}", convertMM2M(filamentDict["calculatedLength"]), "")
 
 			filamentDict["usedCost"] = StringUtils.formatFloatSave("{:.02f}", filamentDict["usedCost"], "")
-			filamentDict["spoolVendor"] = filamentDict["profileVendor"]
+			# remove datetime, because not json serializable
+			del filamentDict["created"]
+			# put to overall model
 			allFilamentDict[filamentDict["toolId"]] = filamentDict
 
 		jobAsDict['filamentModels'] = allFilamentDict
 
-	allTemperatures = job.loadTemperaturesFromAssoziation()
+	allTemperatures = job.getTemperatureModels()
 	if not allTemperatures == None and len(allTemperatures) > 0:
 		allTempsAsList = list()
 
@@ -52,7 +54,6 @@ def transformPrintJobModel(job):
 	del jobAsDict["printStartDateTime"]
 	del jobAsDict["printEndDateTime"]
 	del jobAsDict["created"]
-	# del jobAsDict["filamentModel"]["created"]
 
 	return jobAsDict
 

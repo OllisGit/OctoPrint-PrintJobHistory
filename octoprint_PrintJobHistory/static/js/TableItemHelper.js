@@ -15,7 +15,6 @@
     self.selectedTableItems = ko.observableArray();
     self.allSelectedCheckbox = ko.observable(false);    // checkbox
 
-
     // paging
     self.pageSizeOptions = ko.observableArray([10, 25, 50, 100, "all"])
     self.selectedPageSize = ko.observable(defaultPageSize)
@@ -30,6 +29,7 @@
     // Date
     self.queryStartDate = ko.observable(null);
     self.queryEndDate = ko.observable(null);
+    self.searchQuery = ko.observable("")
 
     self.isInitialLoadDone = false;
 
@@ -73,6 +73,7 @@
             "filterName": self.selectedFilterName(),
             "startDate": self.queryStartDate() == null ? "" : self.queryStartDate(),
             "endDate": self.queryEndDate() == null ? "" : self.queryEndDate(),
+            "searchQuery": self.searchQuery() == null ? "" : self.searchQuery(),
         };
         return tableQuery;
     }

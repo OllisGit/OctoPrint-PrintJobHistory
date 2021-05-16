@@ -3,6 +3,7 @@ from __future__ import absolute_import
 
 import logging
 import os
+import re
 
 MAX_GCODE_LINES_BEFORE_STOP_READING = 10
 LINE_RESULT_GCODE = "LR:gcode"
@@ -35,14 +36,17 @@ class SlicerSettingsParser(object):
 	def __init__(self, parentLogger):
 		self._logger = logging.getLogger(parentLogger.name + "." + self.__class__.__name__)
 		# self._logger.setLevel(logging.DEBUG)
+		self._allSlicerPatterns = []
 
-	def extractSlicerSettings(self, gcodeFilePath):
+	def extractSlicerSettings(self, gcodeFilePath, slicerSettingsExpressions):
 
 		self._logger.info("Start parsing Slicer-Settings")
+		# parse slicer-expressions
 		# Read the file from top
 		# Read the file from bottom
 		# read key-value
 
+		self._parseSlicerExpressions(slicerSettingsExpressions)
 		# - Make sure that the top-region is not overlappig with bottom region
 		# - Stop reading after you read a definied amount of gcode continusly (no interruption -> gcode-block)
 		slicerSettings = SlicerSettings()
@@ -135,14 +139,21 @@ class SlicerSettingsParser(object):
 				return LINE_RESULT_OTHERS
 
 			# KeyValue extraction
-			if ('=' in line):
-				keyValue = line.split('=', 1) # 1 == only the first =
-				key = keyValue[0].strip()
-				value = keyValue[1].strip()
-				if (slicerSettings.isKeyAlreadyExtracted(key) == False):
-					slicerSettings.addKeyValueSetting(key, value)
-					slicerSettings.addKeyValueSettingsAsText(line)
-				return LINE_RESULT_SETTINGS
+			# ;   (.*),(.*)
+			# ;(.*)=(.*)
+			for slicerPattern in self._allSlicerPatterns:
+				matched = slicerPattern.match(line)
+				if (matched):
+				# if ('=' in line):
+				# 	keyValue = line.split('=', 1) # 1 == only the first =
+				# 	key = keyValue[0].strip()
+				# 	value = keyValue[1].strip()
+					key = str(matched.group(1)).strip()
+					value = str(matched.group(2)).strip()
+					if (slicerSettings.isKeyAlreadyExtracted(key) == False):
+						slicerSettings.addKeyValueSetting(key, value)
+						slicerSettings.addKeyValueSettingsAsText(line)
+					return LINE_RESULT_SETTINGS
 
 			return LINE_RESULT_OTHERS
 
@@ -183,4 +194,17 @@ class SlicerSettingsParser(object):
 
 		return line
 
+	def _parseSlicerExpressions(self, slicerSettingsExpressions):
+		self._allSlicerPatterns = []
+		# slicerSettingsExpressions = ;(.*)=(.*)\n;   (.*),(.*)
+		lines = slicerSettingsExpressions.split("\n")
+		try:
+			for line in lines:
+				if (len(line.strip()) == 0):
+					continue
+				slicerExpression = re.compile(line)
+				self._allSlicerPatterns.append(slicerExpression)
+		except (ValueError, RuntimeError) as error:
+			self._logger.exception(""+str(error))
+		pass
 

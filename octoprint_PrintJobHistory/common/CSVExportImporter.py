@@ -282,10 +282,11 @@ class FilamentCSVFormattorParser:
 			filemanentModel = allFilemanentModel[0]
 		else:
 			filemanentModel  = FilamentModel()
+			filemanentModel.toolId = "total"
 			printJobModel.addFilamentModel(filemanentModel)
 
 		if (COLUMN_SPOOL_VENDOR == fieldLabel):
-			filemanentModel.profileVendor = fieldValue
+			filemanentModel.vendor = fieldValue
 			pass
 		elif (COLUMN_SPOOL_NAME == fieldLabel):
 			filemanentModel.spoolName = fieldValue
@@ -369,7 +370,7 @@ ALL_COLUMNS = {
 	COLUMN_HEIGHT: CSVColumn("printedHeight", COLUMN_HEIGHT, "", DefaultCSVFormattorParser()),
 	COLUMN_NOTE: CSVColumn("noteText", COLUMN_NOTE, "", DefaultCSVFormattorParser()),
 	COLUMN_TEMPERATURES: CSVColumn("allTemperatures", COLUMN_TEMPERATURES, "", TemperaturCSVFormattorParser()),
-	COLUMN_SPOOL_VENDOR: CSVColumn(["allFilaments", "profileVendor"], COLUMN_SPOOL_VENDOR, "", FilamentCSVFormattorParser()),
+	COLUMN_SPOOL_VENDOR: CSVColumn(["allFilaments", "vendor"], COLUMN_SPOOL_VENDOR, "", FilamentCSVFormattorParser()),
 	COLUMN_SPOOL_NAME: CSVColumn(["allFilaments", "spoolName"], COLUMN_SPOOL_NAME, "", FilamentCSVFormattorParser()),
 	COLUMN_MATERIAL: CSVColumn(["allFilaments", "material"], COLUMN_MATERIAL, "", FilamentCSVFormattorParser()),
 	COLUMN_DIAMETER: CSVColumn(["allFilaments", "diameter"], COLUMN_DIAMETER, "", FilamentCSVFormattorParser()),

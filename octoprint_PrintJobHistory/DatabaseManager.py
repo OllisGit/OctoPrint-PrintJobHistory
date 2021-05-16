@@ -21,7 +21,7 @@ from peewee import *
 FORCE_CREATE_TABLES = False
 SQL_LOGGING = True
 
-CURRENT_DATABASE_SCHEME_VERSION = 4
+CURRENT_DATABASE_SCHEME_VERSION = 5
 
 # List all Models
 MODELS = [PluginMetaDataModel, PrintJobModel, FilamentModel, TemperatureModel]
@@ -83,6 +83,58 @@ class DatabaseManager(object):
 
 	def _upgradeFrom4To5(self):
 		self._logger.info(" Starting 4 -> 5")
+		# What is changed:
+		# - FilamentModel:
+		# 	- renameing:
+		# 		profileVendor -> vendor
+		# 		spoolWeight -> weight
+		#   (ALTER TABLE spo_spoolmodel RENAME COLUMN encloserTemperature to enclosureTemperature; not working SQLite did not support the ALTER TABLE RENAME COLUMN syntax before version 3.25.0.
+		# 	see https://www.sqlitetutorial.net/sqlite-rename-column/#:~:text=SQLite%20did%20not%20support%20the,the%20version%20lower%20than%203.25.)
+
+		connection = sqlite3.connect(self._databaseFileLocation)
+		cursor = connection.cursor()
+
+		sql = """
+		PRAGMA foreign_keys=off;
+		BEGIN TRANSACTION;
+
+			ALTER TABLE 'pjh_filamentmodel' RENAME TO 'pjh_filamentmodel_old';
+
+			CREATE TABLE "pjh_filamentmodel" (
+				"databaseId" INTEGER NOT NULL PRIMARY KEY,
+				"created" DATETIME NOT NULL,
+				"printJob_id" INTEGER NOT NULL,
+				"vendor" VARCHAR(255),
+				"diameter" REAL,
+				"density" REAL,
+				"material" VARCHAR(255),
+				"spoolName" VARCHAR(255),
+				"spoolCost" REAL,
+				"spoolCostUnit" VARCHAR(255),
+				"weight" REAL,
+				"usedLength" REAL,
+				"calculatedLength" REAL,
+				"usedWeight" REAL,
+				"usedCost" REAL,
+				'toolId' VARCHAR(255),
+				FOREIGN KEY ("printJob_id") REFERENCES "pjh_printjobmodel" ("databaseId") ON DELETE CASCADE);
+
+			INSERT INTO 'pjh_filamentmodel'
+			(databaseId, created, printJob_id, vendor, diameter, density, material, spoolName, spoolCost, spoolCostUnit, weight, usedLength, calculatedLength, usedWeight, usedCost, toolId)
+			 SELECT databaseId, created, printJob_id, profileVendor, diameter, density, material, spoolName, spoolCost, spoolCostUnit, spoolWeight, usedLength, calculatedLength, usedWeight, usedCost, toolId
+			 FROM 'pjh_filamentmodel_old';
+
+			DROP TABLE 'pjh_filamentmodel_old';
+
+			UPDATE 'pjh_pluginmetadatamodel' SET value=5 WHERE key='databaseSchemeVersion';
+		COMMIT;
+		PRAGMA foreign_keys=on;
+		"""
+		cursor.executescript(sql)
+
+		connection.close()
+		self._logger.info(" Successfully 4 -> 5")
+		pass
 
 	def _upgradeFrom3To4(self):
 		self._logger.info(" Starting 3 -> 4")
@@ -110,7 +162,6 @@ class DatabaseManager(object):
 		self._logger.info(" Successfully 3 -> 4")
 		pass
 
-
 	def _upgradeFrom2To3(self):
 		self._logger.info(" Starting 2 -> 3")
 		# What is changed:
@@ -135,7 +186,6 @@ class DatabaseManager(object):
 		connection.close()
 		self._logger.info(" Successfully 2 -> 3")
 		pass
-
 
 	def _upgradeFrom1To2(self):
 		self._logger.info(" Starting 1 -> 2")
@@ -310,7 +360,14 @@ class DatabaseManager(object):
 	def backupDatabaseFile(self, backupFolder):
 		now = datetime.datetime.now()
 		currentDate = now.strftime("%Y%m%d-%H%M")
-		backupDatabaseFileName = "printJobHistory-backup-"+currentDate+".db"
+		currentSchemeVersion = "unknown"
+		try:
+			currentSchemeVersion = PluginMetaDataModel.get(PluginMetaDataModel.key == PluginMetaDataModel.KEY_DATABASE_SCHEME_VERSION)
+			if (currentSchemeVersion != None):
+				currentSchemeVersion = str(currentSchemeVersion.value)
+		except Exception as e:
+			self._logger.exception("Could not read databasescheme version:" + str(e))
+		backupDatabaseFileName = "printJobHistory-backup-V"+currentSchemeVersion +"-"+currentDate+".db"
 		backupDatabaseFilePath = os.path.join(backupFolder, backupDatabaseFileName)
 		if not os.path.exists(backupDatabaseFilePath):
 			shutil.copy(self._databaseFileLocation, backupDatabaseFilePath)
@@ -435,8 +492,7 @@ class DatabaseManager(object):
 			else:
 				statusDict[statusResult] = 1
 
-			job.loadFilamentsFromAssoziation()
-			allFilaments = job.allFilaments
+			allFilaments = job.getFilamentModels()
 			if allFilaments != None:
 				for filla in allFilaments:
 					if (StringUtils.isEmpty(filla.usedLength) == False):
@@ -461,8 +517,6 @@ class DatabaseManager(object):
 							materialDict[filla.material] = currentCount
 						else:
 							materialDict[filla.material] = 1
-
-
 
 		# do formatting
 		queryString = self._buildQueryString(tableQuery)
@@ -616,11 +670,12 @@ class DatabaseManager(object):
 		sortOrder = tableQuery["sortOrder"]
 		filterName = tableQuery["filterName"]
 
+		# - status
 		if (filterName == "onlySuccess"):
 			myQuery = myQuery.where(PrintJobModel.printStatusResult == "success")
 		elif (filterName == "onlyFailed"):
 			myQuery = myQuery.where(PrintJobModel.printStatusResult != "success")
-
+		# -sorting
 		if ("printStartDateTime" == sortColumn):
 			if ("desc" == sortOrder):
 				myQuery = myQuery.order_by(PrintJobModel.printStartDateTime.desc())
@@ -631,6 +686,7 @@ class DatabaseManager(object):
 				myQuery = myQuery.order_by(fn.Lower(PrintJobModel.fileName).desc())
 			else:
 				myQuery = myQuery.order_by(fn.Lower(PrintJobModel.fileName))
+		# - date range
 		if ("startDate" in tableQuery):
 			startDate = tableQuery["startDate"]
 			endDate = tableQuery["endDate"]
@@ -644,6 +700,12 @@ class DatabaseManager(object):
 				# 						 ((PrintJobModel.printStartDateTime == endDate) | ( PrintJobModel.printStartDateTime <  startDate)) )
 				myQuery = myQuery.where( ( ( PrintJobModel.printStartDateTime > startDateTime) & ( PrintJobModel.printStartDateTime < endDateTime))
 										 )
+		# - search query (only filename)
+		if ("searchQuery" in tableQuery):
+			searchQueryValue = tableQuery["searchQuery"]
+			if (len(searchQueryValue) > 0):
+				myQuery = myQuery.where(PrintJobModel.fileName.contains(searchQueryValue))
+				pass
 		return myQuery
 
 

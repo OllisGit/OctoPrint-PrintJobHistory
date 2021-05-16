@@ -56,21 +56,19 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		printJobModel.printedLayers = self._getValueFromJSONOrNone("printedLayers", jsonData)
 		printJobModel.printedHeight = self._getValueFromJSONOrNone("printedHeight", jsonData)
 
-		if (printJobModel.databaseId != None):
-			filamentModel = printJobModel.loadFilamentsFromAssoziation()
-		else:
-			filamentModel = printJobModel.allFilaments[0]
-		filamentModel.profileVendor = self._getValueFromJSONOrNone("spoolVendor", jsonData)
-		filamentModel.spoolName = self._getValueFromJSONOrNone("spoolName", jsonData)
-		filamentModel.material = self._getValueFromJSONOrNone("material", jsonData)
-		filamentModel.usedLength = self._convertM2MM(self._getValueFromJSONOrNone("usedLengthFormatted", jsonData))
-		filamentModel.calculatedLength = self._convertM2MM(self._getValueFromJSONOrNone("calculatedLengthFormatted", jsonData))
-		filamentModel.usedWeight = self._getValueFromJSONOrNone("usedWeight", jsonData)
-		filamentModel.usedCost = self._getValueFromJSONOrNone("usedCost", jsonData)
+		filamentModelTotal = printJobModel.getFilamentModelByToolId("total")
+
+		filamentModelTotal.vendor = self._getValueFromJSONOrNone("vendor", jsonData)
+		filamentModelTotal.spoolName = self._getValueFromJSONOrNone("spoolName", jsonData)
+		filamentModelTotal.material = self._getValueFromJSONOrNone("material", jsonData)
+		filamentModelTotal.usedLength = self._convertM2MM(self._getValueFromJSONOrNone("usedLengthFormatted", jsonData))
+		filamentModelTotal.calculatedLength = self._convertM2MM(self._getValueFromJSONOrNone("calculatedLengthFormatted", jsonData))
+		filamentModelTotal.usedWeight = self._getValueFromJSONOrNone("usedWeight", jsonData)
+		filamentModelTotal.usedCost = self._getValueFromJSONOrNone("usedCost", jsonData)
 
 		# temperatureModel = TemperatureModel
 		if (printJobModel.databaseId != None):
-			allTemperaturesModels = printJobModel.loadTemperaturesFromAssoziation()
+			allTemperaturesModels = printJobModel.getTemperatureModels()
 		else:
 			allTemperaturesModels = printJobModel.allTemperatures
 		for tempModel in allTemperaturesModels:
@@ -147,7 +145,8 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		p1.addTemperatureModel(t2)
 
 		f1 = FilamentModel()
-		f1.profileVendor = "OllisFactory"
+		f1.toolId = "total"
+		f1.vendor = "Ollis-Factory"
 		f1.spoolName = "My best spool"
 		f1.material = "PLA"
 		f1.diameter = 1.75
@@ -202,11 +201,13 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 				slicerSettingssJobToCompareList.append(settingsForCompare)
 
-			slicerService = SlicerSettingsService()
-			compareResult = slicerService.compareSlicerSettings(slicerSettingssJobToCompareList)
-			compoareResultAsJson = TransformSlicerSettings2JSON.transformSlicerSettingsCompareResult(compareResult)
+			slicerService = SlicerSettingsService(self._logger)
+			slicerSettingsExpressions = self._settings.get([SettingsKeys.SETTINGS_KEY_SLICERSETTINGS_KEYVALUE_EXPRESSION])
+			if (slicerSettingsExpressions != None and len(slicerSettingsExpressions) != 0):
+				compareResult = slicerService.compareSlicerSettings(slicerSettingssJobToCompareList, slicerSettingsExpressions)
+				compoareResultAsJson = TransformSlicerSettings2JSON.transformSlicerSettingsCompareResult(compareResult)
 
-			return flask.jsonify(compoareResultAsJson)
+				return flask.jsonify(compoareResultAsJson)
 
 		return flask.jsonify()
 
@@ -257,6 +258,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 			printJobModel = PrintJobModel()
 
 			filemanentModel = FilamentModel()
+			filemanentModel.toolId = "total"
 			printJobModel.addFilamentModel(filemanentModel)
 
 			tempModel = TemperatureModel()
@@ -530,7 +532,6 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 		allJobsModels = list()
 
-
 		history_db_path = self.get_plugin_data_folder()+"/../printhistory/history.db"
 
 		conn = sqlite3.connect(history_db_path)
@@ -585,6 +586,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 				pass
 
 			if (isFilamentValuesPresent == True):
+				filamentModel.toolId = "total"
 				printJob.addFilamentModel(filamentModel)
 
 			# Calculate endtime

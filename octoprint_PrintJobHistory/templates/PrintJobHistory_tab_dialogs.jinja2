@@ -240,7 +240,7 @@
                                     <li data-bind="visible: printJobForEditing().isMultiToolPrint"><a href="#tab-pjh-editjob-details" data-toggle="tab">Tool measurement</a></li>
                                 </ul>
                                 <div class="tab-content">
-                                    <!-- Total - TAB -->
+                                    <!-- General - TAB -->
                                     <div class="tab-pane active" id="tab-pjh-editjob-total">
 
                                         <div class="control-group">
@@ -252,7 +252,7 @@
                                         <div class="control-group no-bottom-gap">
                                             <label class="control-label">Spool Vendor*</label>
                                             <div class="controls">
-                                                <input type="text" class="input-large" data-bind="value: printJobForEditing().spoolVendor" />
+                                                <input type="text" class="input-large" data-bind="value: printJobForEditing().vendor" />
                                             </div>
                                         </div>
                                         <div class="control-group no-bottom-gap">
@@ -319,8 +319,8 @@
                                             <tbody data-bind="foreach:printJobForEditing().allToolKeys">
                                                 <tr data-bind="style: { 'font-weight':  $index() == ($root.printJobForEditing().allToolKeys.length - 1) ? 'bold' : 'normal' }">
                                                     <td data-bind="text:$root.printJobForEditing().allFilamentModels[$data].toolId">Toolo0</td>
-                                                    <td data-bind="text:$root.printJobForEditing().allFilamentModels[$data].spoolName">My Best</td>
-                                                    <td data-bind="text:$root.printJobForEditing().allFilamentModels[$data].material">PLA</td>
+                                                    <td data-bind="text: $index() == ($root.printJobForEditing().allToolKeys.length - 1) ? ' ' : $root.printJobForEditing().allFilamentModels[$data].spoolName">My Best</td>
+                                                    <td data-bind="text: $index() == ($root.printJobForEditing().allToolKeys.length - 1) ? ' ' : $root.printJobForEditing().allFilamentModels[$data].material">PLA</td>
                                                     <td data-bind="text:$root.printJobForEditing().allFilamentModels[$data].usedLengthFormatted">123.4</td>
                                                     <td data-bind="text:$root.printJobForEditing().allFilamentModels[$data].calculatedLengthFormatted">4321.1</td>
                                                     <td data-bind="text:$root.printJobForEditing().allFilamentModels[$data].usedWeight">3423.2</td>
