@@ -59,9 +59,12 @@ class PrintJobModel(BaseModel):
 			self._loadFilamentModels()
 		allFilamentModels = self.filamentModelsByToolId.values()
 		if (withoutTotal):
-			allFilamentModels[:] = [filamentModel for filamentModel in allFilamentModels if filamentModel.toolId != "total"]
+			newAllFilamentModels = []
+			for filamentModel in allFilamentModels:
+				if filamentModel.toolId != "total":
+					newAllFilamentModels.append(filamentModel)
+			allFilamentModels = newAllFilamentModels
 			pass
-
 		return allFilamentModels
 
 

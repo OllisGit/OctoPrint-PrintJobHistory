@@ -4,6 +4,7 @@ function PrintJobHistoryEditDialog(){
     var self = this;
 
     this.apiClient = null;
+    this.currentUser = null;
 
     this.editPrintJobItemDialog = null;
     this.printJobItemForEdit = null;
@@ -193,6 +194,11 @@ function PrintJobHistoryEditDialog(){
     }
 
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////// SETTER
+    this.setCurrentUser = function(currentUser){
+        this.currentUser = currentUser;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////// SHOW DIALOG
     this.showDialog = function(printJobItemForEdit, closeDialogHandler, fullEditMode){
 
@@ -314,7 +320,6 @@ function PrintJobHistoryEditDialog(){
             return;
         }
 
-
         var noteText = self.noteEditor.getText();
         var noteDeltaFormat = self.noteEditor.getContents();
         var noteHtml = self.noteEditor.getHtml();
@@ -322,13 +327,20 @@ function PrintJobHistoryEditDialog(){
         self.printJobItemForEdit.noteDeltaFormat(noteDeltaFormat);
         self.printJobItemForEdit.noteHtml(noteHtml);
 
+        if (self.printJobItemForEdit.userName == null ||
+            self.printJobItemForEdit.userName() == null ||
+            self.printJobItemForEdit.userName().trim().length === 0){
+            if (self.currentUser != null){
+                self.printJobItemForEdit.userName(self.currentUser.name);
+            }
+        }
+
         self.apiClient.callStorePrintJob(self.printJobItemForEdit.databaseId(), self.printJobItemForEdit, function(allPrintJobsResponse){
             self.editPrintJobItemDialog.modal('hide');
             self.closeDialogHandler(true);
         });
 
     }
-
 
     /////////////////////////////////////////////////////////////////////////////////////////////////// DELETE PRINT JOB
     this.deletePrintJobItem  = function(){
@@ -340,7 +352,6 @@ function PrintJobHistoryEditDialog(){
             });
         }
     }
-
 
     /////////////////////////////////////////////////////////////////////////////////////////////////// DELETE IMAGE
     this.deleteImage  = function(){
@@ -441,7 +452,6 @@ function PrintJobHistoryEditDialog(){
             });
         }
     }
-
 
     this.cancelCaptureImage = function(){
         self.imageDisplayMode(IMAGEDISPLAYMODE_SNAPSHOTIMAGE);

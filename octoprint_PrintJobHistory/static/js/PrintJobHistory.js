@@ -139,25 +139,27 @@ $(function() {
             // result from backend
 
             this.allFilamentModels = updateData.filamentModels;
-            this.jsonArray = ko.observable(this.allFilamentModels);
             this.allToolKeys = Object.keys(this.allFilamentModels);
             this.isMultiToolPrint(Object.keys(this.allFilamentModels).length > 1)
 
             totalFilamentModel = updateData.filamentModels["total"];    // should always be present
-            this.diameter(totalFilamentModel.diameter);
-            this.density(totalFilamentModel.density);
-            this.material(totalFilamentModel.material);
-            this.vendor(totalFilamentModel.vendor);
-            this.spoolName(totalFilamentModel.spoolName);
-            this.spoolCost(totalFilamentModel.spoolCost);
-            this.spoolCostUnit(totalFilamentModel.spoolCostUnit);
-            this.weight(totalFilamentModel.weight);
-//            this.usedLength( formatFilamentLength(updateData.filamentEntity.usedLength) );
-//            this.calculatedLength( formatFilamentLength(updateData.filamentEntity.calculatedLength) );
-            this.usedLengthFormatted(totalFilamentModel.usedLengthFormatted );
-            this.calculatedLengthFormatted(totalFilamentModel.calculatedLengthFormatted );
-            this.usedWeight(totalFilamentModel.usedWeight );
-            this.usedCost(totalFilamentModel.usedCost );
+            // should never happen, but in the past we have some jobs where "total" is missing
+            if (totalFilamentModel != null){
+                this.diameter(totalFilamentModel.diameter);
+                this.density(totalFilamentModel.density);
+                this.material(totalFilamentModel.material);
+                this.vendor(totalFilamentModel.vendor);
+                this.spoolName(totalFilamentModel.spoolName);
+                this.spoolCost(totalFilamentModel.spoolCost);
+                this.spoolCostUnit(totalFilamentModel.spoolCostUnit);
+                this.weight(totalFilamentModel.weight);
+    //            this.usedLength( formatFilamentLength(updateData.filamentEntity.usedLength) );
+    //            this.calculatedLength( formatFilamentLength(updateData.filamentEntity.calculatedLength) );
+                this.usedLengthFormatted(totalFilamentModel.usedLengthFormatted );
+                this.calculatedLengthFormatted(totalFilamentModel.calculatedLengthFormatted );
+                this.usedWeight(totalFilamentModel.usedWeight );
+                this.usedCost(totalFilamentModel.usedCost );
+            }
         }
 
 		this.snapshotFilename(updateData.snapshotFilename);
@@ -497,6 +499,14 @@ $(function() {
             }
         }
 
+        self.onUserLoggedIn = function(currentUser) {
+            self.printJobEditDialog.setCurrentUser(currentUser);
+        }
+        self.onUserLoggedOut = function() {
+            if (self.printJobEditDialog != null) {
+                self.printJobEditDialog.setCurrentUser(null);
+            }
+        }
         // receive data from server
         self.onDataUpdaterPluginMessage = function (plugin, data) {
 

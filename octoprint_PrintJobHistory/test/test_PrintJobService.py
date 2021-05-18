@@ -26,9 +26,7 @@ class PrintJobServiceTestCase(unittest.TestCase):
 		self.databaseManager = DatabaseManager(testLogger, True)
 		self.databaseManager.initDatabase(self.databaselocation, self._clientOutput)
 
-
-
-	def test_createPrintJob(self):
+	def _test_createPrintJob(self):
 		self.databaseManager.deletePrintJob(1011)
 
 		newPrintJob = self.printJobService.createWithDefaults()
@@ -98,10 +96,19 @@ class PrintJobServiceTestCase(unittest.TestCase):
 		#  - allTemperatures
 
 
-
 		# do test-cleanup
 		for printJobDatabaseId in self.rollBackPrintJobs:
 			self.databaseManager.deletePrintJob(printJobDatabaseId)
+
+	def test_readFilamentModels(self):
+		# - allFilaments
+		loadedPrintJobModel = self.printJobService.loadPrintJob(72)
+		allFilamentModels = loadedPrintJobModel.getFilamentModels()
+		self.assertEqual(len(allFilamentModels), 2, "'total' and 'tool0' filamentModel expected")
+
+		loadedPrintJobModel = self.printJobService.loadPrintJob(72)
+		allFilamentModels = loadedPrintJobModel.getFilamentModels(withoutTotal=True)
+		self.assertEqual(len(allFilamentModels), 1, "'total' filamentModel expected")
 
 
 

@@ -40,6 +40,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 	def _updatePrintJobFromJson(self, printJobModel,  jsonData):
 		# transfer header values
+		printJobModel.userName = self._getValueFromJSONOrNone("userName", jsonData)
 		printJobModel.fileName = self._getValueFromJSONOrNone("fileName", jsonData)
 		# printJobModel.filePathName = self._getValueFromJSONOrNone("fileName", jsonData) # pech
 		printJobModel.printStartDateTime = StringUtils.transformToDateTimeOrNone(self._getValueFromJSONOrNone("printStartDateTimeFormatted", jsonData))

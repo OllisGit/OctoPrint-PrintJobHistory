@@ -21,7 +21,7 @@ from peewee import *
 FORCE_CREATE_TABLES = False
 SQL_LOGGING = True
 
-CURRENT_DATABASE_SCHEME_VERSION = 5
+CURRENT_DATABASE_SCHEME_VERSION = 6
 
 # List all Models
 MODELS = [PluginMetaDataModel, PrintJobModel, FilamentModel, TemperatureModel]
@@ -73,13 +73,72 @@ class DatabaseManager(object):
 
 	def _upgradeDatabase(self,currentDatabaseSchemeVersion, targetDatabaseSchemeVersion):
 
-		migrationFunctions = [self._upgradeFrom1To2, self._upgradeFrom2To3, self._upgradeFrom3To4, self._upgradeFrom4To5]
+		migrationFunctions = [self._upgradeFrom1To2,
+							  self._upgradeFrom2To3,
+							  self._upgradeFrom3To4,
+							  self._upgradeFrom4To5,
+							  self._upgradeFrom5To6,
+							  self._upgradeFrom6To7,
+							  self._upgradeFrom7To8,
+							  self._upgradeFrom8To9,
+							  self._upgradeFrom9To10
+							  ]
 
 		for migrationMethodIndex in range(currentDatabaseSchemeVersion -1, targetDatabaseSchemeVersion -1):
 			self._logger.info("Database migration from '" + str(migrationMethodIndex + 1) + "' to '" + str(migrationMethodIndex + 2) + "'")
 			migrationFunctions[migrationMethodIndex]()
 			pass
 		pass
+
+	def _upgradeFrom9To10(self):
+		self._logger.info(" Starting 9 -> 10")
+		self._logger.info(" Successfully 9 -> 10")
+		pass
+
+	def _upgradeFrom8To9(self):
+		self._logger.info(" Starting 8 -> 9")
+		self._logger.info(" Successfully 8 -> 9")
+		pass
+
+	def _upgradeFrom7To8(self):
+		self._logger.info(" Starting 7 -> 8")
+		self._logger.info(" Successfully 7 -> 8")
+		pass
+
+	def _upgradeFrom6To7(self):
+		self._logger.info(" Starting 6 -> 7")
+		self._logger.info(" Successfully 6 -> 7")
+		pass
+
+	def _upgradeFrom5To6(self):
+		self._logger.info(" Starting 5 -> 6")
+		# What is changed:
+		# - FilamentModel:
+		# 	- renameing:
+		# 		profileVendor -> vendor
+		# 		spoolWeight -> weight
+		#   (ALTER TABLE spo_spoolmodel RENAME COLUMN encloserTemperature to enclosureTemperature; not working SQLite did not support the ALTER TABLE RENAME COLUMN syntax before version 3.25.0.
+		# 	see https://www.sqlitetutorial.net/sqlite-rename-column/#:~:text=SQLite%20did%20not%20support%20the,the%20version%20lower%20than%203.25.)
+
+		connection = sqlite3.connect(self._databaseFileLocation)
+		cursor = connection.cursor()
+
+		sql = """
+		PRAGMA foreign_keys=off;
+		BEGIN TRANSACTION;
+
+			UPDATE 'pjh_filamentmodel' SET toolId='total' where toolId is NULL;
+
+			UPDATE 'pjh_pluginmetadatamodel' SET value=6 WHERE key='databaseSchemeVersion';
+		COMMIT;
+		PRAGMA foreign_keys=on;
+		"""
+		cursor.executescript(sql)
+
+		connection.close()
+		self._logger.info(" Successfully 5 -> 6")
+		pass
+
 
 	def _upgradeFrom4To5(self):
 		self._logger.info(" Starting 4 -> 5")
@@ -477,7 +536,8 @@ class DatabaseManager(object):
 			printJobCount = printJobCount + 1
 			if (firstDate == None):
 				firstDate = job.printStartDateTime
-			lastDate = job.printEndDateTime
+			if (job.printEndDateTime != None):
+				lastDate = job.printEndDateTime
 			tempJobFileSize = job.fileSize
 			if (tempJobFileSize == None):
 				tempJobFileSize = 0
@@ -520,7 +580,10 @@ class DatabaseManager(object):
 
 		# do formatting
 		queryString = self._buildQueryString(tableQuery)
-		fromToString = firstDate.strftime('%d.%m.%Y %H:%M') + " - " + lastDate.strftime('%d.%m.%Y %H:%M')
+		lastDateString = ""
+		if (lastDate != None):
+			lastDateString = lastDate.strftime('%d.%m.%Y %H:%M')
+		fromToString = firstDate.strftime('%d.%m.%Y %H:%M') + " - " + lastDateString
 		durationString = StringUtils.secondsToText(duration)
 		lengthString = self._buildLengthString(length)
 		weightString = self._buildWeightString(weight)
