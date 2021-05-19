@@ -233,35 +233,29 @@ class TemperaturCSVFormattorParser:
 
 class FilamentCSVFormattorParser:
 
-	def formatValue(self, printJob, fieldNames):
+	def formatValue(self, printJob, fieldName):
 
-		if (hasattr(printJob, fieldNames[0]) == False):
+		# only support for total model
+		totalFilamentModel = printJob.getFilamentModelByToolId("total")
+		if (totalFilamentModel == None):
 			return "-"
-		allFilamentModels = getattr(printJob, fieldNames[0])
-		if (allFilamentModels is None):
-			allFilamentModels = printJob.filaments
-
-		if (allFilamentModels is None or len(allFilamentModels) == 0):
+		if (hasattr(totalFilamentModel, fieldName) == False):
 			return "-"
-		# only support for one model
-		filamentModel = allFilamentModels[0]
-		if (hasattr(filamentModel, fieldNames[1]) == False):
-			return "-"
-		valueToFormat = getattr(filamentModel, fieldNames[1])
+		valueToFormat = getattr(totalFilamentModel, fieldName)
 
 		# append unit to value
-		if ("usedCost" == fieldNames[1] and valueToFormat != None and valueToFormat != ""):
-			if (hasattr(filamentModel, "spoolCostUnit") == True and filamentModel.spoolCostUnit != None):
-				valueToFormat = StringUtils.formatFloatSave(StringUtils.FLOAT_DEFAULT_FORMAT, valueToFormat, "-")
+		if ("usedCost" == fieldName and valueToFormat != None and valueToFormat != ""):
+			valueToFormat = StringUtils.formatFloatSave(StringUtils.FLOAT_DEFAULT_FORMAT, valueToFormat, "-")
+			if (hasattr(totalFilamentModel, "spoolCostUnit") == True and totalFilamentModel.spoolCostUnit != None):
 				if (valueToFormat != "-"):
-					if (isinstance(filamentModel.spoolCostUnit, str)):
-						valueToFormat = valueToFormat + filamentModel.spoolCostUnit
+					if (isinstance(totalFilamentModel.spoolCostUnit, str)):
+						valueToFormat = valueToFormat + totalFilamentModel.spoolCostUnit
 					else:
-						valueToFormat = valueToFormat + filamentModel.spoolCostUnit.encode("utf-8")
+						valueToFormat = valueToFormat + totalFilamentModel.spoolCostUnit.encode("utf-8")
 
-		if ("usedLength" == fieldNames[1] or
-			"calculatedLength" == fieldNames[1] or
-			"usedWeight" == fieldNames[1]):
+		if ("usedLength" == fieldName or
+			"calculatedLength" == fieldName or
+			"usedWeight" == fieldName):
 
 			if (valueToFormat != None and valueToFormat != "" and valueToFormat != "-"):
 				valueToFormat = StringUtils.formatFloatSave(StringUtils.FLOAT_DEFAULT_FORMAT, valueToFormat, "-")
@@ -370,15 +364,15 @@ ALL_COLUMNS = {
 	COLUMN_HEIGHT: CSVColumn("printedHeight", COLUMN_HEIGHT, "", DefaultCSVFormattorParser()),
 	COLUMN_NOTE: CSVColumn("noteText", COLUMN_NOTE, "", DefaultCSVFormattorParser()),
 	COLUMN_TEMPERATURES: CSVColumn("allTemperatures", COLUMN_TEMPERATURES, "", TemperaturCSVFormattorParser()),
-	COLUMN_SPOOL_VENDOR: CSVColumn(["allFilaments", "vendor"], COLUMN_SPOOL_VENDOR, "", FilamentCSVFormattorParser()),
-	COLUMN_SPOOL_NAME: CSVColumn(["allFilaments", "spoolName"], COLUMN_SPOOL_NAME, "", FilamentCSVFormattorParser()),
-	COLUMN_MATERIAL: CSVColumn(["allFilaments", "material"], COLUMN_MATERIAL, "", FilamentCSVFormattorParser()),
-	COLUMN_DIAMETER: CSVColumn(["allFilaments", "diameter"], COLUMN_DIAMETER, "", FilamentCSVFormattorParser()),
-	COLUMN_DENSITY: CSVColumn(["allFilaments", "density"], COLUMN_DENSITY, "", FilamentCSVFormattorParser()),
-	COLUMN_USED_LENGTH: CSVColumn(["allFilaments", "usedLength"], COLUMN_USED_LENGTH, "", FilamentCSVFormattorParser()),
-	COLUMN_CALCULATED_LENGTH: CSVColumn(["allFilaments", "calculatedLength"], COLUMN_CALCULATED_LENGTH, "", FilamentCSVFormattorParser()),
-	COLUMN_USED_WEIGHT: CSVColumn(["allFilaments", "usedWeight"], COLUMN_USED_WEIGHT, "", FilamentCSVFormattorParser()),
-	COLUMN_USED_FILAMENT_COSTS: CSVColumn(["allFilaments", "usedCost"], COLUMN_USED_FILAMENT_COSTS, "", FilamentCSVFormattorParser()),
+	COLUMN_SPOOL_VENDOR: CSVColumn("vendor", COLUMN_SPOOL_VENDOR, "", FilamentCSVFormattorParser()),
+	COLUMN_SPOOL_NAME: CSVColumn("spoolName", COLUMN_SPOOL_NAME, "", FilamentCSVFormattorParser()),
+	COLUMN_MATERIAL: CSVColumn("material", COLUMN_MATERIAL, "", FilamentCSVFormattorParser()),
+	COLUMN_DIAMETER: CSVColumn("diameter", COLUMN_DIAMETER, "", FilamentCSVFormattorParser()),
+	COLUMN_DENSITY: CSVColumn("density", COLUMN_DENSITY, "", FilamentCSVFormattorParser()),
+	COLUMN_USED_LENGTH: CSVColumn("usedLength", COLUMN_USED_LENGTH, "", FilamentCSVFormattorParser()),
+	COLUMN_CALCULATED_LENGTH: CSVColumn("calculatedLength", COLUMN_CALCULATED_LENGTH, "", FilamentCSVFormattorParser()),
+	COLUMN_USED_WEIGHT: CSVColumn("usedWeight", COLUMN_USED_WEIGHT, "", FilamentCSVFormattorParser()),
+	COLUMN_USED_FILAMENT_COSTS: CSVColumn("usedCost", COLUMN_USED_FILAMENT_COSTS, "", FilamentCSVFormattorParser()),
 }
 
 

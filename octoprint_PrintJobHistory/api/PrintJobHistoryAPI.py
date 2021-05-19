@@ -527,7 +527,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 		return flask.jsonify(started=True)
 
-	###################################################################################### EXPORT of PrintHistory.db
+	###################################################################################### EXPORT of PrintHistory.db - Plugin
 	# @octoprint.plugin.BlueprintPlugin.route("/exportPrintHistory", methods=["GET"])
 	def exportPrintHistoryData(self):
 
