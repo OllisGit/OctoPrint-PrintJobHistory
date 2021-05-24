@@ -65,6 +65,8 @@ $(function() {
 		this.slicerSettingsAsText = ko.observable();
 
 		this.isMultiToolPrint = ko.observable(false);
+		this.isRePrintable = ko.observable(false);
+		this.fullFileLocation = ko.observable();
 /*
         this.successful = ko.computed(function() {
             return this.success() == 1;
@@ -164,6 +166,8 @@ $(function() {
 
 		this.snapshotFilename(updateData.snapshotFilename);
 		this.slicerSettingsAsText(updateData.slicerSettingsAsText)
+        this.isRePrintable(updateData.isRePrintable);
+        this.fullFileLocation(updateData.fullFileLocation);
     };
 
 
@@ -306,12 +310,14 @@ $(function() {
         self.pluginCheckDialog = new PrintJobHistoryPluginCheckDialog();
         self.statisticDialog = new StatisticDialog();
         self.compareSlicerSettingsDialog = new CompareSlicerSettingsDialog();
+        self.messageConfirmDialog = new PrintJobHistoryPluginMessageConfirmDialog();
 
         self.printJobForEditing = ko.observable();
         self.printJobForEditing(new PrintJobItem(printHistoryJobItems[0]));
 
         self.printJobToShowAfterStartup = null;
         self.missingPluginDialogMessage = null;
+        self.confirmMessageDialogData = null;
 
         //self.tableAttributeVisibility = ko.observable();
         self.tableAttributeVisibility = new TableAttributeVisibility();
@@ -320,7 +326,8 @@ $(function() {
         self.csvImportInProgress = ko.observable(false);
 
         self.isPrintHistoryPluginAvailable = ko.observable(false);
-        self.isMultiSpoolManagerPluginsAvailable = ko.observable(false);
+        self.isSpoolManagerInstalled = ko.observable(false);
+        self.isFilamentManagerInstalled = ko.observable(false);
 
         self.databaseFileLocation = ko.observable();
         self.snapshotFileLocation = ko.observable();
@@ -352,15 +359,21 @@ $(function() {
         }
 
 
-        self.showPopUp = function(popupType, popupTitle, message){
+        self.showPopUp = function(popupType, popupTitle, message, hide){
+            if (hide){
+                hide = hide;
+            } else {
+                hide = false
+            }
+
             var title = popupType.toUpperCase() + ": " + popupTitle;
             var popupId = (title+message).replace(/([^a-z0-9]+)/gi, '-');
             if($("."+popupId).length <1) {
                 new PNotify({
-                    title: title,
+                    title: "PJHM:" + title,
                     text: message,
                     type: popupType,
-                    hide: false,
+                    hide: hide,
                     addclass: popupId
                 });
             }
@@ -471,6 +484,7 @@ $(function() {
             self.pluginSettings = self.settingsViewModel.settings.plugins[PLUGIN_ID];
             self.printJobEditDialog.init(self.apiClient, self.settingsViewModel.settings.webcam);
             self.pluginCheckDialog.init(self.apiClient, self.pluginSettings);
+            self.messageConfirmDialog.init(self.apiClient, self.pluginSettings);
             self.csvImportDialog.init(self.apiClient);
             self.statisticDialog.init(self.apiClient);
             self.compareSlicerSettingsDialog.init(self.apiClient, self.busyIndicatorActive);
@@ -489,6 +503,7 @@ $(function() {
         self.onAfterBinding = function() {
             // all inits were done
             self.downloadDatabaseUrl(self.apiClient.getDownloadDatabaseUrl());
+
             // to bring up dialogs the binding must be already done
             if (self.printJobToShowAfterStartup != null){
                 self.showPrintJobDetailsDialogAction(self.printJobToShowAfterStartup, true);
@@ -497,6 +512,12 @@ $(function() {
                 self.pluginCheckDialog.showMissingPluginsDialog(self.missingPluginDialogMessage);
                 self.missingPluginDialogMessage = null;
             }
+            if (self.confirmMessageDialogData != null){
+                self.confirmMessageDialog.showDialog(self.confirmMessageDialogData);
+                self.confirmMessageDialogData = null;
+            }
+
+
         }
 
         self.onUserLoggedIn = function(currentUser) {
@@ -507,6 +528,7 @@ $(function() {
                 self.printJobEditDialog.setCurrentUser(null);
             }
         }
+
         // receive data from server
         self.onDataUpdaterPluginMessage = function (plugin, data) {
 
@@ -518,7 +540,8 @@ $(function() {
                 self.databaseFileLocation(data.databaseFileLocation);
                 self.snapshotFileLocation(data.snapshotFileLocation);
                 self.isPrintHistoryPluginAvailable(data.isPrintHistoryPluginAvailable);
-                self.isMultiSpoolManagerPluginsAvailable(data.isMultiSpoolManagerPluginsAvailable);
+                self.isSpoolManagerInstalled(data.isSpoolManagerInstalled);
+                self.isFilamentManagerInstalled(data.isFilamentManagerInstalled);
                 return;
             }
 
@@ -527,8 +550,19 @@ $(function() {
                 if (self.pluginCheckDialog != null && self.pluginCheckDialog.isInitialized()){
                     self.pluginCheckDialog.showMissingPluginsDialog(data.message);
                 } else {
-                    // save message for later use
+                    // save message for later use, because binding is also not finished, but we received a message from backend
                     self.missingPluginDialogMessage = data.message;
+                }
+                return;
+            }
+
+            if ("showMessageConfirmDialog" == data.action){
+                // NOT POSSIBLE, because init not done
+                if (self.confirmMessageDialog != null && self.confirmMessageDialog.isInitialized()){
+                    self.confirmMessageDialog.showDialog(data.confirmMessageData);
+                } else {
+                    // save message for later use, because binding is also not finished, but we received a message from backend
+                    self.confirmMessageDialogData = data.confirmMessageData;
                 }
                 return;
             }
@@ -552,6 +586,10 @@ $(function() {
                 return;
             }
 
+            if ("csvImportStatus" == data.action){
+                self.csvImportDialog.updateText(data);
+                return;
+            }
 
             if ("showPrintJobDialogAfterClientConnection" == data.action){
                 if (data.printJobItem != null){
@@ -561,12 +599,18 @@ $(function() {
                 return;
             }
 
-            if ("csvImportStatus" == data.action){
-                self.csvImportDialog.updateText(data);
+            if ("messagePopUp" == data.action){
+                self.showPopUp("" + data.popupType,
+                               "" + data.title,
+                                "" + data.message,
+                                 data.hide);
+                return;
             }
 
             if ("errorPopUp" == data.action){
-                self.showPopUp("error", 'ERROR:' + data.title, data.message);
+                self.showPopUp("error",
+                                data.title,
+                                "" + data.message);
                 return;
             }
         }

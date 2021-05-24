@@ -19,10 +19,14 @@ from datetime import timedelta
 
 from werkzeug.datastructures import Headers
 
+from octoprint.filemanager import FileDestinations
+
 from octoprint_PrintJobHistory import PrintJobModel, TemperatureModel, FilamentModel
 from octoprint_PrintJobHistory.api import TransformPrintJob2JSON, TransformSlicerSettings2JSON
 
 from octoprint_PrintJobHistory.common import StringUtils
+from octoprint_PrintJobHistory.common import PrintJobUtils
+
 from octoprint_PrintJobHistory.common.SettingsKeys import SettingsKeys
 
 from octoprint_PrintJobHistory.CameraManager import CameraManager
@@ -164,6 +168,14 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 ################################################### APIs
 
 
+	#######################################################################################   CONFIRM MESSAGE
+	@octoprint.plugin.BlueprintPlugin.route("/confirmMessageDialog", methods=["PUT"])
+	def put_confirmMessageDialog(self):
+		self._settings.set([SettingsKeys.SETTINGS_KEY_MESSAGE_CONFIRM_DATA], None)
+		self._settings.save()
+
+		return flask.jsonify([])
+
 	#######################################################################################   DEACTIVATE PLUGIN CHECK
 	@octoprint.plugin.BlueprintPlugin.route("/deactivatePluginCheck", methods=["PUT"])
 	def put_pluginDependencyCheck(self):
@@ -171,7 +183,6 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		self._settings.save()
 
 		return flask.jsonify([])
-
 
 	#######################################################################################   LOAD STATISTIC BY QUERY
 	@octoprint.plugin.BlueprintPlugin.route("/loadStatisticByQuery", methods=["GET"])
@@ -181,7 +192,6 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		statistic = self._databaseManager.calculatePrintJobsStatisticByQuery(tableQuery)
 
 		return flask.jsonify(statistic)
-
 
 	#######################################################################################   COMPARE Slicer Settings
 	@octoprint.plugin.BlueprintPlugin.route("/compareSlicerSettings/", methods=["GET"])
@@ -212,8 +222,6 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 		return flask.jsonify()
 
-
-
 	#######################################################################################   LOAD ALL JOBS BY QUERY
 	@octoprint.plugin.BlueprintPlugin.route("/loadPrintJobHistoryByQuery", methods=["GET"])
 	def get_printjobhistoryByQuery(self):
@@ -221,13 +229,45 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		tableQuery = flask.request.values
 		allJobsModels = self._databaseManager.loadPrintJobsByQuery(tableQuery)
 		# allJobsAsDict = self._convertPrintJobHistoryModelsToDict(allJobsModels)
-		allJobsAsDict = TransformPrintJob2JSON.transformAllPrintJobModels(allJobsModels)
+		# selectedFile = self._file_manager.path_on_disk(fileLocation, selectedFilename)
+		allJobsAsDict = TransformPrintJob2JSON.transformAllPrintJobModels(allJobsModels, self._file_manager)
 
 		totalItemCount = self._databaseManager.countPrintJobsByQuery(tableQuery)
 		return flask.jsonify({
 								"totalItemCount": totalItemCount,
 								"allPrintJobs": allJobsAsDict
 							})
+
+	#######################################################################################   SELECT JOB FOR PRINTING
+	@octoprint.plugin.BlueprintPlugin.route("/selectPrintJobForPrint/<int:databaseId>", methods=["PUT"])
+	def put_select_printjob(self, databaseId):
+
+		printJobModel = self._databaseManager.loadPrintJob(databaseId);
+		if (printJobModel == None):
+			# PrintJob was deleted
+			message = "PrintJob not in database anymore! Selection not possible."
+			self._logger.error(message)
+			self._sendDataToClient(dict(action="errorPopUp",
+										title="Print selection not possible",
+										message=message))
+			return flask.jsonify()
+
+		printJobPrintable = PrintJobUtils.isPrintJobReprintable(self._file_manager,
+																printJobModel.fileOrigin,
+																printJobModel.filePathName,
+																printJobModel.fileName)
+		fullFileLocation = printJobPrintable["fullFileLocation"]
+		if (printJobPrintable["isRePrintable"] == False):
+			message = "PrintJob not found in: " +fullFileLocation
+			self._logger.error(message)
+			self._sendDataToClient(dict(action="errorPopUp",
+										title="Print selection not possible",
+										message=message))
+			return flask.jsonify()
+		sd = False if (printJobModel.fileOrigin != None and printJobModel.fileOrigin == "local") else True
+		self._printer.select_file(fullFileLocation, sd)
+
+		return flask.jsonify()
 
 	#######################################################################################   DELETE JOB
 	@octoprint.plugin.BlueprintPlugin.route("/removePrintJob/<int:databaseId>", methods=["DELETE"])
@@ -369,7 +409,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 	#######################################################################################   DOWNLOAD DATABASE-FILE
 	@octoprint.plugin.BlueprintPlugin.route("/downloadDatabase", methods=["GET"])
-	def download_database(self):
+	def get_download_database(self):
 		return send_file(self._databaseManager.getDatabaseFileLocation(),
 						 mimetype='application/octet-stream',
 						 attachment_filename='printJobHistory.db',
@@ -388,7 +428,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 	#######################################################################################   EXPORT DATABASE as CSV
 	@octoprint.plugin.BlueprintPlugin.route("/exportPrintJobHistory/<string:exportType>", methods=["GET"])
-	def exportPrintJobHistoryData(self, exportType):
+	def get_exportPrintJobHistoryData(self, exportType):
 
 		if exportType == "CSV":
 			if "databaseIds" in flask.request.values:

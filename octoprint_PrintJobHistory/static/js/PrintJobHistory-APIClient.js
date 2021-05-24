@@ -146,6 +146,27 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
         });
     }
 
+    // select PrintJob-Item for printing
+    this.callSelectPrintJobForPrinting = function (databaseId, responseHandler){
+        $.ajax({
+            //url: API_BASEURL + "plugin/"+PLUGIN_ID+"/loadPrintJobHistory",
+            url: this.baseUrl + "plugin/" + this.pluginId + "/selectPrintJobForPrint/" + databaseId,
+            type: "PUT"
+        }).done(function( data ){
+            responseHandler();
+        });
+    }
+
+    // confirm the message dialog
+    this.callConfirmMessageDialog =  function (){
+        $.ajax({
+            url: this.baseUrl + "plugin/"+ this.pluginId +"/confirmMessageDialog",
+            type: "PUT"
+        }).done(function( data ){
+            //responseHandler(data)
+        });
+    }
+
     // deactivate the Plugin/Check
     this.callDeactivatePluginCheck =  function (){
         $.ajax({

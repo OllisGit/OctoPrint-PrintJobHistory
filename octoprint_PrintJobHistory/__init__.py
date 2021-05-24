@@ -55,7 +55,6 @@ class PrintJobHistoryPlugin(
 		self._prusaSlicerThumbnailsPluginImplementation = None
 		self._prusaSlicerThumbnailsPluginImplementationState = None
 		self._printHistoryPluginImplementation = None
-		self._isMultiSpoolManagerPluginsAvailable = False
 
 		pluginDataBaseFolder = self.get_plugin_data_folder()
 
@@ -88,6 +87,14 @@ class PrintJobHistoryPlugin(
 		self._plugin_manager.send_plugin_message(self._identifier,
 												 payloadDict)
 
+	# popupType = 'notice', 'info', 'success', or 'error'.
+	def _sendMessageToClient(self, popupType, title, message, hide=False):
+		self._sendDataToClient(dict(action="messagePopUp",
+									popupType=popupType,
+									title=title,
+									message=message,
+									hide=hide))
+
 	def _sendErrorMessageToClient(self, title, message):
 		self._sendDataToClient(dict(action="errorPopUp",
 									title=title,
@@ -99,6 +106,14 @@ class PrintJobHistoryPlugin(
 				"action": "reloadTableItems"
 			}
 			self._sendDataToClient(payload)
+
+	def _sendMessageConfirmToClient(self, title, message):
+		confirmMessageData = {
+			"title": title,
+			"message": message
+		}
+		self._sendDataToClient(dict(action="showMessageConfirmDialog",
+									confirmMessageData=confirmMessageData))
 
 	def _checkForMissingPluginInfos(self, sendToClient=False):
 
@@ -132,32 +147,12 @@ class PrintJobHistoryPlugin(
 		else:
 			self._printHistoryPluginImplementation = None
 
-
-		isSpoolManagerInstalledAndEnabled = True if self._spoolManagerPluginImplementation != None and self._spoolManagerPluginImplementationState == "enabled" else False
-		isFilamentManagerInstalledAndEnabled = True if self._filamentManagerPluginImplementation != None and self._filamentManagerPluginImplementationState == "enabled" else False
-
-		if (isSpoolManagerInstalledAndEnabled and isFilamentManagerInstalledAndEnabled):
-			self._isMultiSpoolManagerPluginsAvailable = True
-		else:
-			# which one is choosen for tracking, maybe it was deinstalled
-			filamentTrackerBySettings = self._settings.get([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN])
-			filamentTrackerByInstallation = SettingsKeys.KEY_SELECTED_SPOOLMANAGER_PLUGIN if self._spoolManagerPluginImplementation != None and self._spoolManagerPluginImplementationState == "enabled" else SettingsKeys.KEY_SELECTED_FILAMENTMANAGER_PLUGIN
-
-			if (filamentTrackerBySettings != filamentTrackerByInstallation):
-				self._settings.set([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN], filamentTrackerByInstallation)
-				self._settings.save()
-
-		if ( (isSpoolManagerInstalledAndEnabled == False) and (isFilamentManagerInstalledAndEnabled == False) ):
-				self._settings.set([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN], SettingsKeys.KEY_SELECTED_NONE_PLUGIN)
-				self._settings.save()
-
-
 		self._logger.info("Plugin-State: "
 						  "PreHeat=" + self._preHeatPluginImplementationState + " "
 						  "DisplayLayerProgress=" + self._displayLayerProgressPluginImplementationState + " "
 						  "SpoolManager=" + self._spoolManagerPluginImplementationState + " "
 						  "filamentmanager=" + self._filamentManagerPluginImplementationState + " "
-																																																																											"PrusaSlicerThumbnails=" + self._ultimakerFormatPluginImplementationState)
+						  )
 
 		if sendToClient == True:
 			missingMessage = ""
@@ -184,6 +179,59 @@ class PrintJobHistoryPlugin(
 				missingMessage = "<ul>" + missingMessage + "</ul>"
 				self._sendDataToClient(dict(action="missingPlugin",
 											message=missingMessage))
+
+	def _checkForMissingFilamentTracking(self):
+
+		changedToNone = False
+		currentFilamentTrackingPlugin = self._settings.get([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN])
+		if ( (currentFilamentTrackingPlugin == SettingsKeys.KEY_SELECTED_SPOOLMANAGER_PLUGIN) and
+			 (self._isSpoolManagerInstalledAndEnabled() == False) ):
+			changedToNone = True
+			self._settings.set([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN],
+							   SettingsKeys.KEY_SELECTED_NONE_PLUGIN)
+			self._settings.save()
+
+		if ( (currentFilamentTrackingPlugin == SettingsKeys.KEY_SELECTED_FILAMENTMANAGER_PLUGIN) and
+			 (self._isFilamentManagerInstalledAndEnabled() == False) ):
+			changedToNone = True
+			self._settings.set([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN], SettingsKeys.KEY_SELECTED_NONE_PLUGIN)
+			self._settings.save()
+
+		if ( (self._isSpoolManagerInstalledAndEnabled() == True or self._isFilamentManagerInstalledAndEnabled() == True) and
+			 (self._settings.get([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN]) == SettingsKeys.KEY_SELECTED_NONE_PLUGIN) ):
+				# Plugins installed, but currently 'none' is selected
+				self._logger.error("Filamentracking is disabled, but some plugins are installed!");
+				self._sendMessageToClient("notice", "Filamenttracking is possible!", "Select an installed plugin", True)
+
+		# # No plugin is installed
+		# if ( (self._isSpoolManagerInstalledAndEnabled == False) and (self._isFilamentManagerInstalledAndEnabled == False) ):
+		# 		# - check if it was installed previously -> inform user that the tracking part is now disabled
+		# 		prevFilamentTrackingPlugin = self._settings.get([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN])
+		# 		if (StringUtils.isNotEmpty(prevFilamentTrackingPlugin)):
+		# 			self._logger.error("Filamentracking was now disabled, because now plugin is installed");
+		# 			messageConfirmData = {
+		# 				"title": "Filamentracking was now disabled!",
+		# 				"message": "No filament tracking plugin is installed/enabled"
+		# 			}
+		# 			# maybe better a queuing thing
+		# 			self._settings.set([SettingsKeys.SETTINGS_KEY_MESSAGE_CONFIRM_DATA], messageConfirmData)
+		#
+		# 		self._settings.set([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN], SettingsKeys.KEY_SELECTED_NONE_PLUGIN)
+		# 		self._settings.save()
+		# else:
+		# 	if (self._settings.get([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN]) == SettingsKeys.KEY_SELECTED_NONE_PLUGIN):
+		# 		# Plugins installed, but currently 'none' is selected
+		# 		self._logger.error("Filamentracking is disabled, but some plugins are installed!");
+		# 		self._sendMessageToClient("notice", "Filamenttracking is possible!", "Select an installed plugin", True)
+		# 		pass
+
+
+	def _isSpoolManagerInstalledAndEnabled(self):
+		return True if self._spoolManagerPluginImplementation != None and self._spoolManagerPluginImplementationState == "enabled" else False
+
+	def _isFilamentManagerInstalledAndEnabled(self):
+		return True if self._filamentManagerPluginImplementation != None and self._filamentManagerPluginImplementationState == "enabled" else False
+
 
 	# get the plugin with status information
 	# [0] == status-string
@@ -235,6 +283,11 @@ class PrintJobHistoryPlugin(
 		totalFilamentModel.toolId = "total"
 		printJob.addFilamentModel(totalFilamentModel)
 
+		# - assign all spool informations to total
+		allSpoolNames = ""
+		allVendors = ""
+		allMaterials = ""
+
 		# - assign calculated values
 		if (filamentCalculatedDict != None):
 
@@ -248,9 +301,42 @@ class PrintJobHistoryPlugin(
 				filamentModel.calculatedLength = calculatedLength
 				calculatedTotalLength = calculatedTotalLength + calculatedLength
 				printJob.addFilamentModel(filamentModel)
+
+				# Assign SpoolData (e.g. Name) for the calculated tools (only for calc-lenght > 0)
+				# get spool data, if available
+				if (calculatedLength > 0 and selectedSpoolDataDict != None and toolId in selectedSpoolDataDict):
+					spoolData = selectedSpoolDataDict[toolId]
+
+					filamentModel.spoolName = spoolData["spoolName"]
+					filamentModel.vendor = spoolData["vendor"]
+					filamentModel.material = spoolData["material"]
+					filamentModel.diameter = spoolData["diameter"]
+					# filamentModel.spoolCostUnit = TODO
+					filamentModel.density = spoolData["density"]
+
+					filamentModel.spoolCost = spoolData["spoolCost"]
+					filamentModel.weight = spoolData["weight"]
+
+					if (filamentModel.spoolName != None and (filamentModel.spoolName in allSpoolNames) == False):
+						if (allSpoolNames != ""):
+							allSpoolNames = allSpoolNames + ", "
+						allSpoolNames = allSpoolNames + filamentModel.spoolName
+
+					if (filamentModel.vendor != None and (filamentModel.vendor in allVendors) == False):
+						if (allVendors != ""):
+							allVendors = allVendors + ", "
+						allVendors = allVendors + filamentModel.vendor
+
+					if (filamentModel.material != None and (filamentModel.material in allMaterials) == False):
+						if (allMaterials != ""):
+							allMaterials = allMaterials + ", "
+						allMaterials = allMaterials + filamentModel.material
 				pass
 
 		totalFilamentModel.calculatedLength = calculatedTotalLength
+		totalFilamentModel.spoolName = allSpoolNames
+		totalFilamentModel.vendor = allVendors
+		totalFilamentModel.material = allMaterials
 
 		# - assign measured values
 		if (filamentExtrusionArray != None):
@@ -269,21 +355,15 @@ class PrintJobHistoryPlugin(
 				filamentModel.toolId = toolId
 				filamentModel.usedLength = usedLength
 				usedTotalLength = usedTotalLength + usedLength
-				# get spool data, if available
-				if (selectedSpoolDataDict != None and toolId in selectedSpoolDataDict):
-					spoolData = selectedSpoolDataDict[toolId]
 
-					filamentModel.spoolName = spoolData["spoolName"]
-					filamentModel.vendor = spoolData["vendor"]
-					filamentModel.material = spoolData["material"]
-					filamentModel.diameter = spoolData["diameter"]
-					# filamentModel.spoolCostUnit = TODO
-					filamentModel.density = spoolData["density"]
-					filamentModel.usedWeight = self._calculateFilamentWeightForLength(usedLength, filamentModel.diameter, filamentModel.density)
-					usedTotaWeight = usedTotaWeight + filamentModel.usedWeight
+				filamentModel.usedWeight = self._calculateFilamentWeightForLength(usedLength,
+																				  filamentModel.diameter,
+																				  filamentModel.density)
+				usedTotaWeight = usedTotaWeight + filamentModel.usedWeight
 
-					filamentModel.spoolCost = spoolData["spoolCost"]
-					filamentModel.weight = spoolData["weight"]
+				if (filamentModel.spoolCost != None and
+					filamentModel.weight != None and
+					filamentModel.usedWeight != None):
 					filamentModel.usedCost = filamentModel.spoolCost / filamentModel.weight * filamentModel.usedWeight
 					usedTotalCost = usedTotalCost + filamentModel.usedCost
 
@@ -295,35 +375,9 @@ class PrintJobHistoryPlugin(
 				filamentModel.toolId = "total"
 				printJob.addFilamentModel(filamentModel)
 
-			filamentModel.usedLength = usedTotalLength
-			filamentModel.usedWeight = usedTotaWeight
-			filamentModel.usedCost = usedTotalCost
-			# - assign all spool informations to total
-			allSpoolNames = ""
-			allVendors = ""
-			allMaterials = ""
-			allFilamentsWithoutTotal = printJob.getFilamentModels(withoutTotal=True)
-			for filament in allFilamentsWithoutTotal:
-				if ((filament.spoolName in allSpoolNames) == False):
-					if (allSpoolNames != ""):
-						allSpoolNames = allSpoolNames + ", "
-					allSpoolNames = allSpoolNames + filament.spoolName
-
-				if ((filament.vendor in allVendors) == False):
-					if (allVendors != ""):
-						allVendors = allVendors + ", "
-					allVendors = allVendors + filament.vendor
-
-				if ((filament.material in allMaterials) == False):
-					if (allMaterials != ""):
-						allMaterials = allMaterials + ", "
-					allMaterials = allMaterials + filament.material
-
-			filamentModel.spoolName = allSpoolNames
-			filamentModel.vendor = allVendors
-			filamentModel.material = allMaterials
-
-
+			totalFilamentModel.usedLength = usedTotalLength
+			totalFilamentModel.usedWeight = usedTotaWeight
+			totalFilamentModel.usedCost = usedTotalCost
 
 
 	# read the total extrusion of each tool, like this
@@ -334,7 +388,13 @@ class PrintJobHistoryPlugin(
 		filamentTrackerPlugin = self._settings.get([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN])
 		if (SettingsKeys.KEY_SELECTED_SPOOLMANAGER_PLUGIN == filamentTrackerPlugin):
 			# get data from SPOOLMANAGER
-			result = self._spoolManagerPluginImplementation.myFilamentOdometer.getExtrusionAmount()
+			try:
+				result = self._spoolManagerPluginImplementation.api_getExtrusionAmount()
+			except:
+				self._logger.warn("You don't use the latest SpoolManager Version 1.4+")
+			if (result == None):
+				# try the old way
+				result = self._spoolManagerPluginImplementation.myFilamentOdometer.getExtrusionAmount()
 			pass
 		elif (SettingsKeys.KEY_SELECTED_FILAMENTMANAGER_PLUGIN == filamentTrackerPlugin):
 			# myFilamentOdometer, since FilamentManager V1.7.2
@@ -369,8 +429,32 @@ class PrintJobHistoryPlugin(
 		filamentTrackerPlugin = self._settings.get([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN])
 		if (SettingsKeys.KEY_SELECTED_SPOOLMANAGER_PLUGIN == filamentTrackerPlugin):
 			# get data from SPOOLMANAGER
+			selectedSpoolInformations = self._spoolManagerPluginImplementation.api_getSelectedSpoolInformations()
+			if (selectedSpoolInformations != None):
+				result = {}
+				for spoolData in selectedSpoolInformations:
+					if (spoolData != None):
+						toolId = "tool" + str(spoolData["toolIndex"])
+						databaseId = spoolData["databaseId"]
+						spoolName = spoolData["spoolName"]
+						weight = spoolData["weight"]
+						spoolCost = spoolData["cost"]
 
-			# TODO
+						material = spoolData["material"]
+						vendor = spoolData["vendor"]
+						density = spoolData["density"]
+						diameter = spoolData["diameter"]
+
+						result[toolId] = {
+							"databaseId": databaseId,
+							"spoolName": spoolName,
+							"material": material,
+							"vendor":  vendor,
+							"density": density,
+							"diameter":  diameter,
+							"spoolCost": spoolCost,
+							"weight": weight
+						}
 			pass
 		elif (SettingsKeys.KEY_SELECTED_FILAMENTMANAGER_PLUGIN == filamentTrackerPlugin):
 			# myFilamentOdometer, since FilamentManager V1.7.2
@@ -587,14 +671,14 @@ class PrintJobHistoryPlugin(
 				if (showDisplayAfterPrintMode == SettingsKeys.KEY_SHOWPRINTJOBDIALOGAFTERPRINT_MODE_SUCCESSFUL):
 					# show only when succesfull
 					if ("success" == printJobModelStatus):
-						printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel)
+						printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel, self._file_manager)
 				elif (showDisplayAfterPrintMode == SettingsKeys.KEY_SHOWPRINTJOBDIALOGAFTERPRINT_MODE_FAILED):
 					if ("failed" == printJobModelStatus or "canceled" == printJobModelStatus):
-						printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel)
+						printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel, self._file_manager)
 
 				else:
 					# always
-					printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel)
+					printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel, self._file_manager)
 
 			# inform client for a reload (and show dialog)
 			payload = {
@@ -685,14 +769,15 @@ class PrintJobHistoryPlugin(
 		# take snapshot an gcode command
 		if (self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_ON_GCODE_COMMAND])):
 			gcodePattern = self._settings.get([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_GCODE_COMMAND_PATTERN])
-			commandAsString = StringUtils.to_native_str(cmd)
-			if (commandAsString.startswith(gcodePattern)):
-				self._logger.info("M117 mesaage for taking snapshot detected. Try to capture image!")
-				self._cameraManager.takeSnapshotAsync(
-					CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime),
-					self._sendErrorMessageToClient
-				)
-			pass
+			if (gcodePattern != None and len(gcodePattern.strip()) != 0):
+				commandAsString = StringUtils.to_native_str(cmd)
+				if (commandAsString.startswith(gcodePattern)):
+					self._logger.info("M117 mesaage for taking snapshot detected. Try to capture image!")
+					self._cameraManager.takeSnapshotAsync(
+						CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime),
+						self._sendErrorMessageToClient
+					)
+				pass
 		pass
 
 
@@ -700,7 +785,7 @@ class PrintJobHistoryPlugin(
 		# WebBrowser opened
 		if Events.CLIENT_OPENED == event:
 			# Send plugin storage information
-			## Storage
+			## - Storage
 			if (hasattr(self, "_databaseManager") == True):
 				databaseFileLocation = self._databaseManager.getDatabaseFileLocation()
 				snapshotFileLocation = self._cameraManager.getSnapshotFileLocation()
@@ -709,13 +794,15 @@ class PrintJobHistoryPlugin(
 											databaseFileLocation=databaseFileLocation,
 											snapshotFileLocation=snapshotFileLocation,
 											isPrintHistoryPluginAvailable=self._printHistoryPluginImplementation != None,
-											isMultiSpoolManagerPluginsAvailable = self._isMultiSpoolManagerPluginsAvailable
+											isSpoolManagerInstalled = self._isSpoolManagerInstalledAndEnabled(),
+											isFilamentManagerInstalled = self._isFilamentManagerInstalledAndEnabled()
 											))
-			# Check if all needed Plugins are available, if not modale dialog to User
+
+			# - Check if all needed Plugins are available, if not modale dialog to User
 			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_PLUGIN_DEPENDENCY_CHECK]):
 				self._checkForMissingPluginInfos(True)
 
-			# Show last Print-Dialog
+			# - Show last Print-Dialog
 			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT]):
 				printJobId = self._settings.get_int([SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT_JOB_ID])
 				if (not printJobId == None):
@@ -730,13 +817,13 @@ class PrintJobHistoryPlugin(
 						if (showDisplayAfterPrintMode == SettingsKeys.KEY_SHOWPRINTJOBDIALOGAFTERPRINT_MODE_SUCCESSFUL):
 							# show only when succesfull
 							if ("success" == printJobModelStatus):
-								printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel)
+								printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel, self._file_manager)
 						elif (showDisplayAfterPrintMode == SettingsKeys.KEY_SHOWPRINTJOBDIALOGAFTERPRINT_MODE_FAILED):
 							if ("failed" == printJobModelStatus or "canceled" == printJobModelStatus):
-								printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel)
+								printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel, self._file_manager)
 						else:
 							# always
-							printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel)
+							printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel, self._file_manager)
 
 						payload = {
 							"action": "showPrintJobDialogAfterClientConnection",
@@ -745,6 +832,12 @@ class PrintJobHistoryPlugin(
 						self._sendDataToClient(payload)
 					except DoesNotExist as e:
 						self._settings.remove([SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT_JOB_ID])
+
+			messageConfirmData = self._settings.get([SettingsKeys.SETTINGS_KEY_MESSAGE_CONFIRM_DATA])
+			if (messageConfirmData != None):
+				self._sendMessageConfirmToClient(messageConfirmData.title, messageConfirmData.message)
+
+			self._checkForMissingFilamentTracking()
 
 		elif Events.PRINT_STARTED == event:
 			self.alreadyCanceled = False
@@ -801,7 +894,7 @@ class PrintJobHistoryPlugin(
 		settings[SettingsKeys.SETTINGS_KEY_SHOWPRINTJOBDIALOGAFTERPRINT_MODE] = SettingsKeys.KEY_SHOWPRINTJOBDIALOGAFTERPRINT_MODE_SUCCESSFUL
 		settings[SettingsKeys.SETTINGS_KEY_CAPTURE_PRINTJOBHISTORY_MODE] = SettingsKeys.KEY_CAPTURE_PRINTJOBHISTORY_MODE_SUCCESSFUL
 		# settings[SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN] = SettingsKeys.KEY_SELECTED_SPOOLMANAGER_PLUGIN
-		settings[SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN] = SettingsKeys.KEY_SELECTED_FILAMENTMANAGER_PLUGIN
+		settings[SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN] = SettingsKeys.KEY_SELECTED_NONE_PLUGIN
 		settings[SettingsKeys.SETTINGS_KEY_SLICERSETTINGS_KEYVALUE_EXPRESSION] = ";(.*)=(.*)\n;   (.*),(.*)"
 
 		## Camera
@@ -831,6 +924,10 @@ class PrintJobHistoryPlugin(
 
 		## Debugging
 		settings[SettingsKeys.SETTINGS_KEY_SQL_LOGGING_ENABLED] = False
+
+		## Other stuff
+		settings[SettingsKeys.SETTINGS_KEY_MESSAGE_CONFIRM_DATA] = None
+
 
 		# ## Storage
 		# if (hasattr(self,"_databaseManager") == True):
@@ -865,6 +962,7 @@ class PrintJobHistoryPlugin(
 			js=["js/PrintJobHistory.js",
 				"js/PrintJobHistory-APIClient.js",
 				"js/PrintJobHistory-PluginCheckDialog.js",
+				"js/PrintJobHistory-MessageConfirmDialog.js",
 				"js/PrintJobHistory-EditJobDialog.js",
 				"js/PrintJobHistory-ImportDialog.js",
 				"js/PrintJobHistory-StatisticDialog.js",

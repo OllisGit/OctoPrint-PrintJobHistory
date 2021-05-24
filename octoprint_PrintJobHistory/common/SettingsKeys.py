@@ -21,7 +21,7 @@ class SettingsKeys():
 	SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN = "selectedFilamentTrackerPlugin"
 	KEY_SELECTED_SPOOLMANAGER_PLUGIN = "SpoolManager Plugin"	# visible inn plugin-settings
 	KEY_SELECTED_FILAMENTMANAGER_PLUGIN = "FilamentManager Plugin"	# visible inn plugin-settings
-	KEY_SELECTED_NONE_PLUGIN = "no plugin installed/enabled"
+	KEY_SELECTED_NONE_PLUGIN = "none"
 
 	SETTINGS_KEY_SLICERSETTINGS_KEYVALUE_EXPRESSION = "slicerSettingsKeyValueExpression"
 
@@ -50,3 +50,6 @@ class SettingsKeys():
 
 	## Debugging
 	SETTINGS_KEY_SQL_LOGGING_ENABLED = "sqlLoggingEnabled"
+
+	# Other stuff
+	SETTINGS_KEY_MESSAGE_CONFIRM_DATA = "messageConfirmData"

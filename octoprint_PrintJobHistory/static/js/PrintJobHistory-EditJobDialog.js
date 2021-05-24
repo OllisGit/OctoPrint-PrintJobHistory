@@ -183,11 +183,9 @@ function PrintJobHistoryEditDialog(){
         });
     }
 
-
     this.closeSlicerSettingsDialog = function(){
         self.slicerSettingsDialog.modal('hide');
     }
-
 
     this.isInitialized = function() {
         return self.apiClient != null;
@@ -265,6 +263,11 @@ function PrintJobHistoryEditDialog(){
             calcDuration();
         });
 
+        self.printJobItemForEdit.isRePrintable.subscribe(function(newValue){
+            self.tooltipForSelection(self._buildTooltipForSelection());
+        });
+        // trigger
+        self.printJobItemForEdit.isRePrintable.valueHasMutated();
 
         self.editPrintJobItemDialog.modal({
             //minHeight: function() { return Math.max($.fn.modal.defaults.maxHeight() - 80, 250); }
@@ -352,6 +355,29 @@ function PrintJobHistoryEditDialog(){
             });
         }
     }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////// SELECT PRINT JOB
+    self.tooltipForSelection = ko.observable("");
+
+    this.selectForPrinting = function(){
+        self.apiClient.callSelectPrintJobForPrinting(self.printJobItemForEdit.databaseId(), function(responseData) {
+            self.editPrintJobItemDialog.modal('hide');
+            self.closeDialogHandler(true);
+        });
+    }
+
+    this._buildTooltipForSelection = function(){
+        var toolTip = "";
+        if (self.printJobItemForEdit != null ){
+            var fullPath = self.printJobItemForEdit.fullFileLocation();
+            if (self.printJobItemForEdit.isRePrintable() == true){
+                toolTip = "Print file: " + fullPath;
+            } else {
+                toolTip = "Selecting not possible! File not found in " + fullPath;
+            }
+        }
+        return toolTip;
+    };
 
     /////////////////////////////////////////////////////////////////////////////////////////////////// DELETE IMAGE
     this.deleteImage  = function(){

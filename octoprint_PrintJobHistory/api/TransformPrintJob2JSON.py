@@ -1,12 +1,14 @@
 # coding=utf-8
 from __future__ import absolute_import
 
+
 from octoprint_PrintJobHistory.CameraManager import CameraManager
 from octoprint_PrintJobHistory.common import StringUtils
+from octoprint_PrintJobHistory.common import PrintJobUtils
 
 
 
-def transformPrintJobModel(job):
+def transformPrintJobModel(job, fileManager):
 	jobAsDict = job.__data__
 
 	jobAsDict["printStartDateTimeFormatted"] = job.printStartDateTime.strftime('%d.%m.%Y %H:%M')
@@ -55,13 +57,19 @@ def transformPrintJobModel(job):
 	del jobAsDict["printEndDateTime"]
 	del jobAsDict["created"]
 
+	# not the best approach to check this value here
+	printJobReprintable = PrintJobUtils.isPrintJobReprintable(fileManager, job.fileOrigin, job.filePathName, job.fileName)
+
+	jobAsDict["isRePrintable"] = printJobReprintable["isRePrintable"]
+	jobAsDict["fullFileLocation"] = printJobReprintable["fullFileLocation"]
+
 	return jobAsDict
 
-def transformAllPrintJobModels(allJobsModels):
+def transformAllPrintJobModels(allJobsModels, fileManager):
 
 	result = []
 	for job in allJobsModels:
-		jobAsDict = transformPrintJobModel(job)
+		jobAsDict = transformPrintJobModel(job, fileManager)
 		result.append(jobAsDict)
 
 	return result

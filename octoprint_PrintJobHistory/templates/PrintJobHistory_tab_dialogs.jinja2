@@ -454,7 +454,12 @@
             <div class="control-group">
                 <div class="controls row-fluid">
                     <span class="span6" style="text-align:left">
-                        <button type="button" class="btn btn-danger" data-bind="click: printJobEditDialog.deletePrintJobItem" >Delete Print Job</button>
+                        <button type="button" class="btn btn-danger" data-bind="click: printJobEditDialog.deletePrintJobItem" >Delete</button>
+
+                        <button type="button" class="btn btn-warning" data-bind="
+                                                                                attr: {title: printJobEditDialog.tooltipForSelection},
+                                                                                enable: printJobForEditing().isRePrintable(),
+                                                                                click: printJobEditDialog.selectForPrinting" >Select for printing</button>
                     </span>
                     <span class="span6 text-right">
                         <button class="btn " data-bind="click: printJobEditDialog.abortPrintJobItem" style="text-align:right">Close</button>
@@ -694,6 +699,30 @@
             </div>
         </div>
     </div>
+
+
+    <!-- MessageConfirm-Dialog -->
+    <div id="dialog_printJobHistory_messageConfirm" class="modal hide fade">
+        <div class="modal-header">
+            <h3 class="modal-title">Message from the backend</h3>
+        </div>
+        <div class="modal-body">
+
+            <div><br></div>
+            <div id="confirmMessage">&nbsp;</div>
+
+        </div>
+        <div class="modal-footer">
+
+            <div class="control-group">
+                <div class="controls">
+                    <button id="pjh_confirmmessage_button" class="btn btn-primary" style="text-align:right">Confirm</button>
+                    <button id="pjh_cancel_button" class="btn btn-confirm" style="text-align:right">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 
 
 </span>

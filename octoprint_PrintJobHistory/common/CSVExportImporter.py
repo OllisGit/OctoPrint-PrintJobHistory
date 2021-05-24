@@ -270,44 +270,43 @@ class FilamentCSVFormattorParser:
 			# check if mandatory
 			return
 
-		filemanentModel = None
-		allFilemanentModel  = printJobModel.getFilamentModels()
-		if (allFilemanentModel != None and len(allFilemanentModel) > 0):
-			filemanentModel = allFilemanentModel[0]
-		else:
-			filemanentModel  = FilamentModel()
-			filemanentModel.toolId = "total"
-			printJobModel.addFilamentModel(filemanentModel)
+		# allFilemanentModel  = printJobModel.getFilamentModels()
+		filamanentModel = printJobModel.getFilamentModelByToolId("total")
+
+		if (filamanentModel == None):
+			filamanentModel  = FilamentModel()
+			filamanentModel.toolId = "total"
+			printJobModel.addFilamentModel(filamanentModel)
 
 		if (COLUMN_SPOOL_VENDOR == fieldLabel):
-			filemanentModel.vendor = fieldValue
+			filamanentModel.vendor = fieldValue
 			pass
 		elif (COLUMN_SPOOL_NAME == fieldLabel):
-			filemanentModel.spoolName = fieldValue
+			filamanentModel.spoolName = fieldValue
 			pass
 		elif (COLUMN_MATERIAL == fieldLabel):
-			filemanentModel.material = fieldValue
+			filamanentModel.material = fieldValue
 			pass
 		elif (COLUMN_DIAMETER == fieldLabel):
-			filemanentModel.diameter = float(fieldValue)
+			filamanentModel.diameter = float(fieldValue)
 			pass
 		elif (COLUMN_DENSITY == fieldLabel):
-			filemanentModel.density = float(fieldValue)
+			filamanentModel.density = float(fieldValue)
 			pass
 		elif (COLUMN_USED_LENGTH == fieldLabel):
-			filemanentModel.usedLength = float(fieldValue)
+			filamanentModel.usedLength = float(fieldValue)
 			pass
 		elif (COLUMN_CALCULATED_LENGTH == fieldLabel):
-			filemanentModel.calculatedLength = float(fieldValue)
+			filamanentModel.calculatedLength = float(fieldValue)
 			pass
 		elif (COLUMN_USED_WEIGHT == fieldLabel):
-			filemanentModel.usedWeight = float(fieldValue)
+			filamanentModel.usedWeight = float(fieldValue)
 			pass
 		elif (COLUMN_USED_FILAMENT_COSTS == fieldLabel):
 			costUnit = fieldValue[-1]
 			if (costUnit.isdigit()):
 				# no unit present
-				filemanentModel.usedCost = float(fieldValue)
+				filamanentModel.usedCost = float(fieldValue)
 			else:
 				# Split between cost and unit
 				costValue = ""
@@ -318,8 +317,8 @@ class FilamentCSVFormattorParser:
 					else:
 						costUnit = fieldValue[i:]
 						break
-				filemanentModel.usedCost = float(costValue)
-				filemanentModel.spoolCostUnit = costUnit
+				filamanentModel.usedCost = float(costValue)
+				filamanentModel.spoolCostUnit = costUnit
 
 			pass
 		pass
@@ -463,6 +462,16 @@ def parseCSV(csvFile4Import, updateParsingStatus, errorCollection, logger, delet
 						errorCollection.append("Mandatory column is missing! <br/><b>'" + "".join(mandatoryFieldMissing) + "'</b><br/>")
 						break
 				else:
+					# pre check, do we have values in the line?
+					isEmptyLine = True
+					for columnValue in row:
+						if (StringUtils.isNotEmpty(columnValue)):
+							isEmptyLine = False
+							break
+					if (isEmptyLine == True):
+						# errorCollection.append("CSV Line: "+str(lineNumber)+" without values! <br/>")
+						# just skip this line
+						continue
 					printJobModel = PrintJobModel()
 					# parse line with header defined order
 					columnIndex = 0
