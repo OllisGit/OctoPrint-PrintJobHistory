@@ -11,6 +11,7 @@ from octoprint_PrintJobHistory.models.FilamentModel import FilamentModel
 from octoprint_PrintJobHistory.common import StringUtils
 
 FORMAT_DATETIME = "%d.%m.%Y %H:%M"
+FORMAT_DATE = "%d.%m.%Y"
 
 COLUMN_USER = "User"
 COLUMN_PRINT_RESULT = "Print result [success canceled failed]"
@@ -145,7 +146,7 @@ class DateTimeCSVFormattorParser:
 			setattr(printJobModel, fieldName, fieldDateTime)
 			pass
 		else:
-			fieldDateTime = datetime.datetime.fromtimestamp(float(fieldValue))
+			fieldDateTime = datetime.datetime.strptime(fieldValue, FORMAT_DATE)
 			setattr(printJobModel, fieldName, fieldDateTime)
 			pass
 		pass

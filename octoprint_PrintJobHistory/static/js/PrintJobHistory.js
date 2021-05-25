@@ -340,7 +340,6 @@ $(function() {
         loadSettingsFromBrowserStore = function(){
             initTableVisibilities();
 
-
             // TODO maybe in a separate js-file
             // load all settings from browser storage
             if (!Modernizr.localstorage) {
