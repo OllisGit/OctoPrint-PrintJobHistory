@@ -785,6 +785,11 @@ class PrintJobHistoryPlugin(
 		# WebBrowser opened
 		if Events.CLIENT_OPENED == event:
 			# Send plugin storage information
+			# - Check if all needed Plugins are available, if not modale dialog to User
+			self._checkForMissingPluginInfos(
+					self._settings.get_boolean(
+						[SettingsKeys.SETTINGS_KEY_PLUGIN_DEPENDENCY_CHECK]))
+
 			## - Storage
 			if (hasattr(self, "_databaseManager") == True):
 				databaseFileLocation = self._databaseManager.getDatabaseFileLocation()
@@ -798,9 +803,6 @@ class PrintJobHistoryPlugin(
 											isFilamentManagerInstalled = self._isFilamentManagerInstalledAndEnabled()
 											))
 
-			# - Check if all needed Plugins are available, if not modale dialog to User
-			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_PLUGIN_DEPENDENCY_CHECK]):
-				self._checkForMissingPluginInfos(True)
 
 			# - Show last Print-Dialog
 			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT]):
