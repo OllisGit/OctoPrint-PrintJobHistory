@@ -555,6 +555,10 @@ class DatabaseManager(object):
 			allFilaments = job.getFilamentModels()
 			if allFilaments != None:
 				for filla in allFilaments:
+					if filla.toolId == "total":
+						# exclude totals, otherwise everything is counted twice
+						continue
+
 					if (StringUtils.isEmpty(filla.usedLength) == False):
 						length = length + filla.usedLength
 					if (StringUtils.isEmpty(filla.usedWeight) == False):
