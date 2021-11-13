@@ -21,7 +21,7 @@ from werkzeug.datastructures import Headers
 
 from octoprint.filemanager import FileDestinations
 
-from octoprint_PrintJobHistory import PrintJobModel, TemperatureModel, FilamentModel
+from octoprint_PrintJobHistory import PrintJobModel, TemperatureModel, FilamentModel, CostModel
 from octoprint_PrintJobHistory.api import TransformPrintJob2JSON, TransformSlicerSettings2JSON
 
 from octoprint_PrintJobHistory.common import StringUtils
@@ -86,6 +86,35 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 				newToolTemp = self._getValueFromJSONOrNone("temperatureNozzle", jsonData)
 				tempModel.sensorValue = newToolTemp
 
+		# Costs (if present)
+		totalCosts = self._toFloatFromJSONOrNone("totalCosts", jsonData)
+		filamentCost = self._toFloatFromJSONOrNone("filamentCost", jsonData)
+		electricityCost = self._toFloatFromJSONOrNone("electricityCost", jsonData)
+		printerCost = self._toFloatFromJSONOrNone("printerCost", jsonData)
+		otherCostLabel = self._getValueFromJSONOrNone("otherCostLabel", jsonData)
+		otherCost = self._toFloatFromJSONOrNone("otherCost", jsonData)
+		withDefaultSpoolValues = self._getValueFromJSONOrNone("withDefaultSpoolValues", jsonData)
+
+		if (totalCosts != None or
+			filamentCost != None or
+			electricityCost != None or
+			printerCost != None or
+			otherCost != None):
+			# okay, we need to save the data, update or insert
+			if (printJobModel.getCosts() == None):
+				costs = CostModel()
+				printJobModel.setCosts(costs)
+			else:
+				costs = printJobModel.getCosts()
+
+			costs.totalCosts = totalCosts
+			costs.filamentCost = filamentCost
+			costs.electricityCost = electricityCost
+			costs.printerCost = printerCost
+			costs.otherCostLabel = otherCostLabel
+			costs.otherCost = otherCost
+			costs.withDefaultSpoolValues = withDefaultSpoolValues
+
 		return printJobModel
 
 	def _getValueFromJSONOrNone(self, key, values):
@@ -102,6 +131,20 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 				except Exception as e:
 					errorMessage = str(e)
 					self._logger.error("could not transform value '"+str(value)+"' for key '"+key+"' to int:" + errorMessage)
+					value = None
+			else:
+				value = None
+		return value
+
+	def _toFloatFromJSONOrNone(self, key, json):
+		value = self._getValueFromJSONOrNone(key, json)
+		if (value != None):
+			if (StringUtils.isNotEmpty(value)):
+				try:
+					value = float(value)
+				except Exception as e:
+					errorMessage = str(e)
+					self._logger.error("could not transform value '"+str(value)+"' for key '"+key+"' to float:" + errorMessage)
 					value = None
 			else:
 				value = None
@@ -160,8 +203,16 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		f1.calculatedLength = 1456.0
 		f1.usedWeight = 321.0
 		f1.usedCost = 1.34
-		f1.spoolCostUnit = "" # no cost-unit
 		p1.addFilamentModel(f1)
+
+		c1 = CostModel()
+		c1.filamentCost = 3.123
+		c1.electricityCost = 0.89
+		c1.printerCost = 1.234
+		c1.otherCostLabel = "Delivery"
+		c1.otherCost = 22.67
+		c1.withDefaultSpoolValues = True
+		p1.setCosts(c1)
 
 		return p1
 
@@ -281,6 +332,8 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 			allJobsModels.append(self._databaseManager.loadPrintJob(databaseId))
 
 		for printJob in allJobsModels:
+			if (printJob == None):
+				continue
 			self._databaseManager.deletePrintJob(printJob.databaseId)
 			snapshotFilename = CameraManager.buildSnapshotFilename(printJob.printStartDateTime)
 			self._cameraManager.deleteSnapshot(snapshotFilename)
@@ -646,4 +699,142 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 						mimetype='text/csv',
 						headers={'Content-Disposition': 'attachment; filename=PrintHistory.csv'})
 
+	###################################################################################### PRINTJOB - REPORT
+	@octoprint.plugin.BlueprintPlugin.route("/singlePrintJobReport/<databaseId>", methods=["GET"])
+	def get_singlePrintJobReport(self, databaseId):
 
+		printJobModel = self._databaseManager.loadPrintJob(databaseId);
+		if (printJobModel == None):
+			# PrintJob was deleted
+			message = "PrintJob not in database anymore! PrintReport not possible."
+			self._logger.error(message)
+			self._sendDataToClient(dict(action="errorPopUp",
+										title="Print selection not possible",
+										message=message))
+			return flask.jsonify()
+
+		reportHtmlTemplate = self._loadPrintJobReportTemplateContent()
+
+		printJobModelAsJson=TransformPrintJob2JSON.transformPrintJobModel(printJobModel, self._file_manager, False)
+		# printJobModelAsJson = {
+		# 	"Hallo": "du"
+		# }
+		printJobModelAsJsonString = json.dumps(printJobModelAsJson, indent=1, sort_keys=True, default=str)
+		printJobModelAsJsonDict = json.loads(printJobModelAsJsonString)
+		print(printJobModelAsJsonString)
+		# send rendered report to browser
+		return Response(
+						# flask.render_template("singlePrintJobReport.jinja2"),
+						flask.render_template_string(reportHtmlTemplate,
+													 reportCreationTime=datetime.now(),
+													 printJobModel=printJobModel,
+													 hallo="welt",
+													 printJobModelAsJson=printJobModelAsJsonDict
+													 ),
+						mimetype='text/html'
+						# headers={'Content-Disposition': 'attachment; filename=PrintJobHistory-SAMPLE.csv'}
+						)
+
+	################################################################################ PRINTJOB - UPLOAD REPORT Template
+	@octoprint.plugin.BlueprintPlugin.route("/uploadSinglePrintJobReport", methods=["POST"])
+	def post_uploadSinglePrintJobReportTemplate(self):
+
+
+		result = True
+		targetFilename = "unknown"
+		input_name = "file"
+		input_upload_path = input_name + "." + self._settings.global_get(["server", "uploads", "pathSuffix"])
+
+
+		if input_upload_path in flask.request.values:
+
+			# file was uploaded
+			try:
+				# source
+				sourceLocation = flask.request.values[input_upload_path]
+				# setup target
+				now = datetime.now()
+				currentDate = now.strftime("%Y%m%d-%H%M")
+				# "singleReportTemplate-20210604.jinja2"
+				targetFilename = "singleReportTemplate-"+currentDate + ".jinja2"
+				targetLocation = self._getPrintJobReportTemplateLocation(targetFilename)
+				shutil.move(sourceLocation, targetLocation)
+
+				self._settings.set([SettingsKeys.SETTINGS_KEY_SINGLE_PRINTJOB_REPORT_TEMPLATENAME], targetFilename)
+				self._settings.save()
+			except Exception as e:
+				errorMessage = "Error during upload report template !!!! See log file."
+				self._logger.error(errorMessage)
+				self._logger.exception(e)
+
+				self._sendDataToClient(dict(action="errorPopUp",
+											title="Could not upload Report Template",
+											message=errorMessage))
+				result = False
+
+		return flask.jsonify(
+			singlePrintJobTemplateName=targetFilename,
+			result=result
+		)
+
+
+	################################################################################ PRINTJOB - DWONLOAD REPORT Template
+	@octoprint.plugin.BlueprintPlugin.route("/downloadSinglePrintJobReportTemplate", methods=["GET"])
+	def get_downloadSinglePrintJobReportTemplate(self):
+		reportHtmlTemplate = self._loadPrintJobReportTemplateContent()
+		# send rendered report to browser
+		return Response(
+						reportHtmlTemplate,
+						mimetype='text/html',
+						headers={'Content-Disposition': 'attachment; filename=SinglePrintJobReport-Template.jinja2'}
+						)
+
+	def _loadPrintJobReportTemplateContent(self):
+		reportHtmlTemplate = "<h1>Something was wrong!!! Please take a look into the octoprint.log</h1>"
+		try:
+
+			pluginBaseFolder = self._basefolder
+
+			currentReportTemplate = self._settings.get([SettingsKeys.SETTINGS_KEY_SINGLE_PRINTJOB_REPORT_TEMPLATENAME])
+			if (SettingsKeys.SETTINGS_DEFAULT_VALUE_SINGLE_PRINTJOB_REPORT_TEMPLATENAME == currentReportTemplate):
+				# load defaultReportTemplate
+				reportTemplateLocation = pluginBaseFolder + "/templates/PrintJobHistory_"+SettingsKeys.SETTINGS_DEFAULT_VALUE_SINGLE_PRINTJOB_REPORT_TEMPLATENAME+".jinja2"
+			else:
+				# load custom template
+				reportTemplateLocation = self._getPrintJobReportTemplateLocation(currentReportTemplate)
+
+			# read template
+			file = open(reportTemplateLocation)
+			reportHtmlTemplate  = file.read()
+			file.close()
+		except Exception as e:
+			self._logger.error("Error during loading the report template !!!!")
+			self._logger.exception(e)
+
+		return reportHtmlTemplate
+
+	def _savePrintJobReportTemplateContent(self, templateFilename, templateContent):
+		reportTemplateLocation = self._getPrintJobReportTemplateLocation(templateFilename)
+		file = open(reportTemplateLocation)
+		file.write(templateContent)
+		file.close()
+
+	def _getPrintJobReportTemplateLocation(self, reportTemplateFilename):
+		pluginDataBaseFolder = self.get_plugin_data_folder()
+		reportFolderName = "/reportTemplates/"
+		reportFolderLocation = pluginDataBaseFolder + reportFolderName
+		if not os.path.exists(reportFolderLocation):
+			os.makedirs(reportFolderLocation)
+		reportTemplateLocation = reportFolderLocation + reportTemplateFilename
+		return reportTemplateLocation
+
+	################################################################################ PRINTJOB - RESET REPORT Template
+	@octoprint.plugin.BlueprintPlugin.route("/resetSinglePrintJobReportTemplate", methods=["PUT"])
+	def put_confirmMessageDialog(self):
+		self._settings.set([SettingsKeys.SETTINGS_KEY_SINGLE_PRINTJOB_REPORT_TEMPLATENAME], SettingsKeys.SETTINGS_DEFAULT_VALUE_SINGLE_PRINTJOB_REPORT_TEMPLATENAME)
+		self._settings.save()
+
+		return flask.jsonify(
+			result=True,
+			singlePrintJobTemplateName=SettingsKeys.SETTINGS_DEFAULT_VALUE_SINGLE_PRINTJOB_REPORT_TEMPLATENAME
+		)

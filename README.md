@@ -54,6 +54,8 @@ If you like it, I would be thankful about a cup of coffee :)
 
 - [PreHeat](https://plugins.octoprint.org/plugins/preheat/)
     - Starting Temperature
+- [CostEstimation](https://plugins.octoprint.org/plugins/costestimation/)
+    - Added the estimated costs to a print job
 - [SpoolManager](https://plugins.octoprint.org/plugins/SpoolManager/)
     - Spool Management
 - [FillamentManager](https://plugins.octoprint.org/plugins/filamentmanager/)

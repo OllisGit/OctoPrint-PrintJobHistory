@@ -32,6 +32,7 @@ class PrintJobModel(BaseModel):
 
 	filamentModelsByToolId = {}
 
+	costModel = None
 	# def initialize(self):
 	# 	#  initialize with some a default
 	# 	filamentModel = FilamentModel()
@@ -39,6 +40,16 @@ class PrintJobModel(BaseModel):
 	# 	print("PrintJobModel.initialize")
 	# 	pass
 
+	def getCosts(self):
+		if (self.costModel == None):
+			# load costs from database
+			if (self.costs != None and len(self.costs) > 0):
+				self.costModel = self.costs[0]
+		return self.costModel
+
+	def setCosts(self, costModel):
+		costModel.printJob = self
+		self.costModel = costModel
 
 	def addFilamentModel(self, filamentModel):
 		#  check preconditions

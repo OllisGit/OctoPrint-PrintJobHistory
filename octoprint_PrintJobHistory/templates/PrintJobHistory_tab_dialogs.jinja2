@@ -65,7 +65,7 @@
                     <h4 class="modal-title">&nbsp;
                         <a href='' data-bind="click: function(){printJobEditDialog.toggleFullEditMode()}"><i class="icon-pencil"></i></a>
                         <span data-bind="visible: printJobEditDialog.fullEditMode()==false">
-                            <span data-bind="text: printJobForEditing().fileName"></span>&nbsp;&nbsp;(<span data-bind="text:printJobForEditing().fileSize" ></span>)
+                            <span data-bind="text: printJobForEditing().fileName"></span>&nbsp;&nbsp;(<span data-bind="text:printJobForEditing().fileSizeFormatted" ></span>)
                         </span>
                         <span data-bind="visible: printJobEditDialog.fullEditMode()==true">
                             <input type="text" class="input-xxlarge" data-bind="value: printJobForEditing().fileName" />
@@ -232,12 +232,13 @@
                         -->
                         <div class="span6" style="">
 
-                            <!-- Total / Details - TABs -->
+                            <!-- TABs General / Tool measure / Costs - TABs -->
                             <div class="tabbable" style="margin-left:40px"> <!-- Only required for left/right tabs -->
-
-                                <ul class="nav nav-tabs">
+                                {# TAB - NAVIGATION #}
+                                <ul class="nav nav-tabs" id="editPrintJobTabs">
                                     <li class="active"><a href="#tab-pjh-editjob-total" data-toggle="tab">General</a></li>
                                     <li data-bind="visible: printJobForEditing().isMultiToolPrint"><a href="#tab-pjh-editjob-details" data-toggle="tab">Tool measurement</a></li>
+                                    <li><a href="#tab-pjh-editjob-costs" data-toggle="tab">Estimated Costs</a></li>
                                 </ul>
                                 <div class="tab-content">
                                     <!-- General - TAB -->
@@ -262,7 +263,7 @@
                                             </div>
                                         </div>
                                         <div class="" style="margin-left:80px">
-                                            <small><font color="Gray"> * spool values will not be reflected to FilamentManager-Plugin</font></small>
+                                            <small><font color="Gray"> * spool values will not be reflected to Spool- or Filament- ManagerPlugin</font></small>
                                         </div>
                                         <div class="control-group no-bottom-gap">
                                             <label class="control-label">Used length</label>
@@ -291,16 +292,6 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="control-group">
-                                            <label class="control-label">Filament Cost</label>
-                                            <div class="controls">
-                                                <div class="input-append">
-                                                    <input type="number" step="0.01" min="0" class="input-small text-right" data-bind="value: printJobForEditing().usedCost"/>
-                                                    <span class="add-on" data-bind="text: printJobForEditing().spoolCostUnit"></span>
-                                                </div>
-                                            </div>
-                                        </div>
-
                                     </div>
                                     <!-- Details - TAB -->
                                     <div class="tab-pane" id="tab-pjh-editjob-details">
@@ -313,7 +304,7 @@
                                                     <th style="width: 15%" >Used [m]</th>
                                                     <th style="width: 15%" >Calculated [m]</th>
                                                     <th style="width: 15%" >Used weight [g]</th>
-                                                    <th style="width: 10%" >Cost [E]</th>
+                                                    <th style="width: 10%" >Cost [<span data-bind="text: $root.currencySymbol">€</span>]</th>
                                                 </tr>
                                             </thead>
                                             <tbody data-bind="foreach:printJobForEditing().allToolKeys">
@@ -328,10 +319,61 @@
                                                 </tr>
                                             </tbody>
                                         </table>
-
+                                    </div>
+                                    <!-- Costs - TAB -->
+                                    <div class="tab-pane" id="tab-pjh-editjob-costs">
+                                        <div class="control-group">
+                                            <label class="control-label"><b>Total</b></label>
+                                            <div class="controls">
+                                                <div class="input-append">
+                                                    <input disabled type="number" step="0.01" min="0" class="input-small text-right" data-bind="value: printJobForEditing().totalCosts" />
+                                                    <span class="add-on" data-bind="text: $root.currencySymbol">E</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="control-group" style="margin-bottom: 0px;">
+                                            <label class="control-label">Filament</label>
+                                            <div class="controls">
+                                                <div class="input-append">
+                                                    <input type="number" step="0.01" min="0" class="input-small text-right" data-bind="value: printJobForEditing().filamentCost" />
+                                                    <span class="add-on" data-bind="text: $root.currencySymbol">E</span>
+                                                </div>
+                                                <label class="checkbox">
+                                                    <input type="checkbox" data-bind="checked: printJobForEditing().withDefaultSpoolValues" ><small>Default values used for calculation, because Filamentracking not used</small></input>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label">Electricity</label>
+                                            <div class="controls">
+                                                <div class="input-append">
+                                                    <input type="number" step="0.01" min="0" class="input-small text-right" data-bind="value: printJobForEditing().electricityCost" />
+                                                    <span class="add-on" data-bind="text: $root.currencySymbol">E</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label">Printer</label>
+                                            <div class="controls">
+                                                <div class="input-append">
+                                                    <input type="number" step="0.01" min="0" class="input-small text-right" data-bind="value: printJobForEditing().printerCost" />
+                                                    <span class="add-on" data-bind="text: $root.currencySymbol">E</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="control-group">
+                                            <label class="control-label" style="padding-top: 0px;" ><input class="input-small" type="text" placeholder="Other cost" data-bind="value: printJobForEditing().otherCostLabel"></label>
+                                            <div class="controls">
+                                                <div class="input-append">
+                                                    <input type="number" step="0.01" min="0" class="input-small text-right" data-bind="value: printJobForEditing().otherCost" />
+                                                    <span class="add-on" data-bind="text: $root.currencySymbol">E</span>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                            <hr/>
                             <!-- Notes -->
                             <div class="" style="margin-left:40px">
                                 <div class="">
@@ -341,15 +383,15 @@
                                 </div>
                             </div>
                             <div class="" style="margin-left:40px">
-                                <a href='' data-bind="visible:printJobEditDialog.isSlicerSettingsPresent, click: printJobEditDialog.showSlicerSettingsDialog" style="text-align:right">Show Slicer Settings</a>
+                                <a href='' data-bind="visible:printJobEditDialog.isSlicerSettingsPresent && printJobForEditing().databaseId, click: printJobEditDialog.showSlicerSettingsDialog" style="text-align:right">Show Slicer Settings</a>
                             </div>
 
                         </div>
                         <!--
-                            LEFT - SIDE
+                            RIGHT - SIDE
                                 WEB CAM - STUFF
                         -->
-                        <div class="span6">
+                        <div class="span6" id="rightSpan"  >
                             <div class="">
 
                                 <div class="row-fluid text-center">
@@ -454,12 +496,20 @@
             <div class="control-group">
                 <div class="controls row-fluid">
                     <span class="span6" style="text-align:left">
-                        <button type="button" class="btn btn-danger" data-bind="click: printJobEditDialog.deletePrintJobItem" >Delete</button>
+                        <button type="button" class="btn btn-danger" data-bind="visible:printJobForEditing().databaseId,
+                                                                                click: printJobEditDialog.deletePrintJobItem" >Delete</button>
+
+                        <button type="button" class="btn btn-inverse"  data-bind="
+                                                                                  visible:printJobForEditing().databaseId,
+                                                                                  click: printJobEditDialog.reportPrintJobItem">Report</button>
 
                         <button type="button" class="btn btn-warning" data-bind="
-                                                                                attr: {title: printJobEditDialog.tooltipForSelection},
-                                                                                enable: printJobForEditing().isRePrintable(),
-                                                                                click: printJobEditDialog.selectForPrinting" >Select for printing</button>
+                                                                                 visible:printJobForEditing().databaseId,
+                                                                                 attr: {title: printJobEditDialog.tooltipForSelection},
+                                                                                 enable: printJobForEditing().isRePrintable(),
+                                                                                 click: printJobEditDialog.selectForPrinting" >Select for printing</button>
+
+
                     </span>
                     <span class="span6 text-right">
                         <button class="btn " data-bind="click: printJobEditDialog.abortPrintJobItem" style="text-align:right">Close</button>
@@ -533,13 +583,21 @@
 
                     <div class="row">
                         <div class="span3">
-                            <div><b>Print job count</b></div>
+                            <div><b>Print Job Count</b></div>
                         </div>
                         <div class="span9">
                             <span class="text-right" data-bind="text: statisticDialog.printJobCount">1h23m12s</span>
                         </div>
                     </div>
-
+                    <div class="row">
+                        <div class="span3">
+                            <div ><b>Print Results</b></div>
+                        </div>
+                        <div class="span9">
+                            <span class="text-right" data-bind="text: statisticDialog.printResults">success (10), canceled (5), failed (1)</span>
+<!--                            <input disabled class="input-xlarge text-right" type="text" value="canceled (5), success (10), failed (1)">-->
+                        </div>
+                    </div>
                     <div class="row">
                         <div class="span3">
                             <div><b>First/Last</b></div>
@@ -596,16 +654,6 @@
 <!--                                <input disabled type="number" min="1" class="input-xlarge text-right" value="325">-->
 <!--                                <span class="add-on">kByte</span>-->
 <!--                            </div>-->
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="span3">
-                            <div ><b>Print results</b></div>
-                        </div>
-                        <div class="span9">
-                            <span class="text-right" data-bind="text: statisticDialog.printResults">success (10), canceled (5), failed (1)</span>
-<!--                            <input disabled class="input-xlarge text-right" type="text" value="canceled (5), success (10), failed (1)">-->
                         </div>
                     </div>
 

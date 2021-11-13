@@ -252,8 +252,13 @@ class CameraManager(object):
 			if (storeImage):
 				self._logger.info("Try converting thumbnail '" + thumbnailLocation + "' to '" + snapshotFilename + "'")
 				im = Image.open(thumbnailLocation)
-				rgb_im = im.convert('RGB')
-				rgb_im.save(snapshotFilename)
+				# fill_color = (120, 8, 220)
+				# bg = Image.new("RGB", im.size, fill_color) see https://github.com/OllisGit/OctoPrint-PrintJobHistory/issues/160
+				bg = Image.new("RGB", im.size, (255, 255, 255))
+				bg.paste(im, im)
+				bg.save(snapshotFilename, 'JPEG')
+				# rgb_im = im.convert('RGB')
+				# rgb_im.save(snapshotFilename, 'JPEG')
 				self._logger.info("Converting successfull!")
 			else:
 				self._logger.info("Thumbnail is present")

@@ -3,9 +3,10 @@ import unittest
 
 import peewee
 
-from octoprint_PrintJobHistory import DatabaseManager
+from octoprint_PrintJobHistory import DatabaseManager, CostModel
 from octoprint_PrintJobHistory.api import TransformPrintJob2JSON, TransformSlicerSettings2JSON
 from octoprint_PrintJobHistory.common import StringUtils
+from octoprint_PrintJobHistory.common import CSVExportImporter
 import logging
 
 from octoprint_PrintJobHistory.models.PrintJobModel import PrintJobModel
@@ -20,7 +21,7 @@ class TestDatabase(unittest.TestCase):
 	def setUp(self):
 		self.init_database()
 
-	def _clientOutput(message1, message2):
+	def _clientOutput(self, message1, message2):
 		print(message1)
 		print(message2)
 
@@ -58,7 +59,6 @@ class TestDatabase(unittest.TestCase):
 			print(str(jobCount) + " " + jobItem["fileName"] +" " +str(jobItem["databaseId"]) + "  " + str(jobItem["printStartDateTimeFormatted"]) + "  " + str(jobItem["printEndDateTimeFormatted"]))
 
 		pass
-
 
 	# Statistic
 	def _test_statistics(self):
@@ -123,6 +123,16 @@ class TestDatabase(unittest.TestCase):
 	def _test_deletePrinjob(self):
 		self.databaseManager.deletePrintJob(105)
 
+	def test_csvExportPrinjob(self):
+
+		# selectedDatabaseIds = flask.request.values["databaseIds"]
+		# allJobsModels = self._databaseManager.loadSelectedPrintJobs(selectedDatabaseIds)
+		allJobsModels = self.databaseManager.loadAllPrintJobs()
+
+		for csvLine in CSVExportImporter.transform2CSV(allJobsModels):
+			print(csvLine)
+
+
 	def _test_something(self):
 		db = peewee.SqliteDatabase(self.databaselocation+'/printJobHistory.db')
 		singlePrintJob = PrintJobModel.select().join(FilamentModel).where(PrintJobModel.databaseId == 109).get()
@@ -139,6 +149,58 @@ class TestDatabase(unittest.TestCase):
 		# singlePrintJob.filaments.append(newFilaModel)
 		# singlePrintJob.save()
 		pass
+
+	def _test_one2oneAsso(self):
+
+		jobAsDict = []
+		printJob = self.databaseManager.loadPrintJob(16)
+
+		costs = printJob.getCosts()
+
+		if (costs == None):
+			newCostModel = CostModel()
+			newCostModel.totalCosts = 1.234
+
+			printJob.setCosts(newCostModel)
+		#
+		costs = printJob.getCosts()
+
+		costs.totalCosts = 2.567
+
+		printJob.save()
+		costs.save()
+		print(costs.totalCosts)
+
+
+		# for costs in allCosts:
+		# 	print(costs.totalCosts)
+		# 	costsAsDict = costs.__data__
+		# 	print(costsAsDict)
+
+
+		# newCosts = CostModel()
+		# newCosts.totalCosts = 123.34
+		#
+		# printJob.setCost(newCosts);
+
+		# costs = printJob.getCosts()
+		# costs.totalCosts = 1234.56
+
+
+		# self.databaseManager.insertPrintJob(printJob)
+
+		# costModel = CostModel()
+		# costModel.printerCost = 1.234
+		#
+		# printJob.setCost(costModel)
+		#
+		# self.databaseManager.insertPrintJob(printJob)
+		#
+		# newPrintModel = self.databaseManager.loadPrintJob(1)
+		#
+		# print(newPrintModel.costs)
+		pass
+
 
 	def _test_loadPringJobWithAssos(self):
 		printJobModel = self.databaseManager.loadPrintJob(1010)

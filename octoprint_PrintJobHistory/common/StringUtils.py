@@ -198,6 +198,18 @@ def isEmpty(value):
 def isNotEmpty(value):
 	return isEmpty(value) == False
 
+def transformToIntOrNone(intValue):
+	if (intValue != None):
+		if (isNotEmpty(intValue)):
+			try:
+				intValue = int(intValue)
+			except Exception as e:
+				intValue = None
+		else:
+			intValue = None
+	return intValue
+
+
 #################### START: copied from octorprint
 def get_formatted_size(num):
 	"""

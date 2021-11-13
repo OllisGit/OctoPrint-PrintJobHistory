@@ -223,6 +223,8 @@ function PrintJobHistoryEditDialog(){
             // Fallback is text (if present), not Html
             if (printJobItemForEdit.noteText() != null){
                 self.noteEditor.setText(printJobItemForEdit.noteText(), 'api');
+            } else {
+                self.noteEditor.setContents(null, 'api');
             }
         } else {
             deltaFormat = JSON.parse(printJobItemForEdit.noteDeltaFormat());
@@ -268,6 +270,9 @@ function PrintJobHistoryEditDialog(){
         });
         // trigger
         self.printJobItemForEdit.isRePrintable.valueHasMutated();
+
+        // Select first Tab
+        $('a[href="#tab-pjh-editjob-total"]').tab("show");
 
         self.editPrintJobItemDialog.modal({
             //minHeight: function() { return Math.max($.fn.modal.defaults.maxHeight() - 80, 250); }
@@ -354,6 +359,11 @@ function PrintJobHistoryEditDialog(){
                 self.closeDialogHandler(true);
             });
         }
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////// REPORT PRINT JOB
+    this.reportPrintJobItem = function() {
+        window.open(self.apiClient.getSingleReportUrl(self.printJobItemForEdit.databaseId()), '_blank').focus();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////// SELECT PRINT JOB

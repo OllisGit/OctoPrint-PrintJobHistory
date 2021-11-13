@@ -15,15 +15,32 @@ $(function() {
 
     var global = this;
     global.componentFactory = new PrintJobComponentFactory();
+
+    // Helper
+    var toFloatOrZero = function(floatNumber){
+        var result = 0.0
+        try{
+            result = parseFloat(floatNumber);
+            if (Number.isNaN(result)){
+                return 0.0;
+            }
+        } catch (e) {
+            result = 0.0;
+        }
+        return result;
+    }
+
     ////////////////////////////////////////////////////////////
     var PrintJobItem = function(data) {
 
+        self = this;
         // Init Item
 		this.databaseId = ko.observable();
 		this.userName = ko.observable();
 		this.fileName = ko.observable();
 		this.filePathName = ko.observable();
 		this.fileSize = ko.observable();
+		this.fileSizeFormatted = ko.observable();
 
         var printStartDateTimeViewModel = global.componentFactory.createDateTimePicker("printStartDateTime-picker");
 		this.printStartDateTimeFormatted = printStartDateTimeViewModel.currentDateTime;
@@ -53,18 +70,41 @@ $(function() {
 		this.material = ko.observable();
         this.vendor = ko.observable();
 		this.spoolName = ko.observable();
-		this.spoolCost = ko.observable();
-		this.spoolCostUnit = ko.observable();
 		this.weight = ko.observable();
 		this.usedLengthFormatted = ko.observable();
 		this.calculatedLengthFormatted = ko.observable();
 		this.usedWeight = ko.observable(""); // empty sting, because length-check is needed in PringHistory_tab.jinja2
-		this.usedCost = ko.observable();
+        this.usedCost = ko.observable();
+
+        // Tab costs
+		self.totalCosts = ko.observable();
+		self.filamentCost = ko.observable();
+		self.electricityCost = ko.observable();
+		self.printerCost = ko.observable();
+		self.otherCostLabel = ko.observable();
+		self.otherCost = ko.observable();
+		this.currencySymbol = ko.observable();
+		this.withDefaultSpoolValues = ko.observable();
+
+		recalculateTotalCosts = function(newValue){
+		    var filamentCost = toFloatOrZero(self.filamentCost());
+		    var electricityCost = toFloatOrZero(self.electricityCost());
+		    var printerCost = toFloatOrZero(self.printerCost());
+		    var otherCost = toFloatOrZero(self.otherCost());
+		    var newTotal = (filamentCost + electricityCost + printerCost + otherCost).toFixed(2);
+		    self.totalCosts(newTotal);
+        }
+
+        this.filamentCost.subscribe(recalculateTotalCosts);
+        this.electricityCost.subscribe(recalculateTotalCosts);
+        this.printerCost.subscribe(recalculateTotalCosts);
+        this.otherCost.subscribe(recalculateTotalCosts);
 
 		this.snapshotFilename = ko.observable();
 		this.slicerSettingsAsText = ko.observable();
 
 		this.isMultiToolPrint = ko.observable(false);
+		this.isCostsAvailable = ko.observable(false);
 		this.isRePrintable = ko.observable(false);
 		this.fullFileLocation = ko.observable();
 /*
@@ -88,11 +128,8 @@ $(function() {
         this.userName(updateData.userName);
         this.fileName(updateData.fileName);
         this.filePathName(updateData.filePathName);
-        if ( isNaN(updateData.fileSize)){
-            this.fileSize(updateData.fileSize);
-        } else {
-            this.fileSize(formatSize(updateData.fileSize));
-        }
+        this.fileSize(updateData.fileSize)
+        this.fileSizeFormatted(updateData.fileSizeFormatted)
         this.printStartDateTime(updateData.printStartDateTime);
         this.printEndDateTime(updateData.printEndDateTime);
         this.printStartDateTimeFormatted(updateData.printStartDateTimeFormatted);
@@ -114,7 +151,7 @@ $(function() {
 
         // Flatten all releations
         // Temperature
-        tempDataArray = data["temperatureModels"];
+        tempDataArray = updateData["temperatureModels"];
         // Just grab the first value
         if (tempDataArray != null && tempDataArray.length >=2) {
             this.temperatureBed(tempDataArray[0].sensorValue);
@@ -152,8 +189,6 @@ $(function() {
                 this.material(totalFilamentModel.material);
                 this.vendor(totalFilamentModel.vendor);
                 this.spoolName(totalFilamentModel.spoolName);
-                this.spoolCost(totalFilamentModel.spoolCost);
-                this.spoolCostUnit(totalFilamentModel.spoolCostUnit);
                 this.weight(totalFilamentModel.weight);
     //            this.usedLength( formatFilamentLength(updateData.filamentEntity.usedLength) );
     //            this.calculatedLength( formatFilamentLength(updateData.filamentEntity.calculatedLength) );
@@ -162,6 +197,28 @@ $(function() {
                 this.usedWeight(totalFilamentModel.usedWeight );
                 this.usedCost(totalFilamentModel.usedCost );
             }
+        }
+
+        this.isCostsAvailable(updateData.isCostsAvailable);
+        if  (this.isCostsAvailable() == true && updateData.hasOwnProperty("costs")){
+            // data from backend
+            this.totalCosts(updateData.costs.totalCosts?.toFixed(2));
+            this.filamentCost(updateData.costs.filamentCost?.toFixed(2));
+            this.electricityCost(updateData.costs.electricityCost?.toFixed(2));
+            this.printerCost(updateData.costs.printerCost?.toFixed(2));
+            this.otherCostLabel(updateData.costs.otherCostLabel);
+            this.otherCost(updateData.costs.otherCost?.toFixed(2));
+            this.currencySymbol(updateData.costs.currencySymbol);
+            this.withDefaultSpoolValues(updateData.costs.withDefaultSpoolValues);
+        } else {
+            this.totalCosts(updateData.totalCosts);
+            this.filamentCost(updateData.filamentCost);
+            this.electricityCost(updateData.electricityCost);
+            this.printerCost(updateData.printerCost);
+            this.otherCostLabel(updateData.otherCostLabel);
+            this.otherCost(updateData.otherCost);
+            this.currencySymbol(updateData.currencySymbol);
+            this.withDefaultSpoolValues(updateData.withDefaultSpoolValues);
         }
 
 		this.snapshotFilename(updateData.snapshotFilename);
@@ -192,6 +249,7 @@ $(function() {
         this.usedLength = ko.observable(true);
         this.usedWeight = ko.observable(true);
         this.note = ko.observable(true);
+        this.costs = ko.observable(true);
         this.image = ko.observable(true);
     }
 
@@ -213,13 +271,13 @@ $(function() {
                 "durationFormatted" : "",
                 "fileName" : "",
                 "fileSize" : "",
+                "fileSizeFormatted" : "",
                 "temperatureBed" : "0.0",
                 "temperatureNozzle" : "0.0",
                 "printedHeight" : "0.0 / 0.0",
                 "printedLayers" : "0 / 0",
                 "spoolName" : "",
                 "spoolCost" : "",
-                "spoolCostUnit" : "TODO",
                 "material" : "",
                 "usedLengthFormatted" : "",
                 "calculatedLengthFormatted" : "",
@@ -231,68 +289,70 @@ $(function() {
                 "snapshotFilename" : "empty",
                 "slicerSettingsAsText" : ""
         }
+        var printHistoryJobItems = [];
 
-        var printHistoryJobItems = [
-             {
-                "databaseId" : ko.observable(1),
-                "success" : ko.observable("1"),
-                "printStartDateTimeFormatted" : "19.09.2019 16:25",
-                "printEndDateTimeFormatted" : "19.09.2019 17:25",
-                "printStatusResult" : ko.observable("success"),
-                "duration" : "123",
-                "durationFormatted" : "1h12min",
-                "fileName" : "Legolas.gcode",
-                "fileSize" : "134KB",
-                "temperatureBed" : "50C",
-                "temperatureNozzle" : "200C",
-                "printedHeight" : "23 / 23mm",
-                "printedLayers" : "149 / 149",
-                "spoolName" : "myspool",
-                "spoolCost" : "2,23",
-                "spoolCostUnit" : "Euro",
-                "material" : "PLA",
-                "usedLengthFormatted" : "1m22mm",
-                "calculatedLengthFormatted" : "12,5g",
-                "usedWeight" : "12,5g",
-                "usedCost" : "0,003",
-                "noteText" : "Good output of Legolas",
-                "noteDeltaFormat" : "Good output of Legolas",
-                "noteHtml" : "<h1>Good output of Legolas</h1>",
-                "snapshotFilename" : ko.observable("20191003-123322"),
-                "slicerSettingsAsText" : ko.observable()
-//                "usedSpoolManagerPlugin": ko.observable()
-            },{
-                "databaseId" : ko.observable(2),
-                "success" : ko.observable("0"),
-                "printStartDateTimeFormatted" : "20.09.2019 15:25",
-                "printEndDateTimeFormatted" : "20.09.2019 17:25",
-                "printStatusResult" : ko.observable("fail"),
-                "duration" : "321",
-                "durationFormatted" : "2h34min",
-                "fileName" : "Benchy3D.gcode",
-                "fileSize" : "324KB",
-                "temperatureBed" : "60C",
-                "temperatureNozzle" : "220C",
-
-                "printedHeight" : "13 / 143mm",
-                "printedLayers" : "3 / 68",
-                "spoolName" : "Master",
-                "spoolCost" : "2,23",
-                "spoolCostUnit" : "Euro",
-                "material" : "ABS",
-                "usedLengthFormatted" : "2m22mm",
-                "calculatedLengthFormatted" : "312,6g",
-                "usedWeight" : "312,6g",
-                "usedCost" : "1,34",
-
-                "noteText" : "Bad quality",
-                "noteDeltaFormat" : "Bad quality",
-                "noteHtml" : "<h2>Bad quality,/h2>",
-                "snapshotFilename" : ko.observable("20191003-153312"),
-                "slicerSettingsAsText" : ko.observable()
-//                "usedSpoolManagerPlugin": ko.observable()
-            }
-        ];
+//         var printHistoryJobItems = [
+//              {
+//                 "databaseId" : ko.observable(1),
+//                 "success" : ko.observable("1"),
+//                 "printStartDateTimeFormatted" : "19.09.2019 16:25",
+//                 "printEndDateTimeFormatted" : "19.09.2019 17:25",
+//                 "printStatusResult" : ko.observable("success"),
+//                 "duration" : "123",
+//                 "durationFormatted" : "1h12min",
+//                 "fileName" : "Legolas.gcode",
+//                 "fileSize" : "134",
+//                 "fileSizeFormatted" : "134KB",
+//                 "temperatureBed" : "50C",
+//                 "temperatureNozzle" : "200C",
+//                 "printedHeight" : "23 / 23mm",
+//                 "printedLayers" : "149 / 149",
+//                 "spoolName" : "myspool",
+//                 "spoolCost" : "2,23",
+//                 "material" : "PLA",
+//                 "usedLengthFormatted" : "1m22mm",
+//                 "calculatedLengthFormatted" : "12,5g",
+//                 "usedWeight" : "12,5g",
+//                 "usedCost" : "0,003",
+//                  "isCostsAvailable": ko.observable(false),
+//                 "noteText" : "Good output of Legolas",
+//                 "noteDeltaFormat" : "Good output of Legolas",
+//                 "noteHtml" : "<h1>Good output of Legolas</h1>",
+//                 "snapshotFilename" : ko.observable("20191003-123322"),
+//                 "slicerSettingsAsText" : ko.observable()
+// //                "usedSpoolManagerPlugin": ko.observable()
+//             },{
+//                 "databaseId" : ko.observable(2),
+//                 "success" : ko.observable("0"),
+//                 "printStartDateTimeFormatted" : "20.09.2019 15:25",
+//                 "printEndDateTimeFormatted" : "20.09.2019 17:25",
+//                 "printStatusResult" : ko.observable("fail"),
+//                 "duration" : "321",
+//                 "durationFormatted" : "2h34min",
+//                 "fileName" : "Benchy3D.gcode",
+//                 "fileSize" : "324",
+//                 "fileSizeFormatted" : "324KB",
+//                 "temperatureBed" : "60C",
+//                 "temperatureNozzle" : "220C",
+//
+//                 "printedHeight" : "13 / 143mm",
+//                 "printedLayers" : "3 / 68",
+//                 "spoolName" : "Master",
+//                 "spoolCost" : "2,23",
+//                 "material" : "ABS",
+//                 "usedLengthFormatted" : "2m22mm",
+//                 "calculatedLengthFormatted" : "312,6g",
+//                 "usedWeight" : "312,6g",
+//                 "usedCost" : "1,34",
+//
+//                 "noteText" : "Bad quality",
+//                 "noteDeltaFormat" : "Bad quality",
+//                 "noteHtml" : "<h2>Bad quality,/h2>",
+//                 "snapshotFilename" : ko.observable("20191003-153312"),
+//                 "slicerSettingsAsText" : ko.observable()
+// //                "usedSpoolManagerPlugin": ko.observable()
+//             }
+//         ];
 //        self.printJobHistorylistHelper.updateItems(printHistoryJobItems);
 
 /// END MOCK MODEL
@@ -332,6 +392,10 @@ $(function() {
         self.databaseFileLocation = ko.observable();
         self.snapshotFileLocation = ko.observable();
 
+        self.isCostEstimationPluginAvailableText = ko.observable("unknown");
+        self.currencySymbol = ko.observable();
+        self.currencyFormat = ko.observable();
+
         self.csvImportDialog = new PrintJobHistoryImportDialog();
 
         ////////////////////////////////////////////////////// Knockout model-binding/observer
@@ -369,7 +433,7 @@ $(function() {
             var popupId = (title+message).replace(/([^a-z0-9]+)/gi, '-');
             if($("."+popupId).length <1) {
                 new PNotify({
-                    title: "PJHM:" + title,
+                    title: "PJH:" + title,
                     text: message,
                     type: popupType,
                     hide: hide,
@@ -474,6 +538,70 @@ $(function() {
             return self.apiClient.getSampleCSVUrl();
         }
 
+        /////// Report - Template handling
+        self.resetSinglePrintJobReportTemplate = function(){
+
+            var result = confirm("Do you really want reset to the default template report ?");
+            if (result == true) {
+                self.apiClient.callResetSinglePrintJobReportTemplate(function(responseData){
+                    // handle response
+                    if (responseData.result == true){
+                        self.pluginSettings.singlePrintJobTemplateName(responseData.singlePrintJobTemplateName);
+                    }
+                });
+            }
+
+        }
+
+        self.downloadSinglePrintJobReportTemplateUrl = function(){
+            return self.apiClient.getSinglePrintJobReportTemplateUrl();
+        }
+
+        self.singlePrintJobReportTemplateUploadName = ko.observable();
+        self.singlePrintJobReportTemplateInProgress = ko.observable(false);
+
+        self.singlePrintJobReportTemplateUploadButton = $("#settings-pjh-uploadSingleReportTemplate-upload");
+        self.singlePrintJobReportTemplateUploadData = undefined;
+        self.singlePrintJobReportTemplateUploadButton.fileupload({
+            dataType: "json",
+            maxNumberOfFiles: 1,
+            autoUpload: false,
+            headers: OctoPrint.getRequestHeaders(),
+            add: function(e, data) {
+                if (data.files.length === 0) {
+                    // no files? ignore
+                    return false;
+                }
+                self.singlePrintJobReportTemplateUploadName(data.files[0].name);
+                self.singlePrintJobReportTemplateUploadData = data;
+            },
+            done: function(e, data) {
+                self.singlePrintJobReportTemplateInProgress(false);
+                self.singlePrintJobReportTemplateUploadName(undefined);
+                self.singlePrintJobReportTemplateUploadNameUploadData = undefined;
+
+                if (data.result.result == true){
+                    self.pluginSettings.singlePrintJobTemplateName(data.result.singlePrintJobTemplateName);
+                }
+            },
+            error: function(response, data, errorMessage){
+                self.singlePrintJobReportTemplateInProgress(false);
+                statusCode = response.status;       // e.g. 400
+                statusText = response.statusText;   // e.g. BAD REQUEST
+                responseText = response.responseText; // e.g. Invalid request
+            }
+        });
+
+        self.performSinglePrintJobReportTemplateUploadNameFromUpload = function() {
+            if (self.singlePrintJobReportTemplateUploadData === undefined) return;
+
+            self.singlePrintJobReportTemplateInProgress(true);
+
+            self.singlePrintJobReportTemplateUploadData.submit();
+        };
+
+
+
         ///////////////////////////////////////////////////// END: SETTINGS
 
         ///////////////////////////////////////////////////// START: OctoPrint Hooks
@@ -500,6 +628,15 @@ $(function() {
         }
 
         self.onAfterBinding = function() {
+            //
+            // debugger
+            // var mylog = anylogger('my-module');
+            // mylog('Logging is easy!');
+            // mylog.level = log.INFO;
+            // mylog.info('This info message will NOT be logged.');
+            // mylog.warn('This warning message WILL be logged.');
+            //
+            // debugger
             // all inits were done
             self.downloadDatabaseUrl(self.apiClient.getDownloadDatabaseUrl());
 
@@ -522,6 +659,7 @@ $(function() {
         self.onUserLoggedIn = function(currentUser) {
             self.printJobEditDialog.setCurrentUser(currentUser);
         }
+
         self.onUserLoggedOut = function() {
             if (self.printJobEditDialog != null) {
                 self.printJobEditDialog.setCurrentUser(null);
@@ -541,6 +679,15 @@ $(function() {
                 self.isPrintHistoryPluginAvailable(data.isPrintHistoryPluginAvailable);
                 self.isSpoolManagerInstalled(data.isSpoolManagerInstalled);
                 self.isFilamentManagerInstalled(data.isFilamentManagerInstalled);
+
+                if (data.isCostEstimationPluginAvailable == true){
+                    self.isCostEstimationPluginAvailableText("<span style='color:green'>available</span>");
+                } else {
+                    self.isCostEstimationPluginAvailableText("<span style='color:red'>not available</span>");
+                }
+                self.currencySymbol(data.currencySymbol);
+                self.currencyFormat(data.currencyFormat);
+
                 return;
             }
 
@@ -630,7 +777,6 @@ $(function() {
             });
         }
 
-
         printJobDialogCloseHandler = function(shouldTableReload){
             // refresh snapshotImage
             printJob = self.printJobForEditing();
@@ -715,6 +861,7 @@ $(function() {
             assignVisibility("usedLength");
             assignVisibility("usedWeight");
             assignVisibility("note");
+            assignVisibility("costs");
             assignVisibility("image");
         }
 
@@ -725,6 +872,16 @@ $(function() {
 
             self.printJobEditDialog.showDialog(self.printJobForEditing(), printJobDialogCloseHandler, true);
         }
+
+        self.cloneNewPrintJobItem = function(){
+            debugger
+
+            var emptyItem = new PrintJobItem(emptyPrintJobItemAsJson);
+            self.printJobForEditing(emptyItem);
+
+            self.printJobEditDialog.showDialog(self.printJobForEditing(), printJobDialogCloseHandler, true);
+        }
+
 
         loadJobFunction = function(tableQuery, observableTableModel, observableTotalItemCount, observableCurrentItemCount){
             // api-call
@@ -924,10 +1081,11 @@ $(function() {
         };
 
         self.printJobHistoryTableHelper.searchQuery.subscribe(function(newValue){
-                    if (newValue != null && newValue.length > 3){
-                        self.printJobHistoryTableHelper.reloadItems();
-                    }
-                });
+                self.printJobHistoryTableHelper.reloadItems();
+                    // if (newValue != null && newValue.length > 2){
+                    //     self.printJobHistoryTableHelper.reloadItems();
+                    // }
+        });
 
         ///////////////////////////////////////////////////// END: TABLE BEHAVIOR
 

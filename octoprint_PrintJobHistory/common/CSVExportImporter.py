@@ -8,6 +8,7 @@ import re
 from octoprint_PrintJobHistory.models.PrintJobModel import PrintJobModel
 from octoprint_PrintJobHistory.models.TemperatureModel import TemperatureModel
 from octoprint_PrintJobHistory.models.FilamentModel import FilamentModel
+from octoprint_PrintJobHistory.models.CostModel import CostModel
 from octoprint_PrintJobHistory.common import StringUtils
 
 FORMAT_DATETIME = "%d.%m.%Y %H:%M"
@@ -34,6 +35,11 @@ COLUMN_USED_LENGTH = "Used Length [mm]"
 COLUMN_CALCULATED_LENGTH = "Calculated Length [mm]"
 COLUMN_USED_WEIGHT = "Used Weight [g]"
 COLUMN_USED_FILAMENT_COSTS = "Used Filament Cost"
+
+COLUMN_ESTIMATED_FILAMENT_COSTS = "Estimated Filament Cost"
+COLUMN_ESTIMATED_ELECTRICITY_COSTS = "Estimated Electricity Cost"
+COLUMN_ESTIMATED_PRINTER_COSTS = "Estimated Printer Cost"
+COLUMN_OTHER_COSTS = "Other Cost [label:value]"
 
 #############################################################################################################
 class CSVColumn:
@@ -244,16 +250,6 @@ class FilamentCSVFormattorParser:
 			return "-"
 		valueToFormat = getattr(totalFilamentModel, fieldName)
 
-		# append unit to value
-		if ("usedCost" == fieldName and valueToFormat != None and valueToFormat != ""):
-			valueToFormat = StringUtils.formatFloatSave(StringUtils.FLOAT_DEFAULT_FORMAT, valueToFormat, "-")
-			if (hasattr(totalFilamentModel, "spoolCostUnit") == True and totalFilamentModel.spoolCostUnit != None):
-				if (valueToFormat != "-"):
-					if (isinstance(totalFilamentModel.spoolCostUnit, str)):
-						valueToFormat = valueToFormat + totalFilamentModel.spoolCostUnit
-					else:
-						valueToFormat = valueToFormat + totalFilamentModel.spoolCostUnit.encode("utf-8")
-
 		if ("usedLength" == fieldName or
 			"calculatedLength" == fieldName or
 			"usedWeight" == fieldName):
@@ -303,24 +299,73 @@ class FilamentCSVFormattorParser:
 		elif (COLUMN_USED_WEIGHT == fieldLabel):
 			filamanentModel.usedWeight = float(fieldValue)
 			pass
-		elif (COLUMN_USED_FILAMENT_COSTS == fieldLabel):
-			costUnit = fieldValue[-1]
-			if (costUnit.isdigit()):
-				# no unit present
-				filamanentModel.usedCost = float(fieldValue)
-			else:
-				# Split between cost and unit
-				costValue = ""
-				for i in range(len(fieldValue)):
-					c = fieldValue[i]
-					if (c.isdigit() or c == "."):
-						costValue += c
-					else:
-						costUnit = fieldValue[i:]
-						break
-				filamanentModel.usedCost = float(costValue)
-				filamanentModel.spoolCostUnit = costUnit
+		pass
 
+class CostsCSVFormattorParser:
+
+	def formatValue(self, printJob, fieldName):
+
+		costModel = printJob.getCosts()
+		if (costModel == None):
+			return "-"
+
+		if (hasattr(costModel, fieldName) == False):
+			return "-"
+
+		valueToFormat = getattr(costModel, fieldName)
+
+		if ("filamentCost" == fieldName or
+			"electricityCost" == fieldName or
+			"printerCost" == fieldName or
+			"otherCost" == fieldName):
+			if (valueToFormat != None and valueToFormat != "" and valueToFormat != "-"):
+				valueToFormat = StringUtils.formatFloatSave(StringUtils.FLOAT_DEFAULT_FORMAT, valueToFormat, "-")
+				if ("otherCost" == fieldName):
+					otherCostLabel = ""
+					if (StringUtils.isNotEmpty(costModel.otherCostLabel)):
+						otherCostLabel = costModel.otherCostLabel
+					valueToFormat = otherCostLabel + ":" + valueToFormat
+
+		if valueToFormat is None or "" == valueToFormat:
+			return "-"
+
+		return valueToFormat
+
+	def parseAndAssignFieldValue(self, fieldLabel, fieldName, fieldValue, printJobModel, errorCollection, lineNumber):
+		if ("" == fieldValue or "-" == fieldValue or fieldValue == None):
+			# check if mandatory
+			return
+
+		costModel = printJobModel.getCosts()
+		if (costModel == None):
+			costModel  = CostModel()
+			costModel.withDefaultSpoolValues = True
+			printJobModel.setCosts(costModel)
+		#
+		# COLUMN_ESTIMATED_FILAMENT_COSTS = "Estimated Filament Cost"
+		# COLUMN_ESTIMATED_ELECTRICITY_COSTS = "Estimated Electricity Cost"
+		# COLUMN_ESTIMATED_PRINTER_COSTS = "Estimated Printer Cost"
+		# COLUMN_OTHER_COSTS = "Other Cost [label:value]"
+
+		if (COLUMN_ESTIMATED_FILAMENT_COSTS == fieldLabel):
+			costModel.filamentCost = float(fieldValue)
+			pass
+		elif (COLUMN_ESTIMATED_ELECTRICITY_COSTS == fieldLabel):
+			costModel.electricityCost = float(fieldValue)
+			pass
+		elif (COLUMN_ESTIMATED_PRINTER_COSTS == fieldLabel):
+			costModel.printerCost = float(fieldValue)
+			pass
+		elif (COLUMN_OTHER_COSTS == fieldLabel):
+
+			otherTokens = fieldValue.split(":")
+			if (len(otherTokens) != 2):
+				errorCollection.append(str(lineNumber) + ":Wrong format for 'Other Cost' need label:value<br/>")
+				pass
+			label = otherTokens[0]
+			value = otherTokens[1]
+			costModel.otherCostLabel = label
+			costModel.otherCost = float(value)
 			pass
 		pass
 
@@ -347,7 +392,11 @@ ALL_COLUMNS_SORTED = [
 	COLUMN_USED_LENGTH,
 	COLUMN_CALCULATED_LENGTH,
 	COLUMN_USED_WEIGHT,
-	COLUMN_USED_FILAMENT_COSTS
+	COLUMN_USED_FILAMENT_COSTS,
+	COLUMN_ESTIMATED_FILAMENT_COSTS,
+	COLUMN_ESTIMATED_ELECTRICITY_COSTS,
+	COLUMN_ESTIMATED_PRINTER_COSTS,
+	COLUMN_OTHER_COSTS
 ]
 
 ## ALL COLUMNS WITH THERE PARSER/EXPORTER
@@ -373,6 +422,12 @@ ALL_COLUMNS = {
 	COLUMN_CALCULATED_LENGTH: CSVColumn("calculatedLength", COLUMN_CALCULATED_LENGTH, "", FilamentCSVFormattorParser()),
 	COLUMN_USED_WEIGHT: CSVColumn("usedWeight", COLUMN_USED_WEIGHT, "", FilamentCSVFormattorParser()),
 	COLUMN_USED_FILAMENT_COSTS: CSVColumn("usedCost", COLUMN_USED_FILAMENT_COSTS, "", FilamentCSVFormattorParser()),
+
+	COLUMN_ESTIMATED_FILAMENT_COSTS: CSVColumn("filamentCost", COLUMN_ESTIMATED_FILAMENT_COSTS, "", CostsCSVFormattorParser()),
+	COLUMN_ESTIMATED_ELECTRICITY_COSTS: CSVColumn("electricityCost", COLUMN_ESTIMATED_ELECTRICITY_COSTS, "", CostsCSVFormattorParser()),
+	COLUMN_ESTIMATED_PRINTER_COSTS: CSVColumn("printerCost", COLUMN_ESTIMATED_PRINTER_COSTS, "", CostsCSVFormattorParser()),
+	COLUMN_OTHER_COSTS: CSVColumn("otherCost", COLUMN_OTHER_COSTS, "", CostsCSVFormattorParser()),
+
 }
 
 

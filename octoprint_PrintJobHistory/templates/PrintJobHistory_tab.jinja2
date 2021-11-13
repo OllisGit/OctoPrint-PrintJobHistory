@@ -95,7 +95,6 @@
                         <input type="search" class="input-block search-query" data-bind="value: printJobHistoryTableHelper.searchQuery, valueUpdate: 'input'" placeholder="{{ _('Search...')|edq }}">
                         <span class="search-clear" data-bind="click: clearTableSearchQuery"><i class="fas fa-times"></i></span>
                     </div>
-
                 </div>
             </div>
         </div>
@@ -253,6 +252,17 @@
                         <div class="control-group">
                             <div class="controls">
                                 <label class="checkbox" style="margin-left:10px">
+                                    <input type="checkbox" data-bind="checked: tableAttributeVisibility.costs"> Costs
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="span3" style="margin-bottom:-10px">
+                        <div class="control-group">
+                            <div class="controls">
+                                <label class="checkbox" style="margin-left:10px">
                                     <input type="checkbox" data-bind="checked: tableAttributeVisibility.image"> Image
                                 </label>
                             </div>
@@ -296,6 +306,7 @@
                 <th style="width: 27%" data-bind="visible: tableAttributeVisibility.file">File</th>
                 <th style="width: 13%" data-bind="visible: tableAttributeVisibility.usage">Usage</th>
                 <th style="width: 16%" data-bind="visible: tableAttributeVisibility.note">Note</th>
+                <th style="width: 16%" data-bind="visible: tableAttributeVisibility.costs">Costs</th>
                 <th style="width: 16%" data-bind="visible: tableAttributeVisibility.image">Image</th>
 <!--                <th style="width: 9%"></th>-->
             </tr>
@@ -317,7 +328,7 @@
                 <td data-bind="click: function() { $root.showPrintJobDetailsDialogAction($data); }, visible: $root.tableAttributeVisibility.file">
                     <span><span data-bind="visible: $root.tableAttributeVisibility.fileName, text: fileName, attr: { title: fileName }"></span></span>
                     <div class="additionalInfo">
-                        <div><span data-bind="visible: $root.tableAttributeVisibility.fileSize, text: fileSize , attr: { title: fileSize }"></span></div>
+                        <div><span data-bind="visible: $root.tableAttributeVisibility.fileSize, text: fileSizeFormatted , attr: { title: fileSize }"></span></div>
                         <div data-bind="visible: $root.tableAttributeVisibility.tempBed">Bed: <span data-bind="text: temperatureBed, attr: { title: temperatureBed }"></span>°C</div>
                         <div data-bind="visible: $root.tableAttributeVisibility.tempTool" >Tool: <span data-bind="text: temperatureNozzle, attr: { title: temperatureNozzle }"></span>°C</div>
                         <div data-bind="visible: $root.tableAttributeVisibility.height" >Height: <span data-bind="text: printedHeight, attr: { title: printedHeight }"></span>mm</div>
@@ -341,6 +352,11 @@
 <!--                    <span ><span>Figure</span></span>-->
                     <div class="additionalInfo">
                         <div ><span class="quill-viewer" data-bind="html: noteHtml, attr: { title: noteText }"></span></div>
+                    </div>
+                </td>
+                <td data-bind="click: function() { $root.showPrintJobDetailsDialogAction($data); }, visible: $root.tableAttributeVisibility.costs">
+                    <div class="additionalInfo">
+                        <span data-bind="text: totalCosts, attr: { title: totalCosts }"></span><span data-bind="visible: totalCosts() != null && totalCosts().length > 0"><span data-bind="text: $root.currencySymbol"></span> </span>
                     </div>
                 </td>
                 <td data-bind="click: function() { $root.showPrintJobDetailsDialogAction($data); }, visible: $root.tableAttributeVisibility.image">

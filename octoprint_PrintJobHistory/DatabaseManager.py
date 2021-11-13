@@ -10,6 +10,7 @@ import sqlite3
 from octoprint_PrintJobHistory.WrappedLoggingHandler import WrappedLoggingHandler
 from octoprint_PrintJobHistory.api import TransformPrintJob2JSON
 from octoprint_PrintJobHistory.common import StringUtils
+from octoprint_PrintJobHistory.models.CostModel import CostModel
 from octoprint_PrintJobHistory.models.FilamentModel import FilamentModel
 from octoprint_PrintJobHistory.models.PrintJobModel import PrintJobModel
 from octoprint_PrintJobHistory.models.PluginMetaDataModel import PluginMetaDataModel
@@ -21,10 +22,10 @@ from peewee import *
 FORCE_CREATE_TABLES = False
 SQL_LOGGING = True
 
-CURRENT_DATABASE_SCHEME_VERSION = 6
+CURRENT_DATABASE_SCHEME_VERSION = 7
 
 # List all Models
-MODELS = [PluginMetaDataModel, PrintJobModel, FilamentModel, TemperatureModel]
+MODELS = [PluginMetaDataModel, PrintJobModel, FilamentModel, TemperatureModel, CostModel]
 
 
 class DatabaseManager(object):
@@ -107,6 +108,40 @@ class DatabaseManager(object):
 
 	def _upgradeFrom6To7(self):
 		self._logger.info(" Starting 6 -> 7")
+
+		connection = sqlite3.connect(self._databaseFileLocation)
+		cursor = connection.cursor()
+
+		## Changeset
+		# - NEW CostModel
+		# - Droping costUnit, because now there is a general plugin-setting
+
+		sql = """
+		PRAGMA foreign_keys=off;
+		BEGIN TRANSACTION;
+
+			CREATE TABLE "pjh_costmodel" ("databaseId" INTEGER NOT NULL PRIMARY KEY,
+			"created" DATETIME NOT NULL,
+			"printJob_id" INTEGER NOT NULL,
+			"totalCosts" REAL,
+			"filamentCost" REAL,
+			"electricityCost" REAL,
+			"printerCost" REAL,
+			"otherCostLabel" VARCHAR(255),
+			"otherCost" REAL,
+			"withDefaultSpoolValues" INTEGER,
+			FOREIGN KEY ("printJob_id") REFERENCES "pjh_printjobmodel" ("databaseId") ON DELETE CASCADE);
+
+			ALTER TABLE "pjh_filamentmodel" DROP COLUMN "spoolCostUnit";
+
+			UPDATE 'pjh_pluginmetadatamodel' SET value=7 WHERE key='databaseSchemeVersion';
+		COMMIT;
+		PRAGMA foreign_keys=on;
+		"""
+		cursor.executescript(sql)
+
+		connection.close()
+
 		self._logger.info(" Successfully 6 -> 7")
 		pass
 
@@ -138,7 +173,6 @@ class DatabaseManager(object):
 		connection.close()
 		self._logger.info(" Successfully 5 -> 6")
 		pass
-
 
 	def _upgradeFrom4To5(self):
 		self._logger.info(" Starting 4 -> 5")
@@ -426,7 +460,7 @@ class DatabaseManager(object):
 				currentSchemeVersion = str(currentSchemeVersion.value)
 		except Exception as e:
 			self._logger.exception("Could not read databasescheme version:" + str(e))
-		backupDatabaseFileName = "printJobHistory-backup-V"+currentSchemeVersion +"-"+currentDate+".db"
+		backupDatabaseFileName = "printJobHistory-backup-"+currentDate+"-V"+currentSchemeVersion +".db"
 		backupDatabaseFilePath = os.path.join(backupFolder, backupDatabaseFileName)
 		if not os.path.exists(backupDatabaseFilePath):
 			shutil.copy(self._databaseFileLocation, backupDatabaseFilePath)
@@ -473,6 +507,10 @@ class DatabaseManager(object):
 				for temperatureModel in printJobModel.getTemperatureModels():
 					temperatureModel.printJob = printJobModel
 					temperatureModel.save()
+				# - Costs
+				if (printJobModel.getCosts() != None):
+					printJobModel.getCosts().save()
+
 				# do expicit commit
 				transaction.commit()
 			except Exception as e:
@@ -498,10 +536,14 @@ class DatabaseManager(object):
 				for filamentModel in printJobModel.getFilamentModels():
 					filamentModel.save()
 
-				# # - Temperature
+				# # - Temperature not needed for an update
 				# for temperatureModel in printJobModel.getTemperatureModels():
 				# 	temperatureModel.printJob = printJobModel
 				# 	temperatureModel.save()
+
+				# - Costs
+				if (printJobModel.getCosts() != None):
+					printJobModel.getCosts().save()
 			except Exception as e:
 				# Because this block of code is wrapped with "atomic", a
 				# new transaction will begin automatically after the call
@@ -558,7 +600,6 @@ class DatabaseManager(object):
 					if filla.toolId == "total":
 						# exclude totals, otherwise everything is counted twice
 						continue
-
 					if (StringUtils.isEmpty(filla.usedLength) == False):
 						length = length + filla.usedLength
 					if (StringUtils.isEmpty(filla.usedWeight) == False):
@@ -797,16 +838,26 @@ class DatabaseManager(object):
 		# return allDict
 
 	def loadPrintJob(self, databaseId):
-		return PrintJobModel.get_by_id(databaseId)
+		databaseIdAsInt = StringUtils.transformToIntOrNone(databaseId)
+		if (databaseIdAsInt == None):
+			self._logger.error("Could not load PrintJob, because not a valid databaseId '"+str(databaseId)+"' maybe not a number")
+			return None
+		return PrintJobModel.get_or_none(databaseIdAsInt)
 
 	def deletePrintJob(self, databaseId):
+		databaseIdAsInt = StringUtils.transformToIntOrNone(databaseId)
+		if (databaseIdAsInt == None):
+			self._logger.error("Could not delete PrintJob, because not a valid databaseId '"+str(databaseId)+"' maybe not a number")
+			return None
+
 		with self._database.atomic() as transaction:  # Opens new transaction.
 			try:
 				# first delete relations
-				n = FilamentModel.delete().where(FilamentModel.printJob == databaseId).execute()
-				n = TemperatureModel.delete().where(TemperatureModel.printJob == databaseId).execute()
+				n = FilamentModel.delete().where(FilamentModel.printJob == databaseIdAsInt).execute()
+				n = TemperatureModel.delete().where(TemperatureModel.printJob == databaseIdAsInt).execute()
+				n = CostModel.delete().where(CostModel.printJob == databaseIdAsInt).execute()
 
-				PrintJobModel.delete_by_id(databaseId)
+				PrintJobModel.delete_by_id(databaseIdAsInt)
 			except Exception as e:
 				# Because this block of code is wrapped with "atomic", a
 				# new transaction will begin automatically after the call

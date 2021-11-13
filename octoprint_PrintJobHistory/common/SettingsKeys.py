@@ -23,7 +23,12 @@ class SettingsKeys():
 	KEY_SELECTED_FILAMENTMANAGER_PLUGIN = "FilamentManager Plugin"	# visible inn plugin-settings
 	KEY_SELECTED_NONE_PLUGIN = "none"
 
+	SETTINGS_KEY_CURRENCY_SYMBOL = "currencySymbol"
+	SETTINGS_KEY_CURRENCY_FORMAT = "currencyFormat"
+
 	SETTINGS_KEY_SLICERSETTINGS_KEYVALUE_EXPRESSION = "slicerSettingsKeyValueExpression"
+	SETTINGS_KEY_SINGLE_PRINTJOB_REPORT_TEMPLATENAME = "singlePrintJobTemplateName"
+	SETTINGS_DEFAULT_VALUE_SINGLE_PRINTJOB_REPORT_TEMPLATENAME = "defaultSinglePrintJobReport"
 
 	## Camera
 	SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT = "takeSnapshotAfterPrint"

@@ -56,6 +56,16 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
         return _addApiKeyIfNecessary("./plugin/" + this.pluginId + "/printJobSnapshot/" + snapshotFilename);
     }
 
+    this.getSingleReportUrl = function(databaseId){
+        //http://localhost:5000/plugin/PrintJobHistory/singlePrintJobReport/5
+        return _addApiKeyIfNecessary("./plugin/" + this.pluginId + "/singlePrintJobReport/" + databaseId);
+    }
+
+    this.getSinglePrintJobReportTemplateUrl = function(){
+        //http://localhost:5000/plugin/PrintJobHistory/downloadSinglePrintJobReportTemplate
+        return _addApiKeyIfNecessary("./plugin/" + this.pluginId + "//downloadSinglePrintJobReportTemplate");
+    }
+
     this.uploadSnapshotUrl = function(snapshotFilename){
         //http://localhost:5000/plugin/PrintJobHistory/printJobSnapshot/20191003-153311
         return _addApiKeyIfNecessary("./plugin/" + this.pluginId + "/upload/snapshot/" + snapshotFilename);
@@ -178,6 +188,16 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
     }
 
     // deactivate the Plugin/Check
+    this.callResetSinglePrintJobReportTemplate =  function (responseHandler){
+        $.ajax({
+            url: this.baseUrl + "plugin/"+ this.pluginId +"/resetSinglePrintJobReportTemplate",
+            type: "PUT"
+        }).done(function( data ){
+            responseHandler(data)
+        });
+    }
+
+    // deactivate the Plugin/Check
     this.callTakeSnapshot =  function (snapshotFilename, responseHandler){
         $.ajax({
             url: this.baseUrl + "plugin/"+ this.pluginId +"/takeSnapshot/"+snapshotFilename,
@@ -196,7 +216,6 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
             responseHandler(data)
         });
     }
-
 
     this.callForceCloseEditDialog = function(responseHandler){
         $.ajax({

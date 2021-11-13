@@ -18,8 +18,8 @@ class FilamentModel(BaseModel):
 	density = FloatField(null=True)
 	material = CharField(null=True)
 	spoolName = CharField(null=True)	#datetime 2 char
-	spoolCost = FloatField(null=True)	#Char -> FloatField #datetime 2 char
-	spoolCostUnit = CharField(null=True)
+	spoolCost = FloatField(null=True)	#Char -> FloatField #datetime 2 char not visible, just for the archive
+	# spoolCostUnit = CharField(null=True) removed in version 7
 	weight = FloatField(null=True)	#char 2 float
 	usedLength = FloatField(null=True)
 	calculatedLength = FloatField(null=True)

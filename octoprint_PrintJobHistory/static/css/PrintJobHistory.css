@@ -1,4 +1,10 @@
 
+@media (min-width: 1200px){
+    #rightSpan.span6 {
+         width: unset !important;
+    }
+}
+
 
 #tab_printJobHistory .additionalInfo {
     font-size: 85%;
