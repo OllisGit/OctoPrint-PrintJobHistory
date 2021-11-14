@@ -116,6 +116,7 @@ class DatabaseManager(object):
 		# - NEW CostModel
 		# - Droping costUnit, because now there is a general plugin-setting
 
+		# 			ALTER TABLE "pjh_filamentmodel" DROP COLUMN "spoolCostUnit"; Not working for DB Release < 3.30.0 (offical 3.35.0)
 		sql = """
 		PRAGMA foreign_keys=off;
 		BEGIN TRANSACTION;
@@ -131,8 +132,6 @@ class DatabaseManager(object):
 			"otherCost" REAL,
 			"withDefaultSpoolValues" INTEGER,
 			FOREIGN KEY ("printJob_id") REFERENCES "pjh_printjobmodel" ("databaseId") ON DELETE CASCADE);
-
-			ALTER TABLE "pjh_filamentmodel" DROP COLUMN "spoolCostUnit";
 
 			UPDATE 'pjh_pluginmetadatamodel' SET value=7 WHERE key='databaseSchemeVersion';
 		COMMIT;
