@@ -135,94 +135,107 @@ class PrintJobHistoryPlugin(
 									confirmMessageData=confirmMessageData))
 
 	def _checkAndLoadThirdPartyPluginInfos(self, sendToClient=False):
-
-		pluginInfo = self._getPluginInformation("preheat")
+		pluginInfo = self._getPluginInformation(SettingsKeys.PLUGIN_PREHEAT)
 		self._preHeatPluginImplementationState = pluginInfo[0]
 		self._preHeatPluginImplementation = pluginInfo[1]
+		preHeatCurrentVersion = pluginInfo[2]
+		preHeatRequiredVersion = pluginInfo[3]
 
-		pluginInfo = self._getPluginInformation("filamentmanager")
+		pluginInfo = self._getPluginInformation(SettingsKeys.PLUGIN_FILAMENT_MANAGER)
 		self._filamentManagerPluginImplementationState = pluginInfo[0]
 		self._filamentManagerPluginImplementation = pluginInfo[1]
+		filamentManagerCurrentVersion = pluginInfo[2]
+		filamentManagerRequiredVersion = pluginInfo[3]
 
-		pluginInfo = self._getPluginInformation("DisplayLayerProgress")
+		pluginInfo = self._getPluginInformation(SettingsKeys.PLUGIN_DISPLAY_LAYER_PROGRESS)
 		self._displayLayerProgressPluginImplementationState = pluginInfo[0]
 		self._displayLayerProgressPluginImplementation = pluginInfo[1]
+		displayLayerCurrentVersion = pluginInfo[2]
+		displayLayerRequiredVersion = pluginInfo[3]
 
-		pluginInfo = self._getPluginInformation("SpoolManager")
+		pluginInfo = self._getPluginInformation(SettingsKeys.PLUGIN_SPOOL_MANAGER)
 		self._spoolManagerPluginImplementationState = pluginInfo[0]
 		self._spoolManagerPluginImplementation = pluginInfo[1]
+		spoolManagerCurrentVersion = pluginInfo[2]
+		spoolManagerRequiredVersion = pluginInfo[3]
 
-		pluginInfo = self._getPluginInformation("UltimakerFormatPackage")
+		pluginInfo = self._getPluginInformation(SettingsKeys.PLUGIN_ULTIMAKER_FORMAT_PACKAGE)
 		self._ultimakerFormatPluginImplementationState = pluginInfo[0]
 		self._ultimakerFormatPluginImplementation = pluginInfo[1]
+		ultimakerCurrentVersion = pluginInfo[2]
+		ultimakerRequiredVersion = pluginInfo[3]
 
-		pluginInfo = self._getPluginInformation("prusaslicerthumbnails")
+		pluginInfo = self._getPluginInformation(SettingsKeys.PLUGIN_PRUSA_SLICER_THUMNAIL)
 		self._prusaSlicerThumbnailsPluginImplementationState = pluginInfo[0]
 		self._prusaSlicerThumbnailsPluginImplementation = pluginInfo[1]
+		pruseSlicerCurrentVersion = pluginInfo[2]
+		pruseSlicerRequiredVersion = pluginInfo[3]
 
-		pluginInfo = self._getPluginInformation("costestimation")
+		pluginInfo = self._getPluginInformation(SettingsKeys.PLUGIN_COST_ESTIMATION)
 		self._costEstimationPluginImplementationState = pluginInfo[0]
 		self._costEstimationPluginImplementation = pluginInfo[1]
-		costPluginVersion = pluginInfo[2]
+		costPluginCurrentVersion = pluginInfo[2]
+		costPluginRequiredVersion = pluginInfo[3]
 
-		pluginInfo = self._getPluginInformation("printhistory")
+		pluginInfo = self._getPluginInformation(SettingsKeys.PLUGIN_PRINT_HISTORY)
 		if ("enabled" == pluginInfo[0]):
 			self._printHistoryPluginImplementation = pluginInfo[1]
 		else:
 			self._printHistoryPluginImplementation = None
+		printHistoryCurrentVersion = pluginInfo[2]
+		printHistoryRequiredVersion = pluginInfo[3]
 
-		self._logger.info("Plugin-State: "
-						  "PreHeat=" + self._preHeatPluginImplementationState + " "
-						  "DisplayLayerProgress=" + self._displayLayerProgressPluginImplementationState + " "
-						  "SpoolManager=" + self._spoolManagerPluginImplementationState + " "
-						  "filamentmanager=" + self._filamentManagerPluginImplementationState + " "
-						  "costestimation=" + self._costEstimationPluginImplementationState + " "
+		self._logger.info("Plugin-State:\n"
+						  "| PreHeat=" + self._preHeatPluginImplementationState + " (" + str(preHeatCurrentVersion) + ")\n"
+						  "| filamentmanager=" + self._filamentManagerPluginImplementationState + " (" + str(filamentManagerCurrentVersion) + ")\n"
+						  "| DisplayLayerProgress=" + self._displayLayerProgressPluginImplementationState + " (" + str(displayLayerCurrentVersion) + ")\n"
+						  "| SpoolManager=" + self._spoolManagerPluginImplementationState + " (" + str(spoolManagerCurrentVersion) + ")\n"
+						  "| UltimakerFormat=" + self._ultimakerFormatPluginImplementationState + " (" + str(ultimakerCurrentVersion) + ")\n"
+						  "| PrusaSlicerThumbnail=" + self._prusaSlicerThumbnailsPluginImplementationState + " (" + str(pruseSlicerCurrentVersion) + ")\n"
+						  "| costestimation=" + self._costEstimationPluginImplementationState + " (" + str(costPluginCurrentVersion) + ")\n"
 						  )
 
 		if sendToClient == True:
-			missingMessage = ""
 
-			if self._preHeatPluginImplementation == None:
-				missingMessage = missingMessage + "<li><a target='_newTab' href='https://plugins.octoprint.org/plugins/preheat/'>PreHeat Button</a> (<b>" + self._preHeatPluginImplementationState + "</b>)</li>"
+			currentPluginVersion = self._plugin_info.version
+			lastVersionCheck = self._settings.get([SettingsKeys.SETTINGS_KEY_LAST_PLUGIN_DEPENDENCY_CHECK])
+			newPlugiVersionNotifier = False
+			if (currentPluginVersion != lastVersionCheck):
+				newPlugiVersionNotifier = True
 
-			# if at least one filemant tracker is installed, then don't inform the user about the missing other plugin
-			if (self._spoolManagerPluginImplementation == None and self._filamentManagerPluginImplementation == None):
-				missingMessage = missingMessage + "<li><a target='_newTab' href='https://plugins.octoprint.org/plugins/SpoolManager/'>SpoolManager </a>(<b>" + self._spoolManagerPluginImplementationState + "</b>)<br/><b>or</b></li>"
-				missingMessage = missingMessage + "<li><a target='_newTab' href='https://plugins.octoprint.org/plugins/filamentmanager/'>FilamentManager</a> (<b>" + self._filamentManagerPluginImplementationState + "</b>)</li>"
+			lastVersionCheck = currentPluginVersion
+			self._settings.set([SettingsKeys.SETTINGS_KEY_LAST_PLUGIN_DEPENDENCY_CHECK], lastVersionCheck)
+			self._settings.save()
 
-			if self._displayLayerProgressPluginImplementation == None:
-				missingMessage = missingMessage + "<li><a target='_newTab' href='https://plugins.octoprint.org/plugins/DisplayLayerProgress/'>DisplayLayerProgress</a> (<b>" + self._displayLayerProgressPluginImplementationState + "</b>)</li>"
+			if (self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_PLUGIN_DEPENDENCY_CHECK]) == True or newPlugiVersionNotifier):
 
-			if self._ultimakerFormatPluginImplementation == None:
-				missingMessage = missingMessage + "<li><a target='_newTab' href='https://plugins.octoprint.org/plugins/UltimakerFormatPackage/'>Cura Thumbnails</a> (<b>" + self._ultimakerFormatPluginImplementationState + "</b>)</li>"
+				missingMessage = ""
 
-			if self._prusaSlicerThumbnailsPluginImplementation == None:
-				missingMessage = missingMessage + "<li><a target='_newTab' href='https://plugins.octoprint.org/plugins/prusaslicerthumbnails/'>PrusaSlicer Thumbnails</a> (<b>" + self._prusaSlicerThumbnailsPluginImplementationState + "</b>)</li>"
+				if self._preHeatPluginImplementation == None:
+					missingMessage = missingMessage + "<li><a target='_newTab' href='https://plugins.octoprint.org/plugins/preheat/'>PreHeat Button (" + str(preHeatRequiredVersion) + "+)</a> (<b>" + self._preHeatPluginImplementationState + "</b>)</li>"
 
-			if self._costEstimationPluginImplementation == None:
-				missingMessage = missingMessage + "<li><a target='_newTab' href='https://plugins.octoprint.org/plugins/costestimation/'>CostEstimation</a> (<b>" + self._costEstimationPluginImplementationState + "</b>)</li>"
-			else:
-				# it is present, lets check the version
-				import semantic_version
+				# if at least one filemant tracker is installed, then don't inform the user about the missing other plugin
+				if (self._spoolManagerPluginImplementation == None and self._filamentManagerPluginImplementation == None):
+					missingMessage = missingMessage + "<li><a target='_newTab' href='https://plugins.octoprint.org/plugins/SpoolManager/'>SpoolManager (" + str(spoolManagerRequiredVersion) + "+)</a>(<b>" + self._spoolManagerPluginImplementationState + "</b>)<br/><b>or</b></li>"
+					missingMessage = missingMessage + "<li><a target='_newTab' href='https://plugins.octoprint.org/plugins/filamentmanager/'>FilamentManager (" + str(filamentManagerRequiredVersion) + "+)</a> (<b>" + self._filamentManagerPluginImplementationState + "</b>)</li>"
 
-				expectedVersion = "3.4.0"  # equal or greater
-				currentVersion = costPluginVersion
-				canBeUsed = False
-				try:
-					canBeUsed = semantic_version.Version(currentVersion) >= semantic_version.Version(expectedVersion)
-				except (ValueError) as error:
-					logging.exception("Something is wrong with the costestimation version numbers")
+				if self._displayLayerProgressPluginImplementation == None:
+					missingMessage = missingMessage + "<li><a target='_newTab' href='https://plugins.octoprint.org/plugins/DisplayLayerProgress/'>DisplayLayerProgress (" + str(displayLayerRequiredVersion) + "+)</a> (<b>" + self._displayLayerProgressPluginImplementationState + "</b>)</li>"
 
-				# print("Can be used: " + str(canBeUsed))
-				if (canBeUsed == False):
-					self._costEstimationPluginImplementation = None
-					missingMessage = missingMessage + "<li><a target='_newTab' href='https://plugins.octoprint.org/plugins/costestimation/'>CostEstimation</a> (<b>Wrong Version, expected: 3.4.0+ current: " + currentVersion + "</b>)</li>"
+				if self._ultimakerFormatPluginImplementation == None:
+					missingMessage = missingMessage + "<li><a target='_newTab' href='https://plugins.octoprint.org/plugins/UltimakerFormatPackage/'>Cura Thumbnails (" + str(ultimakerRequiredVersion) + "+)</a> (<b>" + self._ultimakerFormatPluginImplementationState + "</b>)</li>"
 
+				if self._prusaSlicerThumbnailsPluginImplementation == None:
+					missingMessage = missingMessage + "<li><a target='_newTab' href='https://plugins.octoprint.org/plugins/prusaslicerthumbnails/'>PrusaSlicer Thumbnails (" + str(pruseSlicerRequiredVersion) + "+)</a> (<b>" + self._prusaSlicerThumbnailsPluginImplementationState + "</b>)</li>"
 
-			if missingMessage != "":
-				missingMessage = "<ul>" + missingMessage + "</ul>"
-				self._sendDataToClient(dict(action="missingPlugin",
-											message=missingMessage))
+				if self._costEstimationPluginImplementation == None:
+					missingMessage = missingMessage + "<li><a target='_newTab' href='https://plugins.octoprint.org/plugins/costestimation/'>CostEstimation (" + str(costPluginRequiredVersion) +"+)</a> (<b>" + self._costEstimationPluginImplementationState + "</b>)</li>"
+					# missingMessage = missingMessage + "<li><a target='_newTab' href='https://plugins.octoprint.org/plugins/costestimation/'>CostEstimation</a> (<b>Wrong Version, expected: 3.4.0+ current: " + currentVersion + "</b>)</li>"
+
+				if missingMessage != "":
+					missingMessage = "<ul>" + missingMessage + "</ul>"
+					self._sendDataToClient(dict(action="missingPlugin",
+												message=missingMessage))
 
 	def _checkForMissingFilamentTracking(self):
 
@@ -247,38 +260,18 @@ class PrintJobHistoryPlugin(
 			self._settings.set([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN], SettingsKeys.KEY_SELECTED_NONE_PLUGIN)
 			self._settings.save()
 
+		notifyUser = self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_NO_NOTIFICATION_FILAMENTTRACKERING_PLUGIN_SELECTION]) == False
 		if ( (self._isSpoolManagerInstalledAndEnabled() == True or self._isFilamentManagerInstalledAndEnabled() == True) and
 			 (self._settings.get([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN]) == SettingsKeys.KEY_SELECTED_NONE_PLUGIN) ):
 				# Plugins installed, but currently 'none' is selected
-				self._logger.error("Filamentracking is disabled, but some plugins are installed!");
-				self._sendMessageToClient("notice", "Filamenttracking is possible!", "Select an tracking plugin in settings", True)
+				self._logger.warn("Filamentracking is disabled, but some plugins are installed!");
+				if (notifyUser):
+					self._sendMessageToClient("notice", "Filamenttracking is possible!", "Select an tracking plugin in settings", True)
 		else:
 			if (self._settings.get([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN]) == SettingsKeys.KEY_SELECTED_NONE_PLUGIN):
-				self._sendMessageToClient("notice", "Filamenttracking not possible!",
-										  "No tracking plugin is installed/enabled", True)
-
-		# # No plugin is installed
-		# if ( (self._isSpoolManagerInstalledAndEnabled == False) and (self._isFilamentManagerInstalledAndEnabled == False) ):
-		# 		# - check if it was installed previously -> inform user that the tracking part is now disabled
-		# 		prevFilamentTrackingPlugin = self._settings.get([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN])
-		# 		if (StringUtils.isNotEmpty(prevFilamentTrackingPlugin)):
-		# 			self._logger.error("Filamentracking was now disabled, because now plugin is installed");
-		# 			messageConfirmData = {
-		# 				"title": "Filamentracking was now disabled!",
-		# 				"message": "No filament tracking plugin is installed/enabled"
-		# 			}
-		# 			# maybe better a queuing thing
-		# 			self._settings.set([SettingsKeys.SETTINGS_KEY_MESSAGE_CONFIRM_DATA], messageConfirmData)
-		#
-		# 		self._settings.set([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN], SettingsKeys.KEY_SELECTED_NONE_PLUGIN)
-		# 		self._settings.save()
-		# else:
-		# 	if (self._settings.get([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN]) == SettingsKeys.KEY_SELECTED_NONE_PLUGIN):
-		# 		# Plugins installed, but currently 'none' is selected
-		# 		self._logger.error("Filamentracking is disabled, but some plugins are installed!");
-		# 		self._sendMessageToClient("notice", "Filamenttracking is possible!", "Select an installed plugin", True)
-		# 		pass
-
+				if (notifyUser):
+					self._sendMessageToClient("notice", "Filamenttracking not possible!",
+											  "No tracking plugin is installed/enabled", True)
 
 	def _isSpoolManagerInstalledAndEnabled(self):
 		return True if self._spoolManagerPluginImplementation != None and self._spoolManagerPluginImplementationState == "enabled" else False
@@ -295,7 +288,10 @@ class PrintJobHistoryPlugin(
 	# [0] == status-string
 	# [1] == implementaiton of the plugin
 	# [2] == version of the plugin, as str like 3.3.0
-	def _getPluginInformation(self, pluginKey):
+	# [3] == requiredVersion of the plugin, as str like 1.3.0
+	def _getPluginInformation(self, pluginInfo):
+		pluginKey = pluginInfo["key"]
+		requiredVersion = pluginInfo["minVersion"]
 
 		status = None
 		implementation = None
@@ -322,7 +318,19 @@ class PrintJobHistoryPlugin(
 		else:
 			status = "missing"
 
-		return [status, implementation, version]
+		# Check requiredVersion, if not compatible --> implementation None
+		if (requiredVersion != None and version != None):
+			canBeUsed = False
+			try:
+				import semantic_version
+				canBeUsed = semantic_version.Version(version) >= semantic_version.Version(requiredVersion)
+			except (ValueError) as error:
+				logging.exception("Something is wrong with the costestimation version numbers")
+
+			if (canBeUsed == False):
+				status = "wrong version"
+				implementation = None
+		return [status, implementation, version, requiredVersion]
 
 	# Grabs all informations for the filament attributes
 	def _createAndAssignFilamentModel(self, printJob, payload):
@@ -875,7 +883,7 @@ class PrintJobHistoryPlugin(
 	#######################################################################################   OP - HOOKs
 	def on_after_startup(self):
 		# check if needed plugins were available
-		self._checkAndLoadThirdPartyPluginInfos()
+		self._checkAndLoadThirdPartyPluginInfos(False) # don't inform the client, because client is maybe not opened
 
 
 	# Listen to all  g-code which where already sent to the printer (thread: comm.sending_thread)
@@ -904,7 +912,7 @@ class PrintJobHistoryPlugin(
 		if Events.CLIENT_OPENED == event:
 
 			# - Check if all needed Plugins are available, if not modale dialog to User
-			self._checkAndLoadThirdPartyPluginInfos(self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_PLUGIN_DEPENDENCY_CHECK]))
+			self._checkAndLoadThirdPartyPluginInfos(True)
 
 			# Send plugin storage information
 			# - Storage
@@ -1021,6 +1029,8 @@ class PrintJobHistoryPlugin(
 		settings[SettingsKeys.SETTINGS_KEY_CAPTURE_PRINTJOBHISTORY_MODE] = SettingsKeys.KEY_CAPTURE_PRINTJOBHISTORY_MODE_SUCCESSFUL
 		# settings[SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN] = SettingsKeys.KEY_SELECTED_SPOOLMANAGER_PLUGIN
 		settings[SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN] = SettingsKeys.KEY_SELECTED_NONE_PLUGIN
+		settings[SettingsKeys.SETTINGS_KEY_NO_NOTIFICATION_FILAMENTTRACKERING_PLUGIN_SELECTION] = False
+
 		settings[SettingsKeys.SETTINGS_KEY_SLICERSETTINGS_KEYVALUE_EXPRESSION] = ";(.*)=(.*)\n;   (.*),(.*)"
 		settings[SettingsKeys.SETTINGS_KEY_SINGLE_PRINTJOB_REPORT_TEMPLATENAME] = SettingsKeys.SETTINGS_DEFAULT_VALUE_SINGLE_PRINTJOB_REPORT_TEMPLATENAME
 
@@ -1058,6 +1068,7 @@ class PrintJobHistoryPlugin(
 
 		## Other stuff
 		settings[SettingsKeys.SETTINGS_KEY_MESSAGE_CONFIRM_DATA] = None
+		settings[SettingsKeys.SETTINGS_KEY_LAST_PLUGIN_DEPENDENCY_CHECK] = None
 
 
 		# ## Storage

@@ -224,6 +224,8 @@ def get_formatted_size(num):
 	Returns:
 	    string: The formatted byte count.
 	"""
+	if num is None:
+		return ""
 
 	for x in ["B","KB","MB","GB"]:
 		if num < 1024.0:

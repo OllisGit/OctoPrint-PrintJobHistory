@@ -3,6 +3,16 @@ from __future__ import absolute_import
 
 class SettingsKeys():
 
+	# All dependent P3rd Party Plugins
+	PLUGIN_PREHEAT = { "key": "preheat", "minVersion": "0.4.0"}
+	PLUGIN_FILAMENT_MANAGER = { "key": "filamentmanager", "minVersion": "1.7.2"}
+	PLUGIN_DISPLAY_LAYER_PROGRESS = { "key": "DisplayLayerProgress", "minVersion": "1.26.0"}
+	PLUGIN_SPOOL_MANAGER = { "key": "SpoolManager", "minVersion": "1.4.2"}
+	PLUGIN_ULTIMAKER_FORMAT_PACKAGE = { "key": "UltimakerFormatPackage", "minVersion": "1.0.0"}
+	PLUGIN_PRUSA_SLICER_THUMNAIL = { "key": "prusaslicerthumbnails", "minVersion": "1.0.0"}
+	PLUGIN_COST_ESTIMATION = { "key": "costestimation", "minVersion": "3.4.0"}
+	PLUGIN_PRINT_HISTORY = { "key": "printhistory", "minVersion": None}
+
 	## General
 	SETTINGS_KEY_PLUGIN_DEPENDENCY_CHECK = "pluginCheckActivated"
 	SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT = "showPrintJobDialogAfterPrint"
@@ -22,6 +32,8 @@ class SettingsKeys():
 	KEY_SELECTED_SPOOLMANAGER_PLUGIN = "SpoolManager Plugin"	# visible inn plugin-settings
 	KEY_SELECTED_FILAMENTMANAGER_PLUGIN = "FilamentManager Plugin"	# visible inn plugin-settings
 	KEY_SELECTED_NONE_PLUGIN = "none"
+	SETTINGS_KEY_NO_NOTIFICATION_FILAMENTTRACKERING_PLUGIN_SELECTION = "noNotificationTrackingPluginSelection"
+
 
 	SETTINGS_KEY_CURRENCY_SYMBOL = "currencySymbol"
 	SETTINGS_KEY_CURRENCY_FORMAT = "currencyFormat"
@@ -58,3 +70,4 @@ class SettingsKeys():
 
 	# Other stuff
 	SETTINGS_KEY_MESSAGE_CONFIRM_DATA = "messageConfirmData"
+	SETTINGS_KEY_LAST_PLUGIN_DEPENDENCY_CHECK = "lastPluginDependencyCheck"
