@@ -26,3 +26,5 @@ class FilamentModel(BaseModel):
 	usedWeight = FloatField(null=True)
 	usedCost = FloatField(null=True)
 	toolId = CharField(null=True) # since V4
+
+# TODO colorName, density, diameter, spoolWeight -> rename weight

@@ -14,7 +14,7 @@ plugin_package = "octoprint_PrintJobHistory"
 plugin_name = "Print Job History"
 
 # The plugin's version. Can be overwritten within OctoPrint's internal data via __plugin_version__ in the plugin module
-plugin_version = "1.15.2"
+plugin_version = "1.16.0"
 
 # The plugin's description. Can be overwritten within OctoPrint's internal data via __plugin_description__ in the plugin
 # module
@@ -33,8 +33,10 @@ plugin_url = "https://github.com/OllisGit/OctoPrint-PrintJobHistory"
 plugin_license = "AGPLv3"
 
 # Any additional requirements besides OctoPrint should be listed here
+# since 7.0.0 no Python 2.7 Support, see https://github.com/python-pillow/Pillow/blob/master/CHANGES.rst
+#  >=6.2.0<7.0.0
 plugin_requires = [
-	"pillow >=6.2.0<7.0.0", # since 7.0.0 no Python 2.7 Support, see https://github.com/python-pillow/Pillow/blob/master/CHANGES.rst
+	"pillow",
 	"peewee"
 ]
 # "psycopg2-binary" # postgresdriver

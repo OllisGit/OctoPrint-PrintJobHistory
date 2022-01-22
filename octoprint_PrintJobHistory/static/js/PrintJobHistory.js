@@ -361,7 +361,8 @@ $(function() {
         self.loginStateViewModel = parameters[0];
         self.loginState = parameters[0];
         self.settingsViewModel = parameters[1];
-//        self.spoolManagerViewModel = parameters[2];
+        self.accessViewModel = parameters[2];
+
         self.pluginSettings = null;
 
         self.apiClient = new PrintJobHistoryAPIClient(PLUGIN_ID, BASEURL);
@@ -448,9 +449,6 @@ $(function() {
         self.busyIndicatorActive = ko.observable(false);
 
         self.downloadDatabaseUrl = ko.observable();
-        self.takeSnapshotAfterPrintDisabled = ko.observable(false);
-        self.takeSnapshotOnGCodeCommndDisabled = ko.observable(false);
-        self.takeSnapshotGCodeCommndPatternDisabled = ko.observable(false);
         self.cameraSnapShotURLAvailable = ko.observable(false);
 
         isSnapshotUrlPresent = function(snapshotUrl){
@@ -466,20 +464,26 @@ $(function() {
                     self.cameraSnapShotURLAvailable(isSnapshotUrlPresent(newSnapShotUrl));
                 });
             }
-
             // Checkbox - stuff
             self.pluginSettings.takeSnapshotAfterPrint.subscribe(function(newValue){
-
-                    if (newValue == true){
+                  if (newValue == true){
+                        self.pluginSettings.takeSnapshotOnM118Commnd(false);
                         self.pluginSettings.takeSnapshotOnGCodeCommnd(false);
                     }
             });
             self.pluginSettings.takeSnapshotOnGCodeCommnd.subscribe(function(newValue){
-
                     if (newValue == true){
+                        self.pluginSettings.takeSnapshotOnM118Commnd(false);
                         self.pluginSettings.takeSnapshotAfterPrint(false);
                     }
             });
+            self.pluginSettings.takeSnapshotOnM118Commnd.subscribe(function(newValue){
+                    if (newValue == true){
+                        self.pluginSettings.takeSnapshotOnGCodeCommnd(false);
+                        self.pluginSettings.takeSnapshotAfterPrint(false);
+                    }
+            });
+
         }
 
         self.deleteDatabaseAction = function() {
@@ -600,6 +604,10 @@ $(function() {
             self.singlePrintJobReportTemplateUploadData.submit();
         };
 
+        // create sample report
+        self.reportSamplePrintJobItem = function() {
+            window.open(self.apiClient.getSingleReportUrl("sample"), '_blank').focus();
+        }
 
 
         ///////////////////////////////////////////////////// END: SETTINGS
@@ -1101,7 +1109,7 @@ $(function() {
         dependencies: [
             "loginStateViewModel",
             "settingsViewModel",
-//            "spoolManagerViewModel"
+            "accessViewModel"
         ],
         // Elements to bind to, e.g. #settings_plugin_PrintJobHistory, #tab_plugin_PrintJobHistory, ...
         elements: [

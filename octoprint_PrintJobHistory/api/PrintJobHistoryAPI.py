@@ -193,7 +193,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		p1.addTemperatureModel(t2)
 
 		f1 = FilamentModel()
-		f1.toolId = "total"
+		f1.toolId = "tool0"
 		f1.vendor = "Ollis-Factory"
 		f1.spoolName = "My best spool"
 		f1.material = "PLA"
@@ -204,6 +204,19 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		f1.usedWeight = 321.0
 		f1.usedCost = 1.34
 		p1.addFilamentModel(f1)
+
+		f2 = FilamentModel()
+		f2.toolId = "total"
+		f2.vendor = "Ollis-Factory"
+		f2.spoolName = "My best spool"
+		f2.material = "PLA"
+		f2.diameter = 1.75
+		f2.density = 1.24
+		f2.usedLength = 1345.0
+		f2.calculatedLength = 1456.0
+		f2.usedWeight = 321.0
+		f2.usedCost = 1.34
+		p1.addFilamentModel(f2)
 
 		c1 = CostModel()
 		c1.filamentCost = 3.123
@@ -703,7 +716,11 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 	@octoprint.plugin.BlueprintPlugin.route("/singlePrintJobReport/<databaseId>", methods=["GET"])
 	def get_singlePrintJobReport(self, databaseId):
 
-		printJobModel = self._databaseManager.loadPrintJob(databaseId);
+		if (databaseId == "sample"):
+			printJobModel = self._createSamplePrintModel()
+		else:
+			printJobModel = self._databaseManager.loadPrintJob(databaseId)
+
 		if (printJobModel == None):
 			# PrintJob was deleted
 			message = "PrintJob not in database anymore! PrintReport not possible."

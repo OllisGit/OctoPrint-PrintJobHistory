@@ -29,8 +29,7 @@ from .api import TransformPrintJob2JSON
 from .DatabaseManager import DatabaseManager
 from .CameraManager import CameraManager
 
-from octoprint_PrintJobHistory.common import StringUtils
-
+from octoprint_PrintJobHistory.common import StringUtils, DateTimeUtils
 
 class PrintJobHistoryPlugin(
 	PrintJobHistoryAPI,
@@ -216,7 +215,7 @@ class PrintJobHistoryPlugin(
 
 				# if at least one filemant tracker is installed, then don't inform the user about the missing other plugin
 				if (self._spoolManagerPluginImplementation == None and self._filamentManagerPluginImplementation == None):
-					missingMessage = missingMessage + "<li><a target='_newTab' href='https://plugins.octoprint.org/plugins/SpoolManager/'>SpoolManager (" + str(spoolManagerRequiredVersion) + "+)</a>(<b>" + self._spoolManagerPluginImplementationState + "</b>)<br/><b>or</b></li>"
+					missingMessage = missingMessage + "<li><a target='_newTab' href='https://plugins.octoprint.org/plugins/SpoolManager/'>SpoolManager (" + str(spoolManagerRequiredVersion) + "+)</a> (<b>" + self._spoolManagerPluginImplementationState + "</b>)<br/><b>or</b></li>"
 					missingMessage = missingMessage + "<li><a target='_newTab' href='https://plugins.octoprint.org/plugins/filamentmanager/'>FilamentManager (" + str(filamentManagerRequiredVersion) + "+)</a> (<b>" + self._filamentManagerPluginImplementationState + "</b>)</li>"
 
 				if self._displayLayerProgressPluginImplementation == None:
@@ -484,7 +483,7 @@ class PrintJobHistoryPlugin(
 			if "filament" in fileData["analysis"]:
 				filamentAnalyseDict = fileData["analysis"]["filament"]
 		if (filamentAnalyseDict == None):
-			self._logger.info("There is no calculated filament data in meta-file?")
+			self._logger.info("There is no calculated filament data in meta-file")
 		return filamentAnalyseDict
 
 	# read the selected tools
@@ -497,6 +496,7 @@ class PrintJobHistoryPlugin(
 		# get some data from the selected filament tracker plugin
 		filamentTrackerPlugin = self._settings.get([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN])
 		if (SettingsKeys.KEY_SELECTED_SPOOLMANAGER_PLUGIN == filamentTrackerPlugin):
+			self._logger.info("Try reading filament from SpoolManager...")
 			# get data from SPOOLMANAGER
 			selectedSpoolInformations = self._spoolManagerPluginImplementation.api_getSelectedSpoolInformations()
 			if (selectedSpoolInformations != None):
@@ -524,8 +524,11 @@ class PrintJobHistoryPlugin(
 							"spoolCost": spoolCost,
 							"weight": weight
 						}
+						self._logger.info(
+							" reading for '" + toolId + "',  Spool: '" + spoolName + "', Material: '" + material + "', Vendor: '" + vendor + "'")
 			pass
 		elif (SettingsKeys.KEY_SELECTED_FILAMENTMANAGER_PLUGIN == filamentTrackerPlugin):
+			self._logger.info("Try reading filament from FilamentManager...")
 			# myFilamentOdometer, since FilamentManager V1.7.2
 			selectedSpools = self._filamentManagerPluginImplementation.filamentManager.get_all_selections(self._filamentManagerPluginImplementation.client_id)
 			if selectedSpools != None and len(selectedSpools) > 0:
@@ -554,7 +557,7 @@ class PrintJobHistoryPlugin(
 						"spoolCost": spoolCost,
 						"weight": weight
 					}
-
+					self._logger.info(" reading for '"+toolId+"',  Spool: '"+spoolName+"', Material: '"+material+"', Vendor: '"+vendor+"'")
 					pass
 			pass
 		else:
@@ -690,6 +693,12 @@ class PrintJobHistoryPlugin(
 		#             }
 		if (self._isCostEstimationInstalledAndEnabled()):
 			costData = self._costEstimationPluginImplementation.api_getCurrentCostsValues()
+
+			# TODO own cost calculation
+			# printTimeInSeconds = DateTimeUtils.calcDurationInSeconds(printJobModel.printEndDateTime, printJobModel.printStartDateTime)
+			# allFilamentModels = printJobModel.getFilamentModels(withoutTotal=True)
+			# costData = self._calculateCostData(allFilamentModels , printTimeInSeconds)
+
 			self._logger.info("Adding costs from CostEstimation-Plugin: "+ str(costData))
 			totalCosts = costData["totalCosts"]	# float = 11.96
 			filamentCost = costData["filamentCost"] # float = 0.06002333...
@@ -714,6 +723,115 @@ class PrintJobHistoryPlugin(
 			self._logger.info("Costs could not captured, because CostEstimation-Plugin not installed/enabled")
 
 		pass
+
+
+	def _calculateCostData(self, allFilamentModels, printTimeInSeconds):
+
+		#             var costData = {
+		#                 filename: filename,
+		#                 filepath: filepath,
+		#                 costResult: costResult,
+		#                 filamentCost: filamentCost,
+		#                 electricityCost: electricityCost,
+		#                 printerCost: printerCost,
+		#                 otherCostLabel: otherCostLabel,
+		#                 otherCost: otherCost,
+		#             }
+		printTimeInHours = printTimeInSeconds / 3600
+
+		# read cost-settings froom Cost-Plugin
+		currencySymbol = self._costEstimationPluginImplementation._settings.get(["currency"]) # Euro
+		currencyFormat = self._costEstimationPluginImplementation._settings.get(["currencyFormat"]) # Euro
+
+		# calc: electricityCost
+		electricityCost = None
+		powerConsumption = self._costEstimationPluginImplementation._settings.get(["powerConsumption"]) # kW
+		costOfElectricity = self._costEstimationPluginImplementation._settings.get(["costOfElectricity"]) # Euro/kWh
+
+		powerConsumption = StringUtils.transformToFloatOrNone(powerConsumption)
+		costOfElectricity = StringUtils.transformToFloatOrNone(costOfElectricity)
+		if (powerConsumption != None or costOfElectricity != None):
+			self._logger.error(
+				"Could not calculate electricityCost, because powerConsumption or costOfElectricity is none")
+		else:
+			costPerHour = powerConsumption * costOfElectricity
+			electricityCost = costPerHour * printTimeInHours
+
+
+		# calc: printerCost
+		printerCost = None
+		priceOfPrinter = self._costEstimationPluginImplementation._settings.get(["priceOfPrinter"]) # Euro
+		lifespanOfPrinter = self._costEstimationPluginImplementation._settings.get(["lifespanOfPrinter"]) # h
+		maintenanceCosts = self._costEstimationPluginImplementation._settings.get(["maintenanceCosts"]) # Euro/h
+
+		priceOfPrinter = StringUtils.transformToFloatOrNone(priceOfPrinter)
+		lifespanOfPrinter = StringUtils.transformToFloatOrNone(lifespanOfPrinter)
+		maintenancePerHour = StringUtils.transformToFloatOrNone(maintenancePerHour)
+
+		if (purchasePrice is None or lifespanOfPrinter is None or maintenanceCosts is None):
+			self._logger.error(
+				"Could not calculate electricityCost, because powerConsumption or costOfElectricity is none")
+		else:
+			# 	value_when_true if condition else value_when_false
+			depreciationPerHour = purchasePrice / lifespan if lifespan > 0 else 0
+			printerCost = (depreciationPerHour + maintenancePerHour) * printTimeInHours
+
+		# calc: filamentCost
+		# - do we have measured filament values or should we use default values
+		calcWithDefaultValues = None
+		costOfFilament = None
+		weightOfFilament = None
+		densityOfFilament = None
+		diameterOfFilament = None
+		if (allFilamentModels == None):
+			#  filament default values
+			self._logger.error("No measured/needed filament present. Cost calculation not possible")
+		else:
+			self._logger.info("Trying to read default filament values, for 'fallback-calculation'")
+			costOfFilament = self._costEstimationPluginImplementation._settings.get(["costOfFilament"])  # Euro
+			weightOfFilament = self._costEstimationPluginImplementation._settings.get(["weightOfFilament"])  # g
+			densityOfFilament = self._costEstimationPluginImplementation._settings.get(["densityOfFilament"])  # g/cm3
+			diameterOfFilament = self._costEstimationPluginImplementation._settings.get(["diameterOfFilament"])  # mm
+
+			costOfFilament = StringUtils.transformToFloatOrNone(costOfFilament)
+			weightOfFilament = StringUtils.transformToFloatOrNone(weightOfFilament)
+			densityOfFilament = StringUtils.transformToFloatOrNone(densityOfFilament)
+			diameterOfFilament = StringUtils.transformToFloatOrNone(diameterOfFilament)
+			if (costOfFilament is None or weightOfFilament is None or densityOfFilament is None or diameterOfFilament is None):
+				self._logger.warn(
+					"Fallback calculation for filamentCost not possible, because Default costOfFilament or weightOfFilament or densityOfFilament is diameterOfFilament none")
+				calcWithDefaultValues = False
+			else:
+				calcWithDefaultValues = True
+
+			# if allFilaments != None:
+			# 	allFilamentDict = {}
+			for filamentModel in allFilamentModels:
+
+				usedLength = filamentModel.usedLength
+				if (usedLength == None):
+					self._logger.error("No used length for "+str(filamentModel.toolId)+" captured. Cost calculation not possible")
+				else:
+					# filametCost calculation = costPerWeight * filamentVolume * densityOfFilament
+
+					diameterOfFilament = filamentModel.diameter
+					densityOfFilament = filamentModel.density
+					# weightOfFilament .... @@@@ TODO continute: blocked, because we need the spoolCost and the spoolWeight to calculate it
+					pass
+				pass
+
+			pass # do the calculation
+
+
+		costData = dict(
+						filamentCost=filamentCost,
+						electricityCost=electricityCost,
+			 			printerCost=printerCost,
+		)
+		return costData
+
+
+
 
 
 	#### print job finished
@@ -809,6 +927,7 @@ class PrintJobHistoryPlugin(
 
 		takeSnapshotAfterPrint = self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT])
 		takeSnapshotOnGCode = self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_ON_GCODE_COMMAND])
+		takeSnapshotOnM118Code = self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_ON_M118_COMMAND])
 		takeThumbnailAfterPrint = self._settings.get_boolean(
 			[SettingsKeys.SETTINGS_KEY_TAKE_PLUGIN_THUMBNAIL_AFTER_PRINT])
 
@@ -820,23 +939,25 @@ class PrintJobHistoryPlugin(
 		isThumbnailPresent = self._isThumbnailPresent(payload)
 
 		# - No Image
-		if (takeSnapshotAfterPrint == False and takeSnapshotOnGCode == False and takeThumbnailAfterPrint == False):
+		if (takeSnapshotAfterPrint == False and takeSnapshotOnGCode == False and takeSnapshotOnM118Code == False and takeThumbnailAfterPrint == False):
 			self._logger.info("no image should be taken")
 			return
 		# - Only Thumbnail
-		if (takeThumbnailAfterPrint == True and takeSnapshotAfterPrint == False and takeSnapshotOnGCode == False):
+		if (takeThumbnailAfterPrint == True and takeSnapshotAfterPrint == False and takeSnapshotOnGCode == False and takeSnapshotOnM118Code == False):
 			# Try to take the thumbnail
+			self._logger.info("try to take thumbnail, because afterprint/gcode not selected")
 			self._takeThumbnailImage(payload)
 			return
 		if (takeThumbnailAfterPrint == True and isThumbnailPresent == True and preferedThumbnail == True):
+			self._logger.info("try to take thumbnail, because thumbnail is present and prefered")
 			self._takeThumbnailImage(payload)
 			return
 		# - Only Camera
-		if ((takeSnapshotAfterPrint == True or takeSnapshotOnGCode == True) and takeThumbnailAfterPrint == False):
+		if ((takeSnapshotAfterPrint == True) and takeThumbnailAfterPrint == False):
 			if (isCameraPresent == False):
 				self._logger.info("Camera Snapshot is selected but no camera url is available")
 				return
-			self._logger.info("Try capturing snapshot asyc")
+			self._logger.info("try capturing snapshot asyc from camera, because thumbnail not selected")
 			self._cameraManager.takeSnapshotAsync(
 				CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime),
 				self._sendErrorMessageToClient,
@@ -885,6 +1006,16 @@ class PrintJobHistoryPlugin(
 		# check if needed plugins were available
 		self._checkAndLoadThirdPartyPluginInfos(False) # don't inform the client, because client is maybe not opened
 
+		helpers = self._plugin_manager.get_helpers("multicam")
+		if helpers and "get_webcam_profiles" in helpers:
+			get_webcam_profiles = helpers["get_webcam_profiles"]
+			
+			self.camProfiles = get_webcam_profiles()
+
+		pass
+
+
+
 
 	# Listen to all  g-code which where already sent to the printer (thread: comm.sending_thread)
 	def on_sentGCodeHook(self, comm_instance, phase, cmd, cmd_type, gcode, *args, **kwargs):
@@ -902,7 +1033,52 @@ class PrintJobHistoryPlugin(
 				pass
 		pass
 
+	# Receiving commands from the printer
+	# Terminal: !!DEBUG:send //action:pjhTakeSnapshot
+	def on_receivedActionHook(self, comm, line, action, *args, **kwargs):
+		if (action == "pjhTakeSnapshot"):
+			self._logger.info("Received \"pjhTakeSnapshot\" action from printer")
 
+			if (self._settings.get_boolean(
+				[SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_ON_M118_COMMAND])):
+				self._logger.info("M118 command enabled for taking snapshot. Try to capture image!")
+				if (self._currentPrintJobModel != None and self._currentPrintJobModel.printStartDateTime != None):
+
+					if (self._cameraManager.isCamaraSnahotURLPresent() == True):
+						# Try to take the snapshot
+						self._cameraManager.takeSnapshotAsync(
+							CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime),
+							self._sendErrorMessageToClient)
+					else:
+						self._logger.error("Camera Snapshot is selected, but no camera url is available")
+				else:
+					self._logger.error("M118 command detected, but there is no printjob started!")
+			else:
+				self._logger.info("Take Snapshot via M118 command is not activated in plugin settings")
+
+		return
+
+	def additional_permissions_hook(self):
+		from octoprint.access import ADMIN_GROUP
+		from octoprint.access import USER_GROUP
+		return [
+			{
+				"key": "DELETE_JOB",
+				"name": "Delete print jobs",
+				"description": "Allows to delete print jobs from history",
+				"default_groups": [ADMIN_GROUP, USER_GROUP],
+				"roles": ["print_operator"],
+			},
+			{
+				"key": "EDIT_JOB",
+				"name": "Edit print jobs",
+				"description": "Allows to edit print jobs",
+				"default_groups": [ADMIN_GROUP, USER_GROUP],
+				"roles": ["print_operator"],
+			},
+		]
+
+	# Main Event-Handler
 	def on_event(self, event, payload):
 
 		# print("****************************")
@@ -1020,7 +1196,9 @@ class PrintJobHistoryPlugin(
 
 	##~~ SettingsPlugin mixin
 	def get_settings_defaults(self):
-		settings = dict()
+		settings = dict(
+			installed_version=self._plugin_version
+		)
 		## General
 		settings[SettingsKeys.SETTINGS_KEY_PLUGIN_DEPENDENCY_CHECK] = True
 		settings[SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT] = True
@@ -1041,6 +1219,7 @@ class PrintJobHistoryPlugin(
 		## Camera
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT] = True
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_PLUGIN_THUMBNAIL_AFTER_PRINT] = True
+		settings[SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_ON_M118_COMMAND] = False
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_ON_GCODE_COMMAND] = False
 		settings[SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_GCODE_COMMAND_PATTERN] = "M117 Snap"
 		settings[SettingsKeys.SETTINGS_KEY_PREFERED_IMAGE_SOURCE] = SettingsKeys.KEY_PREFERED_IMAGE_SOURCE_THUMBNAIL
@@ -1136,12 +1315,31 @@ class PrintJobHistoryPlugin(
 
 				# version check: github repository
 				type="github_release",
+
 				user="OllisGit",
 				repo="OctoPrint-PrintJobHistory",
 				current=self._plugin_version,
 
+				stable_branch=dict(
+					name="Only Release",
+					branch="master",
+					comittish=["master"]
+				),
+				prerelease_branches=[
+					dict(
+						name="Release & Candidate",
+						branch="pre-release",
+						comittish=["pre-release", "master"],
+					),
+					dict(
+						name="Release & Candidate & in development",
+						branch="development",
+						comittish=["development", "pre-release", "master"],
+					)
+				],
+
 				# update method: pip
-				pip="https://github.com/OllisGit/OctoPrint-PrintJobHistory/releases/latest/download/master.zip"
+				pip="https://github.com/OllisGit/OctoPrint-PrintJobHistory/releases/download/{target_version}/master.zip"
 			)
 		)
 
@@ -1180,6 +1378,8 @@ def __plugin_load__():
 		# "octoprint.server.http.routes": __plugin_implementation__.route_hook,
 		# "octoprint.comm.protocol.gcode.sent": __plugin_implementation__.on_sentGCodeHook,
 		"octoprint.comm.protocol.gcode.sending": __plugin_implementation__.on_sentGCodeHook,
+		"octoprint.comm.protocol.action": __plugin_implementation__.on_receivedActionHook,
+		"octoprint.access.permissions": __plugin_implementation__.additional_permissions_hook,
 		"octoprint.server.http.bodysize": __plugin_implementation__.bodysize_hook,
 		"octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
 	}

@@ -395,23 +395,25 @@
                             <div class="">
 
                                 <div class="row-fluid text-center">
-                                    <span class="span5 text-left">
-                                        <span data-bind="visible: !printJobEditDialog.webCamEnabled()">WebCam not enabled!</span>
-                                        <button id="printJobHistory-captureButton" data-bind="visible: printJobEditDialog.webCamEnabled, click: printJobEditDialog.captureImage" class="btn btn-success">
-                                            <i class="fa fa-spinner fa-spin" id="printJobHistory-captureInProgress" style="display: none;"></i>
-                                            <i class="fa fa-camera"></i>
-                                            <span id="printJobHistory-captureButtonText">Capture</span></button>
-<!-- DEBUGGING OUTPUT  <span data-bind="text: printJobEditDialog.imageDisplayMode"></span>-->
-                                            <button id="printJobHistory-cancelCaptureButton"
-                                                    data-bind="click: printJobEditDialog.cancelCaptureImage,
-                                                                visible: printJobEditDialog.imageDisplayMode()=='videoStream'
-                                                                        || printJobEditDialog.imageDisplayMode()=='videoStreamLoading'
-                                                                        || printJobEditDialog.imageDisplayMode()=='videoStreamError'
-                                                                        || printJobEditDialog.imageDisplayMode()=='videoStreamWithShutter'"
-                                                    class="btn">Cancel</button>
-                                    </span>
-                                    <span class="span6 text-right">
-                                        <button type="button" class="btn btn-danger" data-bind="click: printJobEditDialog.deleteImage" ><i class="fa fa-trash"></i>Delete Image</button>
+                                    <span data-bind="visible: loginStateViewModel.hasPermission(accessViewModel.permissions.PLUGIN_PRINTJOBHISTORY_EDIT_JOB)">
+                                        <span class="span5 text-left">
+                                            <span data-bind="visible: !printJobEditDialog.webCamEnabled()">WebCam not enabled!</span>
+                                            <button id="printJobHistory-captureButton" data-bind="visible: printJobEditDialog.webCamEnabled, click: printJobEditDialog.captureImage" class="btn btn-success">
+                                                <i class="fa fa-spinner fa-spin" id="printJobHistory-captureInProgress" style="display: none;"></i>
+                                                <i class="fa fa-camera"></i>
+                                                <span id="printJobHistory-captureButtonText">Capture</span></button>
+    <!-- DEBUGGING OUTPUT  <span data-bind="text: printJobEditDialog.imageDisplayMode"></span>-->
+                                                <button id="printJobHistory-cancelCaptureButton"
+                                                        data-bind="click: printJobEditDialog.cancelCaptureImage,
+                                                                    visible: printJobEditDialog.imageDisplayMode()=='videoStream'
+                                                                            || printJobEditDialog.imageDisplayMode()=='videoStreamLoading'
+                                                                            || printJobEditDialog.imageDisplayMode()=='videoStreamError'
+                                                                            || printJobEditDialog.imageDisplayMode()=='videoStreamWithShutter'"
+                                                        class="btn">Cancel</button>
+                                        </span>
+                                        <span class="span6 text-right">
+                                            <button type="button" class="btn btn-danger" data-bind="click: printJobEditDialog.deleteImage" ><i class="fa fa-trash"></i>Delete Image</button>
+                                        </span>
                                     </span>
                                 </div>
 
@@ -466,7 +468,7 @@
                                     </div>
                                 </div>
 
-                                <div class="row ">
+                                <div class="row" data-bind="visible: loginStateViewModel.hasPermission(accessViewModel.permissions.PLUGIN_PRINTJOBHISTORY_EDIT_JOB)">
                                     <div class="span6 text-center">
                                         <span class="input-prepend">
                                             <span class="btn fileinput-button">
@@ -496,8 +498,10 @@
             <div class="control-group">
                 <div class="controls row-fluid">
                     <span class="span6" style="text-align:left">
-                        <button type="button" class="btn btn-danger" data-bind="visible:printJobForEditing().databaseId,
-                                                                                click: printJobEditDialog.deletePrintJobItem" >Delete</button>
+                        <span data-bind="visible: loginStateViewModel.hasPermission(accessViewModel.permissions.PLUGIN_PRINTJOBHISTORY_DELETE_JOB)">
+                            <button type="button" class="btn btn-danger" data-bind="visible:printJobForEditing().databaseId,
+                                                                                    click: printJobEditDialog.deletePrintJobItem" >Delete</button>
+                        </span>
 
                         <button type="button" class="btn btn-inverse"  data-bind="
                                                                                   visible:printJobForEditing().databaseId,
@@ -513,7 +517,10 @@
                     </span>
                     <span class="span6 text-right">
                         <button class="btn " data-bind="click: printJobEditDialog.abortPrintJobItem" style="text-align:right">Close</button>
-                        <button class="btn btn-primary" data-bind="click: printJobEditDialog.savePrintJobItem" style="text-align:right">Save</button>
+
+                        <span data-bind="visible: loginStateViewModel.hasPermission(accessViewModel.permissions.PLUGIN_PRINTJOBHISTORY_EDIT_JOB)">
+                            <button class="btn btn-primary" data-bind="click: printJobEditDialog.savePrintJobItem" style="text-align:right">Save</button>
+                        </span>
                     </span>
                 </div>
             </div>

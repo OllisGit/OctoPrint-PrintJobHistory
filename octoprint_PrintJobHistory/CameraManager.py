@@ -251,7 +251,7 @@ class CameraManager(object):
 			# Convert png to jpg and save in printjobhistory storage
 			if (storeImage):
 				self._logger.info("Try converting thumbnail '" + thumbnailLocation + "' to '" + snapshotFilename + "'")
-				im = Image.open(thumbnailLocation)
+				im = Image.open(thumbnailLocation).convert("RGBA")
 				# fill_color = (120, 8, 220)
 				# bg = Image.new("RGB", im.size, fill_color) see https://github.com/OllisGit/OctoPrint-PrintJobHistory/issues/160
 				bg = Image.new("RGB", im.size, (255, 255, 255))

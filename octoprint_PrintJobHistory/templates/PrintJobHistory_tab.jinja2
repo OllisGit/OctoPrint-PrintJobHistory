@@ -8,7 +8,7 @@
                 <i class='fa fa-spinner fa-spin' ></i>
             </div>
 
-            <div >
+            <div data-bind="visible: loginStateViewModel.hasPermission(accessViewModel.permissions.PLUGIN_PRINTJOBHISTORY_EDIT_JOB)">
 <!--                <button title="Add new Printjob" class="btn" data-bind="click: addNewPrintJobItem"><i class="fa fa-plus"></i> Add Printjob</button>-->
                 <a href="#" data-bind="click: addNewPrintJobItem" title="Force refresh" ><span class="fa fa-plus"></span> Add Printjob</a>
             </div>
@@ -24,7 +24,7 @@
             <div>
                 <a href="#" data-bind="click:compareSelectedPrintJobs"> <i class="icon-columns"></i> Compare selected (<span data-bind="text: printJobHistoryTableHelper.selectedTableItems().length">100</span>)</a>
             </div>
-            <div>
+            <div data-bind="visible: loginStateViewModel.hasPermission(accessViewModel.permissions.PLUGIN_PRINTJOBHISTORY_DELETE_JOB)">
                 <a href="#" data-bind="click:deleteSelectedPrintJobs"> <i class="icon-trash"></i> Delete selected (<span data-bind="text: printJobHistoryTableHelper.selectedTableItems().length">100</span>)</a>
             </div>
             <div>Pagesize:

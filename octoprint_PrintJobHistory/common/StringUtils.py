@@ -198,6 +198,19 @@ def isEmpty(value):
 def isNotEmpty(value):
 	return isEmpty(value) == False
 
+
+def transformToFloatOrNone(floatValue):
+	if (floatValue != None):
+		if (isNotEmpty(floatValue)):
+			try:
+				floatValue = float(floatValue)
+			except Exception as e:
+				floatValue = None
+		else:
+			floatValue = None
+	return floatValue
+	
+	
 def transformToIntOrNone(intValue):
 	if (intValue != None):
 		if (isNotEmpty(intValue)):

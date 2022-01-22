@@ -20,7 +20,7 @@ from peewee import *
 
 
 FORCE_CREATE_TABLES = False
-SQL_LOGGING = True
+SQL_LOGGING = False
 
 CURRENT_DATABASE_SCHEME_VERSION = 7
 

@@ -1,6 +1,6 @@
 
 <form id="settings_printJobHistory" class="form-horizontal" >
-
+    <h3>Print Job History  <small>{{ _('Version') }}: <span data-bind="text: pluginSettings.installed_version"></span></small></h3>
 
     <div class="tabbable"> <!-- Only required for left/right tabs -->
         <ul class="nav nav-tabs">
@@ -116,14 +116,15 @@
                 <div class="control-group" data-bind="visible: cameraSnapShotURLAvailable">
                     <div class="controls">
                         <label class="checkbox">
-                            <input type="checkbox" data-bind="checked: pluginSettings.takeSnapshotAfterPrint,
-                                                              disable: takeSnapshotAfterPrintDisabled" > Take camera snapshot after print
+                            <input type="checkbox" name="takeSnapshotGroup" data-bind="checked: pluginSettings.takeSnapshotAfterPrint" > Take camera snapshot after print
                         </label>
                         <label class="checkbox">
-                            <input type="checkbox" data-bind="checked: pluginSettings.takeSnapshotOnGCodeCommnd,
-                                                              disable: takeSnapshotOnGCodeCommndDisabled" > Take camera snapshot if following gcode was sent
-                            <input type="text" data-bind="value: pluginSettings.takeSnapshotGCodeCommndPattern,
-                                                               disable: takeSnapshotGCodeCommndPatternDisabled" >
+                            <input type="checkbox" name="takeSnapshotGroup" data-bind="checked: pluginSettings.takeSnapshotOnM118Commnd" > Take camera snapshot if M118 command was sent from the printer. See example* below
+                        </label>
+
+                        <label class="checkbox">
+                            <input type="checkbox" name="takeSnapshotGroup" data-bind="checked: pluginSettings.takeSnapshotOnGCodeCommnd" > <b>[DEPRECATED] will be removed in one of the next release</b><br/>Take camera snapshot if following gcode was sent
+                            <input type="text" data-bind="value: pluginSettings.takeSnapshotGCodeCommndPattern" >
                         </label>
                         <div class="help-inline">
                             You don't need to enter the command exactly, the plugin  checks if the gcode starts with the entered text.
@@ -138,16 +139,6 @@
                         </div>
                     </div>
                 </div>
-
-<!--                <div class="control-group">-->
-<!--                    <div class="controls">-->
-<!--                        <label class="checkbox">-->
-<!--                            <input type="checkbox" data-bind="checked: pluginSettings.takeSnapshotAfterPrint,-->
-<!--                                                              disable: pluginSettings.takeSnapshotOnGCodeCommnd" > Take camera snapshot after print-->
-<!--                        </label>-->
-<!--                        <span class="help-inline">Hint: if enabled, the thumbnail image from the gcode is not stored in the history!</span>-->
-<!--                    </div>-->
-<!--                </div>-->
                 <div class="control-group">
                     <div class="controls">
                         <label class="checkbox">
@@ -162,18 +153,6 @@
                         </div>
                     </div>
                 </div>
-<!--                <div class="control-group">-->
-<!--                    <div class="controls">-->
-<!--                        <label class="checkbox">-->
-<!--                            <input type="checkbox" data-bind="checked: pluginSettings.takeSnapshotOnGCodeCommnd" > Take camera snapshot if following gcode was sent-->
-<!--                            <div><input type="text" data-bind="value: pluginSettings.takeSnapshotGCodeCommndPattern" ></div>-->
-<!--                        </label>-->
-<!--                        <div class="help-inline">-->
-<!--                            You don't need to enter the command exactly, the plugin  checks if the gcode starts with the entered text.-->
-<!--                            <div>E.g. Text: <code>M117 Snap</code>. Sent gcode was: <code>M117 Snapshot</code>. Result: snapshot is taken</div>-->
-<!--                        </div>-->
-<!--                    </div>-->
-<!--                </div>-->
                 <div class="control-group">
                     <div class="controls">
                         <label>
@@ -185,6 +164,28 @@
                         </label>
                     </div>
                 </div>
+
+                <div class="control-group">
+                    <div class="controls">
+                        <label>
+                            <b>*Example taking Snapshot via M118 gcode</b>
+<textarea disabled rows="8" cols="60" style="font-family: Courier;min-width: 96%" >
+M400 ;Finish moves
+G4 P1000 ;Wait for no vibrations
+M300 S440 P100 ;Playing a beep
+
+M118 //action:pjhTakeSnapshot
+
+G4 P60000 ;Waiting for Camera taken the Snapshot
+M300 S440 P100 ;Playing a beep
+</textarea>
+
+                        </label>
+                    </div>
+                </div>
+
+
+
             </div>
             <!-- TEMPERATURE - TAB -->
             <div class="tab-pane" id="tab-pjh-Temperature">
@@ -240,6 +241,15 @@
                         <button class="btn btn-primary" data-bind="disable: (singlePrintJobReportTemplateInProgress() || singlePrintJobReportTemplateUploadName() == undefined), click: performSinglePrintJobReportTemplateUploadNameFromUpload" disabled="">
                             <i class="fa fa-spinner fa-spin" data-bind="visible: singlePrintJobReportTemplateInProgress" style="display: none;"></i> Upload Template
                         </button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label"></label>
+                    <div class="controls">
+                        <div class="input">
+                            <button title="Create a sample print report" class="btn  btn-inverse pull-center" data-bind="click: reportSamplePrintJobItem">Create Sample-Report</button>
+                        </div>
                     </div>
                 </div>
             </div>
