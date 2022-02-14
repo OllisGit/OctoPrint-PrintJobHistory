@@ -1,8 +1,10 @@
 # coding=utf-8
 from __future__ import absolute_import
 
+import logging.handlers
 import threading
 import time
+from queue import Queue
 
 import octoprint.plugin
 from octoprint.events import Events
@@ -24,6 +26,7 @@ from peewee import DoesNotExist
 
 from .common.SettingsKeys import SettingsKeys
 from .common.SlicerSettingsParser import SlicerSettingsParser
+from .common.ResetAbleLogFileHandler import ResetAbleLogFileHandler
 from .api.PrintJobHistoryAPI import PrintJobHistoryAPI
 from .api import TransformPrintJob2JSON
 from .DatabaseManager import DatabaseManager
@@ -82,6 +85,8 @@ class PrintJobHistoryPlugin(
 		self._currentPrintJobModel = None
 
 		self.alreadyCanceled = False
+
+		self._resetableFileLogHandler = None
 
 		self._logger.info("Done initializing")
 
@@ -263,7 +268,7 @@ class PrintJobHistoryPlugin(
 		if ( (self._isSpoolManagerInstalledAndEnabled() == True or self._isFilamentManagerInstalledAndEnabled() == True) and
 			 (self._settings.get([SettingsKeys.SETTINGS_KEY_SELECTED_FILAMENTTRACKER_PLUGIN]) == SettingsKeys.KEY_SELECTED_NONE_PLUGIN) ):
 				# Plugins installed, but currently 'none' is selected
-				self._logger.warn("Filamentracking is disabled, but some plugins are installed!");
+				self._logger.warning("Filamentracking is disabled, but some plugins are installed!");
 				if (notifyUser):
 					self._sendMessageToClient("notice", "Filamenttracking is possible!", "Select an tracking plugin in settings", True)
 		else:
@@ -280,6 +285,9 @@ class PrintJobHistoryPlugin(
 
 	def _isCostEstimationInstalledAndEnabled(self):
 		return True if self._costEstimationPluginImplementation != None and self._costEstimationPluginImplementationState == "enabled" else False
+
+	def _isPreHeatInstalledAndEnabled(self):
+		return True if self._preHeatPluginImplementation != None and self._preHeatPluginImplementationState == "enabled" else False
 
 
 
@@ -321,20 +329,30 @@ class PrintJobHistoryPlugin(
 		if (requiredVersion != None and version != None):
 			canBeUsed = False
 			try:
-				import semantic_version
-				canBeUsed = semantic_version.Version(version) >= semantic_version.Version(requiredVersion)
+				comparabelVersion = self._get_comparable_version_semantic(version)
+				comparabelRequiredVersion = self._get_comparable_version_semantic(requiredVersion)
+				canBeUsed = comparabelVersion >= comparabelRequiredVersion
 			except (ValueError) as error:
-				logging.exception("Something is wrong with the costestimation version numbers")
+				logging.exception("Something is wrong with the " +pluginKey+ " version numbers")
 
 			if (canBeUsed == False):
 				status = "wrong version"
 				implementation = None
 		return [status, implementation, version, requiredVersion]
 
+	def _get_comparable_version_semantic(self, version_string, force_base=False):
+		import semantic_version
+		version = semantic_version.Version.coerce(version_string, partial=False)
+		if force_base:
+			version_string = "{}.{}.{}".format(version.major, version.minor, version.patch)
+			version = semantic_version.Version.coerce(version_string, partial=False)
+
+		return version
+
 	# Grabs all informations for the filament attributes
 	def _createAndAssignFilamentModel(self, printJob, payload):
 
-		self._logger.info("Try reading filament")
+		self._logger.info("----- Start reading filament -----")
 		filePath = payload["path"]
 		fileData = self._file_manager.get_metadata(payload["origin"], filePath)
 
@@ -432,8 +450,10 @@ class PrintJobHistoryPlugin(
 				if (filamentModel.spoolCost != None and
 					filamentModel.weight != None and
 					filamentModel.usedWeight != None):
-					filamentModel.usedCost = filamentModel.spoolCost / filamentModel.weight * filamentModel.usedWeight
+					filamentModel.usedCost = (filamentModel.spoolCost / filamentModel.weight) * filamentModel.usedWeight
 					usedTotalCost = usedTotalCost + filamentModel.usedCost
+
+				self._logger.info(toolId + ": usedLength='"+str(usedLength)+"'; usedWeight='"+str(filamentModel.usedWeight)+"'; usedCost='"+str(filamentModel.usedCost)+"'")
 
 				toolIndex = toolIndex + 1
 			# - add total values
@@ -447,6 +467,8 @@ class PrintJobHistoryPlugin(
 			totalFilamentModel.usedWeight = usedTotaWeight
 			totalFilamentModel.usedCost = usedTotalCost
 
+			self._logger.info("total: usedTotalLength='"+str(usedTotalLength)+"'; usedTotaWeight='"+str(usedTotaWeight)+"'; usedTotalCost='"+str(usedTotalCost)+"'")
+
 
 	# read the total extrusion of each tool, like this
 	# return [123.123, 234.234, 0, 0]
@@ -459,7 +481,7 @@ class PrintJobHistoryPlugin(
 			try:
 				result = self._spoolManagerPluginImplementation.api_getExtrusionAmount()
 			except:
-				self._logger.warn("You don't use the latest SpoolManager Version 1.4+")
+				self._logger.warning("You don't use the latest SpoolManager Version 1.4+")
 			if (result == None):
 				# try the old way
 				result = self._spoolManagerPluginImplementation.myFilamentOdometer.getExtrusionAmount()
@@ -621,11 +643,11 @@ class PrintJobHistoryPlugin(
 						tempTool = preHeatTemperature[toolId]  # "tool0"
 						tempFound = True
 					else:
-						self._logger.warn(
+						self._logger.warning(
 							"... PreHeat-Temperatures does not include default Extruder-Tool '" + toolId + "'")
 				pass
 			else:
-				self._logger.warn("... PreHeat Button Plugin not installed/enabled")
+				self._logger.warning("... PreHeat Button Plugin not installed/enabled")
 
 		if (tempFound == True):
 			self._logger.info(
@@ -653,7 +675,8 @@ class PrintJobHistoryPlugin(
 				self._logger.error("Could not read temperature from Tool '" + toolId + "'", e)
 
 			self._logger.info(
-				"Temperature from Printer Bed: '" + str(tempBed) + "' Tool " + toolId + ": '" + str(tempTool) + "'")
+				"Temperature read from Printer Bed: '" + str(tempBed) +
+				"' Tool " + toolId + ": '" + str(tempTool) + "' after a delay of '"+str(dealyInSeconds)+"' seconds")
 			addTemperatureToPrintModel(printJobModel, tempBed, toolId, tempTool)
 
 
@@ -681,6 +704,7 @@ class PrintJobHistoryPlugin(
 
 	def _addCostsToPrintModel(self, printJobModel):
 
+		self._logger.info("----- Start reading costs -----")
 		#             var costData = {
 		#                 filename: filename,
 		#                 filepath: filepath,
@@ -692,14 +716,15 @@ class PrintJobHistoryPlugin(
 		#                 otherCost: otherCost,
 		#             }
 		if (self._isCostEstimationInstalledAndEnabled()):
-			costData = self._costEstimationPluginImplementation.api_getCurrentCostsValues()
+			# self._logger.info("Try reading Costs from CostEstimation-Plugin")
+			# costData = self._costEstimationPluginImplementation.api_getCurrentCostsValues()
 
 			# TODO own cost calculation
-			# printTimeInSeconds = DateTimeUtils.calcDurationInSeconds(printJobModel.printEndDateTime, printJobModel.printStartDateTime)
-			# allFilamentModels = printJobModel.getFilamentModels(withoutTotal=True)
-			# costData = self._calculateCostData(allFilamentModels , printTimeInSeconds)
+			printTimeInSeconds = DateTimeUtils.calcDurationInSeconds(printJobModel.printEndDateTime, printJobModel.printStartDateTime)
+			allFilamentModels = printJobModel.getFilamentModels(withoutTotal=True)
+			self._logger.info("Try calculating Costs with CostEstimation-Plugin settings")
+			costData = self._calculateCostData(allFilamentModels , printTimeInSeconds)
 
-			self._logger.info("Adding costs from CostEstimation-Plugin: "+ str(costData))
 			totalCosts = costData["totalCosts"]	# float = 11.96
 			filamentCost = costData["filamentCost"] # float = 0.06002333...
 			electricityCost = costData["electricityCost"] # float = 0.0213454...
@@ -718,7 +743,11 @@ class PrintJobHistoryPlugin(
 			costModel.withDefaultSpoolValues = withDefaultSpoolValues
 
 			printJobModel.setCosts(costModel)
-			self._logger.info("Costs from CostEstimation-Plugin read")
+			if ("filename" in costData):
+				costData.pop("filename")
+			if ("filepath" in costData):
+				costData.pop("filepath")
+			self._logger.info("Adding costs from CostEstimation-Plugin: "+ str(costData))
 		else:
 			self._logger.info("Costs could not captured, because CostEstimation-Plugin not installed/enabled")
 
@@ -726,17 +755,15 @@ class PrintJobHistoryPlugin(
 
 
 	def _calculateCostData(self, allFilamentModels, printTimeInSeconds):
-
 		#             var costData = {
-		#                 filename: filename,
-		#                 filepath: filepath,
-		#                 costResult: costResult,
+		#                 totalCosts:
 		#                 filamentCost: filamentCost,
 		#                 electricityCost: electricityCost,
 		#                 printerCost: printerCost,
-		#                 otherCostLabel: otherCostLabel,
-		#                 otherCost: otherCost,
+		# 				  withDefaultSpoolValues
 		#             }
+
+		withDefaultSpoolValues = False
 		printTimeInHours = printTimeInSeconds / 3600
 
 		# read cost-settings froom Cost-Plugin
@@ -750,13 +777,14 @@ class PrintJobHistoryPlugin(
 
 		powerConsumption = StringUtils.transformToFloatOrNone(powerConsumption)
 		costOfElectricity = StringUtils.transformToFloatOrNone(costOfElectricity)
-		if (powerConsumption != None or costOfElectricity != None):
+		if (powerConsumption is None or costOfElectricity is None):
 			self._logger.error(
 				"Could not calculate electricityCost, because powerConsumption or costOfElectricity is none")
 		else:
 			costPerHour = powerConsumption * costOfElectricity
 			electricityCost = costPerHour * printTimeInHours
-
+			self._logger.info("costPerHour '"+str(costPerHour)+"' = powerConsumption '"+str(powerConsumption)+"' * costOfElectricity '"+str(costOfElectricity)+"'" )
+			self._logger.info("electricityCost '"+str(electricityCost)+"' = costPerHour '"+str(costPerHour)+"' * printTimeInHours '"+str(printTimeInHours)+"'" )
 
 		# calc: printerCost
 		printerCost = None
@@ -766,80 +794,156 @@ class PrintJobHistoryPlugin(
 
 		priceOfPrinter = StringUtils.transformToFloatOrNone(priceOfPrinter)
 		lifespanOfPrinter = StringUtils.transformToFloatOrNone(lifespanOfPrinter)
-		maintenancePerHour = StringUtils.transformToFloatOrNone(maintenancePerHour)
+		maintenancePerHour = StringUtils.transformToFloatOrNone(maintenanceCosts)
 
-		if (purchasePrice is None or lifespanOfPrinter is None or maintenanceCosts is None):
+		if (priceOfPrinter is None or lifespanOfPrinter is None or maintenancePerHour is None):
 			self._logger.error(
-				"Could not calculate electricityCost, because powerConsumption or costOfElectricity is none")
+				"Could not calculate printerCost, because purchasePrice or lifespanOfPrinter or maintenancePerHour is none")
 		else:
 			# 	value_when_true if condition else value_when_false
-			depreciationPerHour = purchasePrice / lifespan if lifespan > 0 else 0
+			depreciationPerHour = priceOfPrinter / lifespanOfPrinter if lifespanOfPrinter > 0 else 0
 			printerCost = (depreciationPerHour + maintenancePerHour) * printTimeInHours
+			self._logger.info("printerCost '"+str(printerCost)+"' = (depreciationPerHour '"+str(depreciationPerHour)+"' + maintenancePerHour '"+str(maintenancePerHour)+"') * printTimeInHours '"+str(printTimeInHours)+"'" )
 
 		# calc: filamentCost
+		filamentCost = None
 		# - do we have measured filament values or should we use default values
-		calcWithDefaultValues = None
 		costOfFilament = None
 		weightOfFilament = None
 		densityOfFilament = None
 		diameterOfFilament = None
 		if (allFilamentModels == None):
 			#  filament default values
-			self._logger.error("No measured/needed filament present. Cost calculation not possible")
+			self._logger.error("No measured/needed filament present. FilamentCost calculation not possible. Maybe metadata not assigned in json file.")
 		else:
-			self._logger.info("Trying to read default filament values, for 'fallback-calculation'")
-			costOfFilament = self._costEstimationPluginImplementation._settings.get(["costOfFilament"])  # Euro
-			weightOfFilament = self._costEstimationPluginImplementation._settings.get(["weightOfFilament"])  # g
-			densityOfFilament = self._costEstimationPluginImplementation._settings.get(["densityOfFilament"])  # g/cm3
-			diameterOfFilament = self._costEstimationPluginImplementation._settings.get(["diameterOfFilament"])  # mm
 
-			costOfFilament = StringUtils.transformToFloatOrNone(costOfFilament)
-			weightOfFilament = StringUtils.transformToFloatOrNone(weightOfFilament)
-			densityOfFilament = StringUtils.transformToFloatOrNone(densityOfFilament)
-			diameterOfFilament = StringUtils.transformToFloatOrNone(diameterOfFilament)
-			if (costOfFilament is None or weightOfFilament is None or densityOfFilament is None or diameterOfFilament is None):
-				self._logger.warn(
-					"Fallback calculation for filamentCost not possible, because Default costOfFilament or weightOfFilament or densityOfFilament is diameterOfFilament none")
-				calcWithDefaultValues = False
+			# do we have fillamennt-informations for cost-calculation, if not use default filament parameters
+			# we need:
+			# 1. used filament (per tool)
+			# 2. diameterOfFilament
+			# 3. densityOfFilament
+			# 4. spooldata (costOfFilament, weightOfFilament)
+			# if 1 is not available -> skip
+			# if 2,3 or 4 not available use default values from cost-plugin
+
+			if (allFilamentModels[0].usedLength is None):
+				self._logger.error(
+					"No used filament present. FilamentCost calculation not possible. Maybe no filament tracker, like SpoolManager installed.")
 			else:
-				calcWithDefaultValues = True
+				calcWithDefaultValuesPossible = None
+				self._logger.info("Trying to read default filament values, for 'fallback-calculation'")
+				default_costOfFilament = self._costEstimationPluginImplementation._settings.get(["costOfFilament"])  # Euro
+				default_weightOfFilament = self._costEstimationPluginImplementation._settings.get(["weightOfFilament"])  # g
+				default_densityOfFilament = self._costEstimationPluginImplementation._settings.get(["densityOfFilament"])  # g/cm3
+				default_diameterOfFilament = self._costEstimationPluginImplementation._settings.get(["diameterOfFilament"])  # mm
 
-			# if allFilaments != None:
-			# 	allFilamentDict = {}
-			for filamentModel in allFilamentModels:
-
-				usedLength = filamentModel.usedLength
-				if (usedLength == None):
-					self._logger.error("No used length for "+str(filamentModel.toolId)+" captured. Cost calculation not possible")
+				default_costOfFilament = StringUtils.transformToFloatOrNone(default_costOfFilament)
+				default_weightOfFilament = StringUtils.transformToFloatOrNone(default_weightOfFilament)
+				default_densityOfFilament = StringUtils.transformToFloatOrNone(default_densityOfFilament)
+				default_diameterOfFilament = StringUtils.transformToFloatOrNone(default_diameterOfFilament)
+				if (default_costOfFilament is None or default_weightOfFilament is None or default_densityOfFilament is None or default_diameterOfFilament is None):
+					self._logger.warning(
+						"Fallback calculation for filamentCost not possible, because Default costOfFilament or weightOfFilament or densityOfFilament is diameterOfFilament none")
+					calcWithDefaultValuesPossible = False
 				else:
-					# filametCost calculation = costPerWeight * filamentVolume * densityOfFilament
+					calcWithDefaultValuesPossible = True
 
+				for filamentModel in allFilamentModels:
+					usedLength = filamentModel.usedLength
+					toolId = filamentModel.toolId # tool0
 					diameterOfFilament = filamentModel.diameter
 					densityOfFilament = filamentModel.density
-					# weightOfFilament .... @@@@ TODO continute: blocked, because we need the spoolCost and the spoolWeight to calculate it
+					costOfFilament = filamentModel.spoolCost
+					weightOfFilament = filamentModel.weight
+
+					if (usedLength == None or usedLength == 0.0):
+						self._logger.info("No filament calculation for '"+toolId+"', because usedLength is 0")
+						continue
+
+					if (diameterOfFilament is None):
+						if (calcWithDefaultValuesPossible):
+							self._logger.info("No filament diameter from filamenttracker, using default '"+str(default_diameterOfFilament)+"'")
+							diameterOfFilament = default_diameterOfFilament
+							withDefaultSpoolValues = True
+						else:
+							self._logger.info(
+								"No filament diameter from filamenttracker or as default value")
+							continue
+					if (densityOfFilament is None):
+						if (calcWithDefaultValuesPossible):
+							self._logger.info("No filament densityOfFilament from filamenttracker, using default '"+str(default_densityOfFilament)+"'")
+							densityOfFilament = default_densityOfFilament
+							withDefaultSpoolValues = True
+						else:
+							self._logger.info(
+								"No filament densityOfFilament from filamenttracker or as default value")
+							continue
+					if (costOfFilament is None):
+						if (calcWithDefaultValuesPossible):
+							self._logger.info("No filament costOfFilament from filamenttracker, using default '"+str(default_costOfFilament)+"'")
+							costOfFilament = default_costOfFilament
+							withDefaultSpoolValues = True
+						else:
+							self._logger.info(
+								"No filament costOfFilament from filamenttracker or as default value")
+							continue
+					if (weightOfFilament is None):
+						if (calcWithDefaultValuesPossible):
+							self._logger.info("No filament weightOfFilament from filamenttracker, using default '"+str(default_weightOfFilament)+"'")
+							weightOfFilament = default_weightOfFilament
+							withDefaultSpoolValues = True
+						else:
+							self._logger.info(
+								"No filament weightOfFilament from filamenttracker or as default value")
+							continue
+
+					self._logger.info("Filament cost calculation for '" + toolId + "'")
+					# calculated used cost of this curretn tool
+					costPerWeight =  costOfFilament / weightOfFilament
+					self._logger.info("Cost per weight '"+str(costPerWeight)+"' =  costOfFilament '"+str(costOfFilament)+"' / weightOfFilament '"+str(weightOfFilament)+"'")
+					volumeWeight =  self._calculateFilamentWeightForLength(usedLength, diameterOfFilament, densityOfFilament)
+					filamentCost = StringUtils.transformToFloatOrZero(filamentCost) + (costPerWeight * volumeWeight)
+					self._logger.info("filamentCost '"+str(filamentCost)+"' = costPerWeight '"+str(costPerWeight)+"' * volumeWeight '"+str(volumeWeight)+"'")
 					pass
-				pass
 
-			pass # do the calculation
+		# calc: totalCost
 
+		totalCost = StringUtils.transformToFloatOrZero(filamentCost) + StringUtils.transformToFloatOrZero(electricityCost) + StringUtils.transformToFloatOrZero(printerCost)
+		self._logger.info("totalcost = '"+str(totalCost)+"'")
 
 		costData = dict(
+						totalCosts=totalCost,
+						# filamentCost=filamentCost,
 						filamentCost=filamentCost,
-						electricityCost=electricityCost,
+						electricityCost=electricityCost,# done
 			 			printerCost=printerCost,
+						withDefaultSpoolValues=withDefaultSpoolValues
 		)
 		return costData
 
+	def _printJobStarted(self, payload):
+		self._resetableFileLogHandler.resetLog()
+		self._resetableFileLogHandler.startLogging()
 
+		self._logger.info("PrintJob '" + payload["name"] + "' started!")
 
-
+		self.alreadyCanceled = False
+		self._createPrintJobModel(payload)
 
 	#### print job finished
 	# printStatus = "success", "failed", "canceled"
 	def _printJobFinished(self, printStatus, payload):
+		self._logger.info("PrintJob finished!")
+
+		self._capturePrintJobData(printStatus, payload)
+
+	def _capturePrintJobData(self, printStatus, payload):
 		captureMode = self._settings.get([SettingsKeys.SETTINGS_KEY_CAPTURE_PRINTJOBHISTORY_MODE])
+		self._logger.info("Print result:" + printStatus + ", CaptureMode:" + captureMode)
+
 		if (captureMode == SettingsKeys.KEY_CAPTURE_PRINTJOBHISTORY_MODE_NONE):
-			return
+			self._logger.info("PrintJob not captured, because it is not enabled in plugin settings")
+			return None
 
 		captureThePrint = False
 		if (captureMode == SettingsKeys.KEY_CAPTURE_PRINTJOBHISTORY_MODE_ALWAYS):
@@ -849,10 +953,11 @@ class PrintJobHistoryPlugin(
 			if (printStatus == "success"):
 				captureThePrint = True
 
-		self._logger.info("Print result:" + printStatus + ", CaptureMode:" + captureMode)
+		databaseId = None
+		payLoadForClient = None
 		# capture the print
 		if (captureThePrint == True):
-			self._logger.info("Start capturing print job...")
+			self._logger.info("----- Start capturing print job data... -----")
 
 			# - Core Data
 			self._currentPrintJobModel.printEndDateTime = datetime.datetime.now()
@@ -879,11 +984,11 @@ class PrintJobHistoryPlugin(
 			self._addCostsToPrintModel(self._currentPrintJobModel)
 
 			# store everything in the database
-			self._logger.info("Try storing printjob model")
+			self._logger.info("----- Try storing printjob model ----")
 			databaseId = self._databaseManager.insertPrintJob(self._currentPrintJobModel)
 			if (databaseId == None):
 				self._logger.error("PrintJob not captured, see previous error log!")
-				return
+				return None
 			printJobItem = None
 			if self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_SHOW_PRINTJOB_DIALOG_AFTER_PRINT]):
 
@@ -912,17 +1017,34 @@ class PrintJobHistoryPlugin(
 					printJobItem = TransformPrintJob2JSON.transformPrintJobModel(printJobModel, self._file_manager)
 
 			# inform client for a reload (and show dialog)
-			payload = {
+			payLoadForClient = {
 				"action": "printFinished",
 				"printJobItem": printJobItem  # if present then the editor dialog is shown
 			}
-			self._sendDataToClient(payload)
-			self._logger.info("... End PrintJob captured!")
+			# self._sendDataToClient(payLoadForClient)
+			self._logger.info("----- ... End PrintJob captured! -----")
 		else:
-			self._logger.info("... PrintJob not captured, because not activated!")
+			self._logger.info("----- ... PrintJob not captured, because not activated! -----")
+
+		# capture the technical log and send updated model to browser
+		self._resetableFileLogHandler.stopLogging()
+		if (databaseId != None):
+			techLog = self._resetableFileLogHandler.readLogContent()
+			lastPrintJobModel = self._databaseManager.loadPrintJob(databaseId)
+			lastPrintJobModel.technicalLog = techLog
+			self._databaseManager.updatePrintJob(lastPrintJobModel)
+			if (payload != None):
+				if (payLoadForClient["printJobItem"] != None):
+					printJobItem = TransformPrintJob2JSON.transformPrintJobModel(lastPrintJobModel, self._file_manager)
+					payLoadForClient["printJobItem"] = printJobItem
+				self._sendDataToClient(payLoadForClient)
+			pass
+
+		return databaseId
 
 
 	def _grabImage(self, payload):
+		self._logger.info("----- Start grab Image/thumbnail... -----")
 		isCameraPresent = self._cameraManager.isCamaraSnahotURLPresent()
 
 		takeSnapshotAfterPrint = self._settings.get_boolean([SettingsKeys.SETTINGS_KEY_TAKE_SNAPSHOT_AFTER_PRINT])
@@ -940,16 +1062,16 @@ class PrintJobHistoryPlugin(
 
 		# - No Image
 		if (takeSnapshotAfterPrint == False and takeSnapshotOnGCode == False and takeSnapshotOnM118Code == False and takeThumbnailAfterPrint == False):
-			self._logger.info("no image should be taken")
+			self._logger.info("No image should be taken")
 			return
 		# - Only Thumbnail
 		if (takeThumbnailAfterPrint == True and takeSnapshotAfterPrint == False and takeSnapshotOnGCode == False and takeSnapshotOnM118Code == False):
 			# Try to take the thumbnail
-			self._logger.info("try to take thumbnail, because afterprint/gcode not selected")
+			self._logger.info("Try to take thumbnail, because afterprint/gcode not selected")
 			self._takeThumbnailImage(payload)
 			return
 		if (takeThumbnailAfterPrint == True and isThumbnailPresent == True and preferedThumbnail == True):
-			self._logger.info("try to take thumbnail, because thumbnail is present and prefered")
+			self._logger.info("Try to take thumbnail, because thumbnail is present and prefered")
 			self._takeThumbnailImage(payload)
 			return
 		# - Only Camera
@@ -957,7 +1079,7 @@ class PrintJobHistoryPlugin(
 			if (isCameraPresent == False):
 				self._logger.info("Camera Snapshot is selected but no camera url is available")
 				return
-			self._logger.info("try capturing snapshot asyc from camera, because thumbnail not selected")
+			self._logger.info("Try capturing snapshot asyc from camera, because thumbnail not selected")
 			self._cameraManager.takeSnapshotAsync(
 				CameraManager.buildSnapshotFilename(self._currentPrintJobModel.printStartDateTime),
 				self._sendErrorMessageToClient,
@@ -991,10 +1113,10 @@ class PrintJobHistoryPlugin(
 				storeImage=storeImage
 			)
 		else:
-			self._logger.warn("Thumbnail not found in print metadata")
+			self._logger.warning("Thumbnail not found in print metadata")
 
 		if (thumbnailPresent == False):
-			self._logger.warn("Thumbnail not found for cameraManager")
+			self._logger.warning("Thumbnail not found for cameraManager")
 		else:
 			self._logger.info("Thumbnail was captured from metadata")
 
@@ -1002,16 +1124,39 @@ class PrintJobHistoryPlugin(
 
 
 	#######################################################################################   OP - HOOKs
+	from queue import Queue
+	# from logging.handlers import QueueHandler
+	# from logging.handlers import QueueListener
+
 	def on_after_startup(self):
 		# check if needed plugins were available
 		self._checkAndLoadThirdPartyPluginInfos(False) # don't inform the client, because client is maybe not opened
 
-		helpers = self._plugin_manager.get_helpers("multicam")
-		if helpers and "get_webcam_profiles" in helpers:
-			get_webcam_profiles = helpers["get_webcam_profiles"]
-			
-			self.camProfiles = get_webcam_profiles()
+		# helpers = self._plugin_manager.get_helpers("multicam")
+		# if helpers and "get_webcam_profiles" in helpers:
+		# 	get_webcam_profiles = helpers["get_webcam_profiles"]
+		#
+		# 	self.camProfiles = get_webcam_profiles()
 
+		# que = Queue(10)
+		# queue_handler = MyQueueHandler(que)
+		#
+		# root = logging.getLogger()
+		# root.addHandler(queue_handler)
+		# self._technicalLoggingHandler = MyHandler()
+		# listener = logging.handlers.QueueListener(que, self._technicalLoggingHandler)
+		# listener.start()
+
+		logFilename = os.path.join(self._settings.getBaseFolder("logs"), "plugin_PrintJobHistory_singlePrintJob.log")
+		formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+		self._resetableFileLogHandler = ResetAbleLogFileHandler(logFilename, "octoprint.plugins.PrintJobHistory")
+		self._resetableFileLogHandler.setFormatter(formatter)
+		# self._resetableFileLogHandler.assignLoggerNameToCapture("octoprint.plugins.PrintJobHistory")
+		# add to current plugin logger
+		pluginLogger = logging.getLogger(self._logger.name)
+		pluginLogger.addHandler(self._resetableFileLogHandler)
+
+		self._logger.info("on after startup done")
 		pass
 
 
@@ -1085,6 +1230,10 @@ class PrintJobHistoryPlugin(
 		# print(event)
 		# print("****************************")
 		# WebBrowser opened
+		# TODO when OP 1.8.0 is release, implement FileMoved event
+		if ("FileMoved" == event):
+			print("******* MOVED ***********")
+
 		if Events.CLIENT_OPENED == event:
 
 			# - Check if all needed Plugins are available, if not modale dialog to User
@@ -1108,6 +1257,7 @@ class PrintJobHistoryPlugin(
 											isSpoolManagerInstalled = self._isSpoolManagerInstalledAndEnabled(),
 											isFilamentManagerInstalled = self._isFilamentManagerInstalledAndEnabled(),
 											isCostEstimationPluginAvailable = self._isCostEstimationInstalledAndEnabled(),
+											isPreHeatPluginAvailable = self._isPreHeatInstalledAndEnabled(),
 											currencySymbol = currencySymbol,
 											currencyFormat = currencyFormat,
 											))
@@ -1150,8 +1300,7 @@ class PrintJobHistoryPlugin(
 			self._checkForMissingFilamentTracking()
 
 		elif Events.PRINT_STARTED == event:
-			self.alreadyCanceled = False
-			self._createPrintJobModel(payload)
+			self._printJobStarted(payload)
 
 		elif "DisplayLayerProgress_layerChanged" == event or event == "DisplayLayerProgress_heightChanged":
 			self._updatePrintJobModelWithLayerHeightInfos(payload)
@@ -1164,7 +1313,6 @@ class PrintJobHistoryPlugin(
 		elif Events.PRINT_CANCELLED == event:
 			self.alreadyCanceled = True
 			self._printJobFinished("canceled", payload)
-
 		pass
 
 
@@ -1211,6 +1359,7 @@ class PrintJobHistoryPlugin(
 
 		settings[SettingsKeys.SETTINGS_KEY_SLICERSETTINGS_KEYVALUE_EXPRESSION] = ";(.*)=(.*)\n;   (.*),(.*)"
 		settings[SettingsKeys.SETTINGS_KEY_SINGLE_PRINTJOB_REPORT_TEMPLATENAME] = SettingsKeys.SETTINGS_DEFAULT_VALUE_SINGLE_PRINTJOB_REPORT_TEMPLATENAME
+		settings[SettingsKeys.SETTINGS_KEY_MULTI_PRINTJOB_REPORT_TEMPLATENAME] = SettingsKeys.SETTINGS_DEFAULT_VALUE_MULTI_PRINTJOB_REPORT_TEMPLATENAME
 
 		settings[SettingsKeys.SETTINGS_KEY_CURRENCY_SYMBOL] = "€"
 		settings[SettingsKeys.SETTINGS_KEY_CURRENCY_FORMAT] = "%v %s"
@@ -1396,5 +1545,63 @@ def __plugin_load__():
 # 	volumne = filamentAnalyseDict[toolId]["volume"]
 # 	print(toolId + " " + str(length))
 
+class MyHandler:
+	"""
+	A simple handler for logging events. It runs in the listener process and
+	dispatches events to loggers based on the name in the received record,
+	which then get dispatched, by the logging system, to the handlers
+	configured for those loggers.
+	"""
+	def __init__(self):
+		self.technicalLog = ""
+
+	def resetTechnicalLog(self):
+		self.technicalLog = ""
+
+	def getTechnicalLog(self):
+		return self.technicalLog
+
+	def handle(self, record):
+		# if record.name == "root":
+		#     logger = logging.getLogger()
+		# else:
+		#     logger = logging.getLogger(record.name)
+		#
+		# if logger.isEnabledFor(record.levelno):
+		#     # The process name is transformed just to show that it's the listener
+		#     # doing the logging to files and console
+		#     record.processName = '%s (for %s)' % (current_process().name, record.processName)
+		#     logger.handle(record)
+
+		# BOOOOMMM "AttributeError: 'LogRecord' object has no attribute 'asctime'"
+		# print("AAAAA****************************")
+		#print(record)
+		# asctime = record.asctime #2022-01-22 14:50:09,729
+		name = record.name #octoprint.plugins.SpoolManager
+		module = record.module # SpoolManagerAPI
+		levelname = record.levelname # DEBUG
+		message = record.message # API Load all spool
+
+		if (name.startswith("octoprint.plugins.PrintJobHistory")):
+			self.technicalLog = self.technicalLog + message + "\n"
+
+		# print("EEEEE****************************")
+		pass
+
+class MyQueueHandler(logging.handlers.QueueHandler):
+
+	def enqueue(self, record):
+		"""
+		Enqueue a record.
+
+		The base implementation uses put_nowait. You may want to override
+		this method if you want to use blocking, timeouts or custom queue
+		implementations.
+		"""
+		# print("*** Current len: " + str (self.queue.qsize()))
+		if (self.queue.full()):
+			print("Something wrong with the listener, because loggging queue is full. No new log-record is added.")
+		else:
+			self.queue.put_nowait(record)
 
 

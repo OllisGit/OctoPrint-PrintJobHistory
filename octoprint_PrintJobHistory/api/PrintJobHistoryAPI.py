@@ -169,14 +169,21 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 									)
 							   )
 
-	def _createSamplePrintModel(self):
+	def _createSamplePrintModels(self):
+		return [
+			self._createSamplePrintModel(),
+			self._createSamplePrintModel("MyBenchy.gcode"),
+			self._createSamplePrintModel("MyThirdBenchy.gcode"),
+		]
+
+	def _createSamplePrintModel(self, fileName="OllisBenchy.gcode"):
 		p1 = PrintJobModel()
 		p1.userName = "Olli"
 		p1.printStatusResult = "success"
 		p1.printStartDateTime = datetime.now()
 		p1.printEndDateTime = datetime.now() + timedelta(minutes=123)
 		p1.duration = (p1.printEndDateTime - p1.printStartDateTime).total_seconds()
-		p1.fileName = "OllisBenchy.gcode"
+		p1.fileName = fileName
 		p1.filePathName = "/_archive/OllisBenchy.gcode"
 		p1.fileSize = 123456
 		p1.printedLayers = "45 / 45"
@@ -714,7 +721,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 
 	###################################################################################### PRINTJOB - REPORT
 	@octoprint.plugin.BlueprintPlugin.route("/singlePrintJobReport/<databaseId>", methods=["GET"])
-	def get_singlePrintJobReport(self, databaseId):
+	def get_createSinglePrintJobReport(self, databaseId):
 
 		if (databaseId == "sample"):
 			printJobModel = self._createSamplePrintModel()
@@ -730,7 +737,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 										message=message))
 			return flask.jsonify()
 
-		reportHtmlTemplate = self._loadPrintJobReportTemplateContent()
+		reportHtmlTemplate = self._loadPrintJobReportTemplateContent("single")
 
 		printJobModelAsJson=TransformPrintJob2JSON.transformPrintJobModel(printJobModel, self._file_manager, False)
 		# printJobModelAsJson = {
@@ -738,7 +745,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		# }
 		printJobModelAsJsonString = json.dumps(printJobModelAsJson, indent=1, sort_keys=True, default=str)
 		printJobModelAsJsonDict = json.loads(printJobModelAsJsonString)
-		print(printJobModelAsJsonString)
+		# print(printJobModelAsJsonString)
 		# send rendered report to browser
 		return Response(
 						# flask.render_template("singlePrintJobReport.jinja2"),
@@ -752,10 +759,62 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 						# headers={'Content-Disposition': 'attachment; filename=PrintJobHistory-SAMPLE.csv'}
 						)
 
-	################################################################################ PRINTJOB - UPLOAD REPORT Template
-	@octoprint.plugin.BlueprintPlugin.route("/uploadSinglePrintJobReport", methods=["POST"])
-	def post_uploadSinglePrintJobReportTemplate(self):
+	@octoprint.plugin.BlueprintPlugin.route("/multiPrintJobReport", methods=["GET"])
+	def get_createMultiPrintJobReport(self):
 
+		tableQuery = flask.request.values
+		allPrintJobModels = []
+		if ("sample" in tableQuery):
+			allPrintJobModels = self._createSamplePrintModels()
+		else:
+			# tableQuery or muliple databaseIds
+			if ("databaseIds" in tableQuery):
+				selectedDatabaseIds = tableQuery["databaseIds"]
+				# selectedDatabaseIds = "21, 17"
+				allPrintJobModels = self._databaseManager.loadSelectedPrintJobs(selectedDatabaseIds)
+			else:
+				# always load all print jobs
+				tableQuery["from"] = 0
+				tableQuery["to"] = 99999
+				allPrintJobModels = self._databaseManager.loadPrintJobsByQuery(tableQuery)
+
+		if (len(allPrintJobModels) == 0):
+			# PrintJob was deleted
+			message = "PrintJobs not in database anymore! PrintReport not possible."
+			self._logger.error(message)
+			self._sendDataToClient(dict(action="errorPopUp",
+										title="Print selection not possible",
+										message=message))
+			return flask.jsonify()
+
+		# build mulit-page report
+		reportHtmlTemplate = self._loadPrintJobReportTemplateContent("multi")
+
+		allJobsAsDict = TransformPrintJob2JSON.transformAllPrintJobModels(allPrintJobModels, self._file_manager, False)
+
+		# allPrintJobModelAsJson = TransformPrintJob2JSON.transformPrintJobModel(printJobModel, self._file_manager, False)
+		# printJobModelAsJson = {
+		# 	"Hallo": "du"
+		# }
+		printJobModelAsJsonString = json.dumps(allJobsAsDict, indent=1, sort_keys=True, default=str)
+		printJobModelAsJsonDict = json.loads(printJobModelAsJsonString)
+		# print(printJobModelAsJsonString)
+		# send rendered report to browser
+		return Response(
+						# flask.render_template("singlePrintJobReport.jinja2"),
+						flask.render_template_string(reportHtmlTemplate,
+													 reportCreationTime = datetime.now(),
+													 allPrintJobModels = allPrintJobModels,
+													 hallo = "welt",
+													 printJobModelAsJson = printJobModelAsJsonDict
+													 ),
+						mimetype='text/html'
+						# headers={'Content-Disposition': 'attachment; filename=PrintJobHistory-SAMPLE.csv'}
+						)
+
+	################################################################################ PRINTJOB - UPLOAD REPORT Template
+	@octoprint.plugin.BlueprintPlugin.route("/uploadPrintJobReport/<reportType>", methods=["POST"])
+	def post_uploadPrintJobReportTemplate(self, reportType):
 
 		result = True
 		targetFilename = "unknown"
@@ -773,11 +832,17 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 				now = datetime.now()
 				currentDate = now.strftime("%Y%m%d-%H%M")
 				# "singleReportTemplate-20210604.jinja2"
-				targetFilename = "singleReportTemplate-"+currentDate + ".jinja2"
+				if (reportType == "multi"):
+					targetFilename = "multiReportTemplate-"+currentDate + ".jinja2"
+				else:
+					targetFilename = "singleReportTemplate-" + currentDate + ".jinja2"
 				targetLocation = self._getPrintJobReportTemplateLocation(targetFilename)
 				shutil.move(sourceLocation, targetLocation)
 
-				self._settings.set([SettingsKeys.SETTINGS_KEY_SINGLE_PRINTJOB_REPORT_TEMPLATENAME], targetFilename)
+				if (reportType == "multi"):
+					self._settings.set([SettingsKeys.SETTINGS_KEY_MULTI_PRINTJOB_REPORT_TEMPLATENAME], targetFilename)
+				else:
+					self._settings.set([SettingsKeys.SETTINGS_KEY_SINGLE_PRINTJOB_REPORT_TEMPLATENAME], targetFilename)
 				self._settings.save()
 			except Exception as e:
 				errorMessage = "Error during upload report template !!!! See log file."
@@ -790,35 +855,47 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 				result = False
 
 		return flask.jsonify(
-			singlePrintJobTemplateName=targetFilename,
+			printJobTemplateName=targetFilename,
 			result=result
 		)
 
 
 	################################################################################ PRINTJOB - DWONLOAD REPORT Template
-	@octoprint.plugin.BlueprintPlugin.route("/downloadSinglePrintJobReportTemplate", methods=["GET"])
-	def get_downloadSinglePrintJobReportTemplate(self):
-		reportHtmlTemplate = self._loadPrintJobReportTemplateContent()
+	@octoprint.plugin.BlueprintPlugin.route("/downloadPrintJobReportTemplate/<reportType>", methods=["GET"])
+	def get_download_printJobReportTemplate(self, reportType):
+		'''
+		:param reportType: single or multi
+		:return:
+		'''
+		reportHtmlTemplate = self._loadPrintJobReportTemplateContent(reportType)
 		# send rendered report to browser
 		return Response(
 						reportHtmlTemplate,
 						mimetype='text/html',
-						headers={'Content-Disposition': 'attachment; filename=SinglePrintJobReport-Template.jinja2'}
+						headers={'Content-Disposition': 'attachment; filename='+reportType+'PrintJobReport-Template.jinja2'}
 						)
 
-	def _loadPrintJobReportTemplateContent(self):
+	def _loadPrintJobReportTemplateContent(self, reportType):
 		reportHtmlTemplate = "<h1>Something was wrong!!! Please take a look into the octoprint.log</h1>"
 		try:
-
 			pluginBaseFolder = self._basefolder
-
-			currentReportTemplate = self._settings.get([SettingsKeys.SETTINGS_KEY_SINGLE_PRINTJOB_REPORT_TEMPLATENAME])
-			if (SettingsKeys.SETTINGS_DEFAULT_VALUE_SINGLE_PRINTJOB_REPORT_TEMPLATENAME == currentReportTemplate):
-				# load defaultReportTemplate
-				reportTemplateLocation = pluginBaseFolder + "/templates/PrintJobHistory_"+SettingsKeys.SETTINGS_DEFAULT_VALUE_SINGLE_PRINTJOB_REPORT_TEMPLATENAME+".jinja2"
+			currentReportTemplate = ""
+			if (reportType == "single"):
+				currentReportTemplate = self._settings.get([SettingsKeys.SETTINGS_KEY_SINGLE_PRINTJOB_REPORT_TEMPLATENAME])
+				if (SettingsKeys.SETTINGS_DEFAULT_VALUE_SINGLE_PRINTJOB_REPORT_TEMPLATENAME == currentReportTemplate):
+					# load defaultReportTemplate
+					reportTemplateLocation = pluginBaseFolder + "/templates/PrintJobHistory_"+SettingsKeys.SETTINGS_DEFAULT_VALUE_SINGLE_PRINTJOB_REPORT_TEMPLATENAME+".jinja2"
+				else:
+					# load custom template
+					reportTemplateLocation = self._getPrintJobReportTemplateLocation(currentReportTemplate)
 			else:
-				# load custom template
-				reportTemplateLocation = self._getPrintJobReportTemplateLocation(currentReportTemplate)
+				currentReportTemplate = self._settings.get([SettingsKeys.SETTINGS_KEY_MULTI_PRINTJOB_REPORT_TEMPLATENAME])
+				if (SettingsKeys.SETTINGS_DEFAULT_VALUE_MULTI_PRINTJOB_REPORT_TEMPLATENAME == currentReportTemplate):
+					# load defaultReportTemplate
+					reportTemplateLocation = pluginBaseFolder + "/templates/PrintJobHistory_"+SettingsKeys.SETTINGS_DEFAULT_VALUE_MULTI_PRINTJOB_REPORT_TEMPLATENAME+".jinja2"
+				else:
+					# load custom template
+					reportTemplateLocation = self._getPrintJobReportTemplateLocation(currentReportTemplate)
 
 			# read template
 			file = open(reportTemplateLocation)
@@ -846,12 +923,24 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 		return reportTemplateLocation
 
 	################################################################################ PRINTJOB - RESET REPORT Template
-	@octoprint.plugin.BlueprintPlugin.route("/resetSinglePrintJobReportTemplate", methods=["PUT"])
-	def put_confirmMessageDialog(self):
-		self._settings.set([SettingsKeys.SETTINGS_KEY_SINGLE_PRINTJOB_REPORT_TEMPLATENAME], SettingsKeys.SETTINGS_DEFAULT_VALUE_SINGLE_PRINTJOB_REPORT_TEMPLATENAME)
+	@octoprint.plugin.BlueprintPlugin.route("/resetPrintJobReportTemplate/<reportType>", methods=["PUT"])
+	def put_confirmMessageDialog(self, reportType):
+		defaultReportTemplateName = ""
+
+		if (reportType == "multi"):
+			self._settings.set([SettingsKeys.SETTINGS_KEY_MULTI_PRINTJOB_REPORT_TEMPLATENAME],
+							   	SettingsKeys.SETTINGS_DEFAULT_VALUE_MULTI_PRINTJOB_REPORT_TEMPLATENAME)
+			defaultReportTemplateName = SettingsKeys.SETTINGS_DEFAULT_VALUE_MULTI_PRINTJOB_REPORT_TEMPLATENAME
+		else:
+			self._settings.set([SettingsKeys.SETTINGS_KEY_SINGLE_PRINTJOB_REPORT_TEMPLATENAME],
+							   	SettingsKeys.SETTINGS_DEFAULT_VALUE_SINGLE_PRINTJOB_REPORT_TEMPLATENAME)
+			defaultReportTemplateName = SettingsKeys.SETTINGS_DEFAULT_VALUE_SINGLE_PRINTJOB_REPORT_TEMPLATENAME
+
 		self._settings.save()
+
 
 		return flask.jsonify(
 			result=True,
-			singlePrintJobTemplateName=SettingsKeys.SETTINGS_DEFAULT_VALUE_SINGLE_PRINTJOB_REPORT_TEMPLATENAME
+			printJobTemplateName=defaultReportTemplateName
 		)
+

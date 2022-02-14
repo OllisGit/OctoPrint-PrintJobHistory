@@ -68,6 +68,10 @@ function PrintJobHistoryEditDialog(){
     }
 
     self.isSlicerSettingsPresent = ko.observable(false);
+    self.isTechnicalLogPresent = ko.observable(false);
+
+    self.textAreaTitleDialog = ko.observable();
+    self.textAreaContentDialog = ko.observable();
 
     /////////////////////////////////////////////////////////////////////////////////////////////////// INIT
 
@@ -141,7 +145,7 @@ function PrintJobHistoryEditDialog(){
             }
         });
 
-        self.slicerSettingsDialog = $("#dialog_printJobHistory_slicerSettings");
+        self.textAreaDialog = $("#dialog_printJobHistory_textAreaDialog");
         self.changePrintStatusDialog = $("#dialog_printJobHistory_changePrintStatus");
     }
 
@@ -170,8 +174,19 @@ function PrintJobHistoryEditDialog(){
         self.closePrintStatusDialog();
     }
 
-    this.showSlicerSettingsDialog = function(){
-        self.slicerSettingsDialog.modal({
+    self.showSlicerSettingsDialog = function(){
+        self._showTextAreaDialog("Slicer-Settings for print job",  self.printJobItemForEdit.slicerSettingsAsText());
+    }
+
+    self.showTechnicalLogDialog = function(){
+        self._showTextAreaDialog("Technical log for print job", self.printJobItemForEdit.technicalLog());
+    }
+
+    self._showTextAreaDialog = function(title, content){
+        self.textAreaTitleDialog(title);
+        self.textAreaContentDialog(content);
+
+        self.textAreaDialog.modal({
             //minHeight: function() { return Math.max($.fn.modal.defaults.maxHeight() - 80, 250); }
             keyboard: false,
             clickClose: false,
@@ -183,8 +198,8 @@ function PrintJobHistoryEditDialog(){
         });
     }
 
-    this.closeSlicerSettingsDialog = function(){
-        self.slicerSettingsDialog.modal('hide');
+    this.closeTextAreaDialog = function(){
+        self.textAreaDialog.modal('hide');
     }
 
     this.isInitialized = function() {
@@ -231,11 +246,19 @@ function PrintJobHistoryEditDialog(){
             self.noteEditor.setContents(deltaFormat, 'api');
         }
 
-        slicerSettingsPresent = self.printJobItemForEdit.slicerSettingsAsText();
-        if (slicerSettingsPresent != null && slicerSettingsPresent.length != 0){
+        var slicerSettingsPresent = self.printJobItemForEdit.slicerSettingsAsText();
+        if (slicerSettingsPresent != null && self.printJobItemForEdit.slicerSettingsAsText().length != 0){
             self.isSlicerSettingsPresent(true);
+        } else {
+            self.isSlicerSettingsPresent(false);
         }
 
+        var technicalLogPresent = self.printJobItemForEdit.technicalLog();
+        if (technicalLogPresent != null && self.printJobItemForEdit.technicalLog().length != 0){
+            self.isTechnicalLogPresent(true);
+        } else {
+            self.isTechnicalLogPresent(false);
+        }
         // some magic, if in edit mode
 
 
@@ -363,7 +386,7 @@ function PrintJobHistoryEditDialog(){
 
     /////////////////////////////////////////////////////////////////////////////////////////////////// REPORT PRINT JOB
     this.reportPrintJobItem = function() {
-        window.open(self.apiClient.getSingleReportUrl(self.printJobItemForEdit.databaseId()), '_blank').focus();
+        window.open(self.apiClient.callCreateSingleReportUrl(self.printJobItemForEdit.databaseId()), '_blank').focus();
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////// SELECT PRINT JOB

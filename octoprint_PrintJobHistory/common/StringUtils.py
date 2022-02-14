@@ -209,8 +209,21 @@ def transformToFloatOrNone(floatValue):
 		else:
 			floatValue = None
 	return floatValue
-	
-	
+
+def transformToFloatOrZero(floatValue):
+	if (floatValue != None):
+		if (isNotEmpty(floatValue)):
+			try:
+				floatValue = float(floatValue)
+			except Exception as e:
+				floatValue = 0.0
+		else:
+			floatValue = 0.0
+	else:
+		floatValue = 0.0
+	return floatValue
+
+
 def transformToIntOrNone(intValue):
 	if (intValue != None):
 		if (isNotEmpty(intValue)):

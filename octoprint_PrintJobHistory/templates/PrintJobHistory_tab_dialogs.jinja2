@@ -238,7 +238,7 @@
                                 <ul class="nav nav-tabs" id="editPrintJobTabs">
                                     <li class="active"><a href="#tab-pjh-editjob-total" data-toggle="tab">General</a></li>
                                     <li data-bind="visible: printJobForEditing().isMultiToolPrint"><a href="#tab-pjh-editjob-details" data-toggle="tab">Tool measurement</a></li>
-                                    <li><a href="#tab-pjh-editjob-costs" data-toggle="tab">Estimated Costs</a></li>
+                                    <li><a href="#tab-pjh-editjob-costs" data-toggle="tab">Costs</a></li>
                                 </ul>
                                 <div class="tab-content">
                                     <!-- General - TAB -->
@@ -383,7 +383,12 @@
                                 </div>
                             </div>
                             <div class="" style="margin-left:40px">
-                                <a href='' data-bind="visible:printJobEditDialog.isSlicerSettingsPresent && printJobForEditing().databaseId, click: printJobEditDialog.showSlicerSettingsDialog" style="text-align:right">Show Slicer Settings</a>
+                                <span  class="pull-left" data-bind="visible:printJobEditDialog.isSlicerSettingsPresent() && printJobForEditing().databaseId()">
+                                    <a href='' data-bind="click: printJobEditDialog.showSlicerSettingsDialog" style="text-align:right">Slicer Settings</a>
+                                </span>
+                                <span class="pull-right" data-bind="visible:printJobEditDialog.isTechnicalLogPresent() && printJobForEditing().databaseId()">
+                                    <a href='' data-bind="click: printJobEditDialog.showTechnicalLogDialog" style="text-align:right">Technical Log</a>
+                                </span>
                             </div>
 
                         </div>
@@ -527,20 +532,23 @@
         </div>
     </div>
 
-    <!-- SlicerSettings View - Dialog -->
-    <div id="dialog_printJobHistory_slicerSettings" class="modal hide fade">
+    <!-- SlicerSettings/Technical Log - Dialog -->
+    <div id="dialog_printJobHistory_textAreaDialog" class="modal large hide fade">
         <div class="modal-header">
-            <h3 class="modal-title">Slicer-Settings for that print job </h3>
+            <h3 class="modal-title" data-bind="text: printJobEditDialog.textAreaTitleDialog"></h3>
         </div>
         <div class="modal-body">
             <div class="row">
-                <span class="" > <textarea readonly style="margin-left:14px;" type="text" class="input-xxlarge" rows="30" data-bind="readonly: true, textInput: printJobForEditing().slicerSettingsAsText">Halleie weoihf oeif owieefj oijwef ioj wefoij wefij oijwefioj owjf oij wefoij </textarea> </span>
+                <span class="" > <textarea readonly style="margin-left:14px;width: 96%;" type="text" class="input-xxlarge" rows="30"
+                                           data-bind="readonly: true,
+                                                      textInput: printJobEditDialog.textAreaContentDialog">Hello </textarea>
+                </span>
             </div>
         </div>
         <div class="modal-footer">
             <div class="control-group">
                 <div class="controls">
-                    <button class="btn "  data-bind="click: printJobEditDialog.closeSlicerSettingsDialog" style="text-align:right">Close</button>
+                    <button class="btn "  data-bind="click: printJobEditDialog.closeTextAreaDialog" style="text-align:right">Close</button>
                 </div>
             </div>
         </div>

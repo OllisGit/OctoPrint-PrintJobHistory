@@ -21,6 +21,18 @@
                 <a href="#" data-bind="attr: {href: $root.exportUrl('CSV'), css: {disabled: !$root.exportUrl('CSV')}}"> <i class="icon-reorder"></i> CSV Export</a>
                 <span data-bind="visible: printJobHistoryTableHelper.selectedTableItems().length > 0">| <a href="#" data-bind="attr: {href: $root.exportedSelectedURL, css: {disabled: !$root.exportUrl('CSV')}}"> only selected (<span data-bind="text: printJobHistoryTableHelper.selectedTableItems().length"></span>)</a> </span>
             </div>
+
+
+
+            <div>
+                <a href="#" target="_blank" data-bind="attr: {href: $root.reportMultiPrintJobItem()}"> <i class="icon-print"></i> Report</a>
+                <span data-bind="visible: printJobHistoryTableHelper.selectedTableItems().length > 0">| <a href="#" data-bind="attr: {href: $root.reportMultiPrintJobItem()}"> only selected (<span data-bind="text: printJobHistoryTableHelper.selectedTableItems().length"></span>)</a> </span>
+            </div>
+
+
+
+
+
             <div>
                 <a href="#" data-bind="click:compareSelectedPrintJobs"> <i class="icon-columns"></i> Compare selected (<span data-bind="text: printJobHistoryTableHelper.selectedTableItems().length">100</span>)</a>
             </div>

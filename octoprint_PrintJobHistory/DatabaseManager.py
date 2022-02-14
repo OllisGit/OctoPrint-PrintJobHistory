@@ -22,7 +22,7 @@ from peewee import *
 FORCE_CREATE_TABLES = False
 SQL_LOGGING = False
 
-CURRENT_DATABASE_SCHEME_VERSION = 7
+CURRENT_DATABASE_SCHEME_VERSION = 8
 
 # List all Models
 MODELS = [PluginMetaDataModel, PrintJobModel, FilamentModel, TemperatureModel, CostModel]
@@ -103,6 +103,27 @@ class DatabaseManager(object):
 
 	def _upgradeFrom7To8(self):
 		self._logger.info(" Starting 7 -> 8")
+		# What is changed:
+		# - PrintJobModel:
+		# 	- Add Column: technicalLog
+
+		connection = sqlite3.connect(self._databaseFileLocation)
+		cursor = connection.cursor()
+
+		sql = """
+		PRAGMA foreign_keys=off;
+		BEGIN TRANSACTION;
+
+			ALTER TABLE 'pjh_printjobmodel' ADD 'technicalLog' TEXT;
+
+				UPDATE 'pjh_pluginmetadatamodel' SET value=8 WHERE key='databaseSchemeVersion';
+		COMMIT;
+		PRAGMA foreign_keys=on;
+		"""
+		cursor.executescript(sql)
+
+		connection.close()
+
 		self._logger.info(" Successfully 7 -> 8")
 		pass
 
@@ -399,7 +420,7 @@ class DatabaseManager(object):
 			# new transaction will begin automatically after the call
 			# to rollback().
 			errorMessage =  str(e);
-			self._logger.warn("Test Database-Connection failed:" +errorMessage)
+			self._logger.warning("Test Database-Connection failed:" +errorMessage)
 			return {
 				"error": errorMessage
 			}
@@ -465,7 +486,7 @@ class DatabaseManager(object):
 			shutil.copy(self._databaseFileLocation, backupDatabaseFilePath)
 			self._logger.info("Backup of printjobhistory database created '"+backupDatabaseFilePath+"'")
 		else:
-			self._logger.warn("Backup of printjobhistory database ('" + backupDatabaseFilePath + "') is already present. No backup created.")
+			self._logger.warning("Backup of printjobhistory database ('" + backupDatabaseFilePath + "') is already present. No backup created.")
 		return backupDatabaseFilePath
 
 

@@ -27,6 +27,7 @@ class PrintJobModel(BaseModel):
 	printedLayers = CharField(null=True)
 	printedHeight = CharField(null=True)
 	slicerSettingsAsText = TextField(null=True)
+	technicalLog = TextField(null=True)	#since v8
 
 	allTemperatures = None
 

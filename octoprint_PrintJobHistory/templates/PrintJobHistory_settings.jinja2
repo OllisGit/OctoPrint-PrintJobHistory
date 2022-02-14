@@ -192,7 +192,7 @@ M300 S440 P100 ;Playing a beep
                 <div class="control-group">
                     <div class="">
                         <label class="checkbox">
-                            <input type="checkbox" data-bind="checked: pluginSettings.takeTemperatureFromPreHeatPlugin" > Take temperature values from PreHeat-Plugin (if installed)
+                            <input type="checkbox" data-bind="checked: pluginSettings.takeTemperatureFromPreHeatPlugin" > Take temperature values from PreHeat-Plugin (Status: <span data-bind="html:isPreHeatPluginAvailableText"></span>))
                         </label>
                     </div>
                 </div>
@@ -217,13 +217,15 @@ M300 S440 P100 ;Playing a beep
             </div>
             <!-- REPORT - TAB -->
             <div class="tab-pane" id="tab-pjh-Report">
+                {# Single - Report #}
                 <div class="control-group no-bottom-gap">
+                    <h4>Single Spool-Report</h4>
                     <label class="control-label">Print Job - Report Template</label>
                     <div class="controls">
                         <div class="input-append">
                             <input type="text" disabled="" class="input-xlarge text-right" data-bind="value: pluginSettings.singlePrintJobTemplateName">
-                            <a href="#" class="btn btn-warning" title="Reset to default report template" data-bind="click: resetSinglePrintJobReportTemplate"><i class="icon-reply"></i></a>
-                            <a class="btn btn-primary" title="Download Report-Template" data-bind="attr: {href: downloadSinglePrintJobReportTemplateUrl()}" target="_blank" ><i class="icon-download"></i></a>
+                            <a href="#" class="btn btn-warning" title="Reset to default report template" data-bind="click: function(){ resetPrintJobReportTemplate('single'); }"><i class="icon-reply"></i></a>
+                            <a class="btn btn-primary" title="Download Report-Template" data-bind="attr: {href: downloadPrintJobReportTemplateUrl('single')}" target="_blank" ><i class="icon-download"></i></a>
                         </div>
                     </div>
                 </div>
@@ -234,7 +236,7 @@ M300 S440 P100 ;Playing a beep
                         <div class="input-prepend">
                             <span class="btn fileinput-button">
                                 <span>Browse...</span>
-                                <input id="settings-pjh-uploadSingleReportTemplate-upload" type="file" name="file" data-url="/plugin/PrintJobHistory/uploadSinglePrintJobReport" accept=".jinja2">
+                                <input id="settings-pjh-uploadSingleReportTemplate-upload" type="file" name="file" data-url="/plugin/PrintJobHistory/uploadPrintJobReport/single" accept=".jinja2">
                             </span>
                             <span class="add-on" data-bind="text: singlePrintJobReportTemplateUploadName"></span>
                         </div>
@@ -248,10 +250,52 @@ M300 S440 P100 ;Playing a beep
                     <label class="control-label"></label>
                     <div class="controls">
                         <div class="input">
-                            <button title="Create a sample print report" class="btn  btn-inverse pull-center" data-bind="click: reportSamplePrintJobItem">Create Sample-Report</button>
+                            <button title="Create a sample print report" class="btn  btn-inverse pull-center" data-bind="click: function(){ reportSamplePrintJobItem('single'); }">Create Sample-Report</button>
                         </div>
                     </div>
                 </div>
+                <hr/>
+                {# Multi - Report #}
+                <div class="control-group no-bottom-gap">
+                    <h4>Multi Spool-Report</h4>
+                    <label class="control-label">Print Job - Report Template</label>
+                    <div class="controls">
+                        <div class="input-append">
+                            <input type="text" disabled="" class="input-xlarge text-right" data-bind="value: pluginSettings.multiPrintJobTemplateName">
+                            <a href="#" class="btn btn-warning" title="Reset to default report template" data-bind="click: function(){ resetPrintJobReportTemplate('multi'); }"><i class="icon-reply"></i></a>
+                            <a class="btn btn-primary" title="Download Report-Template" data-bind="attr: {href: downloadPrintJobReportTemplateUrl('multi')}" target="_blank" ><i class="icon-download"></i></a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label">Upload Print Job - Report</label>
+                    <div class="controls">
+                        <div class="input-prepend">
+                            <span class="btn fileinput-button">
+                                <span>Browse...</span>
+                                <input id="settings-pjh-uploadMultiReportTemplate-upload" type="file" name="file" data-url="/plugin/PrintJobHistory/uploadPrintJobReport/multi" accept=".jinja2">
+                            </span>
+                            <span class="add-on" data-bind="text: multiPrintJobReportTemplateUploadName"></span>
+                        </div>
+                        <button class="btn btn-primary" data-bind="disable: (multiPrintJobReportTemplateInProgress() || multiPrintJobReportTemplateUploadName() == undefined), click: performMultiPrintJobReportTemplateUploadNameFromUpload" disabled="">
+                            <i class="fa fa-spinner fa-spin" data-bind="visible: multiPrintJobReportTemplateInProgress" style="display: none;"></i> Upload Template
+                        </button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label class="control-label"></label>
+                    <div class="controls">
+                        <div class="input">
+                            <button title="Create a sample print report" class="btn  btn-inverse pull-center" data-bind="click: function(){ reportSamplePrintJobItem('multi'); }">Create Sample-Report</button>
+                        </div>
+                    </div>
+                </div>
+
+
+
+
             </div>
 
 

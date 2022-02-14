@@ -1,0 +1,147 @@
+{#
+    THIS IS THE DEFAULT MULTI PRINTJOB REPORT
+    You can change the content as decribed in the Wiki: https://github.com/OllisGit/OctoPrint-PrintJobHistory/wiki/HowToPrintJobReport
+#}
+<html>
+	<head>
+		<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+		<title></title>
+		<style type="text/css">
+
+			// copied from https://github.com/cognitom/paper-css
+			@page { margin: 0 }
+			body {
+				margin: 0;
+				font: 12pt "Tahoma";
+			}
+			.sheet {
+			  margin: 0;
+			  overflow: hidden;
+			  position: relative;
+			  box-sizing: border-box;
+			  page-break-after: always;
+			}
+
+			/** Paper sizes **/
+			body.A3               .sheet { width: 297mm; height: 419mm }
+			body.A3.landscape     .sheet { width: 420mm; height: 296mm }
+			body.A4               .sheet { width: 210mm; height: 296mm }
+			body.A4.landscape     .sheet { width: 297mm; height: 209mm }
+			body.A5               .sheet { width: 148mm; height: 209mm }
+			body.A5.landscape     .sheet { width: 210mm; height: 147mm }
+			body.letter           .sheet { width: 216mm; height: 279mm }
+			body.letter.landscape .sheet { width: 280mm; height: 215mm }
+			body.legal            .sheet { width: 216mm; height: 356mm }
+			body.legal.landscape  .sheet { width: 357mm; height: 215mm }
+
+			/** Padding area **/
+			.sheet.padding-10mm { padding: 10mm }
+			.sheet.padding-15mm { padding: 15mm }
+			.sheet.padding-20mm { padding: 20mm }
+			.sheet.padding-25mm { padding: 25mm }
+
+			/** For screen preview **/
+			@media screen {
+			  body { background: #e0e0e0 }
+			  .sheet {
+				background: white;
+				box-shadow: 0 .5mm 2mm rgba(0,0,0,.3);
+				margin: 5mm auto;
+			  }
+			}
+
+			/** Fix for Chrome issue #273306 **/
+			@media print {
+					   body.A3.landscape { width: 420mm }
+			  body.A3, body.A4.landscape { width: 297mm }
+			  body.A4, body.A5.landscape { width: 210mm }
+			  body.A5                    { width: 148mm }
+			  body.letter, body.legal    { width: 216mm }
+			  body.letter.landscape      { width: 280mm }
+			  body.legal.landscape       { width: 357mm }
+			}
+
+			@page { size: A4 }
+
+
+            .img-polaroid {
+              padding: 4px;
+              background-color: #fff;
+              border: 1px solid #ccc;
+              border: 1px solid rgba(0, 0, 0, 0.2);
+              -webkit-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                 -moz-box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            }
+            img {
+                width: auto \9;
+                height: auto;
+                max-width: 50%;
+                vertical-align: middle;
+                border: 0;
+                -ms-interpolation-mode: bicubic;
+            }
+
+		</style>
+
+	</head>
+	<!-- Set "A5", "A4" or "A3" for class name -->
+	<!-- Set also "landscape" if you need -->
+	<!-- HINT: DEBUGGING just remmove class, then you can see everyting instead of only one page -->
+	<body class="A4">
+
+		<!-- Each sheet element should have the class "sheet" -->
+		<!-- "padding-**mm" is optional: you can set 10, 15, 20 or 25 -->
+        {# Each PrintJob on a singel A4 Page #}
+        {% set totalPageCount = printJobModelAsJson | length %}
+        {% for printJobModelAsJson in printJobModelAsJson %}
+		<section class="sheet padding-10mm">
+
+			<!-- Write HTML just like a web page -->
+			<article>
+
+				<h1>PrintJob - Report!  </h1>
+                <div>Filename: {{ printJobModelAsJson["fileName"] }}</div>
+                <hr/>
+                <div>Printed by: {{ printJobModelAsJson["userName"] }}</div>
+                <div>Filename: {{ printJobModelAsJson["fileName"] }}</div>
+                <div>Filesize: {{ printJobModelAsJson["fileSizeFormatted"] }}</div>
+                <div>Starttime: {{ printJobModelAsJson["printStartDateTimeFormatted"] }}</div>
+                <div>EndTime: {{ printJobModelAsJson["printEndDateTimeFormatted"] }}</div>
+                <div>Duration: {{ printJobModelAsJson["durationFormatted"] }}</div>
+                <div>Result: {{ printJobModelAsJson["printStatusResult"] }}</div>
+                <div>Notes: {{ printJobModelAsJson["noteText"] }}</div>
+                <div>Layers: {{ printJobModelAsJson["printedLayers"] }}</div>
+                <div>Height: {{ printJobModelAsJson["printedHeight"] }}</div>
+
+{#                <div>Spoolname: {{ printJobModelAsJson["filamentModels"]["tool0"]["spoolName"] }}</div>#}
+{#                <div>Material: {{ printJobModelAsJson["filamentModels"]["tool0"]["material"] }}</div>#}
+{#                <div>Vendor: {{ printJobModelAsJson["filamentModels"]["tool0"]["vendor"] }}</div>#}
+{#                <div>Diameter: {{ printJobModelAsJson["filamentModels"]["tool0"]["diameter"] }}</div>#}
+{#                <div>Density: {{ printJobModelAsJson["filamentModels"]["tool0"]["density"] }}</div>#}
+                <div>Calculated length: {{ printJobModelAsJson["filamentModels"]["total"]["calculatedLengthFormatted"] }}</div>
+                <div>Used length: {{ printJobModelAsJson["filamentModels"]["total"]["usedLengthFormatted"] }}</div>
+                <div>Used weight: {{ printJobModelAsJson["filamentModels"]["total"]["usedWeight"] }}</div>
+                <div>Used cost: {{ printJobModelAsJson["filamentModels"]["total"]["usedCost"] }}</div>
+
+                <div>snapshotFilename: {{ printJobModelAsJson["snapshotFilename"] }}</div>
+                <img  class="img-polaroid"  src="{{ url_for('plugin.PrintJobHistory.get_snapshot',snapshotFilename=printJobModelAsJson["snapshotFilename"] ) }}" >
+                <div>&nbsp;</div>
+                <div>&nbsp;</div>
+                <div>Report created at {{ reportCreationTime.strftime('%d.%m.%Y %H:%M') }}. Page {{loop.index}} of {{ totalPageCount }}</div>
+                <hr/>
+{#                <div>DEBUGGING-SECTION</div>#}
+{#                <div>{{ printJobModelAsJson }}</div>#}
+
+
+			</article>
+		</section>
+        {% endfor %}
+
+ 		<script type="text/javascript">
+            {#	After reload open the browser print-dialog #}
+            {#window.print();#}
+		</script>
+	</body>
+
+</html>

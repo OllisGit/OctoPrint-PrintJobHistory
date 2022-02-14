@@ -56,14 +56,25 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
         return _addApiKeyIfNecessary("./plugin/" + this.pluginId + "/printJobSnapshot/" + snapshotFilename);
     }
 
-    this.getSingleReportUrl = function(databaseId){
+    this.callCreateSingleReportUrl = function(databaseId){
         //http://localhost:5000/plugin/PrintJobHistory/singlePrintJobReport/5
         return _addApiKeyIfNecessary("./plugin/" + this.pluginId + "/singlePrintJobReport/" + databaseId);
     }
 
-    this.getSinglePrintJobReportTemplateUrl = function(){
+    this.callCreateMultiReportUrl = function (tableQuery){
+        query = _buildRequestQuery(tableQuery);
+        urlToCall = this.baseUrl + "./plugin/"+this.pluginId+"/multiPrintJobReport?"+query;
+        return _addApiKeyIfNecessary(urlToCall);
+    }
+
+    this.getMultiReportUrl = function(databaseId){
+        //http://localhost:5000/plugin/PrintJobHistory/multiPrintJobReport/5
+        return _addApiKeyIfNecessary("./plugin/" + this.pluginId + "/multiPrintJobReport/" + databaseId);
+    }
+
+    this.getPrintJobReportTemplateUrl = function(reportType){
         //http://localhost:5000/plugin/PrintJobHistory/downloadSinglePrintJobReportTemplate
-        return _addApiKeyIfNecessary("./plugin/" + this.pluginId + "//downloadSinglePrintJobReportTemplate");
+        return _addApiKeyIfNecessary("./plugin/" + this.pluginId + "/downloadPrintJobReportTemplate/" + reportType);
     }
 
     this.uploadSnapshotUrl = function(snapshotFilename){
@@ -187,17 +198,16 @@ function PrintJobHistoryAPIClient(pluginId, baseUrl) {
         });
     }
 
-    // deactivate the Plugin/Check
-    this.callResetSinglePrintJobReportTemplate =  function (responseHandler){
+
+    this.callResetPrintJobReportTemplate =  function (reportType, responseHandler){
         $.ajax({
-            url: this.baseUrl + "plugin/"+ this.pluginId +"/resetSinglePrintJobReportTemplate",
+            url: this.baseUrl + "plugin/"+ this.pluginId +"/resetPrintJobReportTemplate/"+reportType,
             type: "PUT"
         }).done(function( data ){
             responseHandler(data)
         });
     }
 
-    // deactivate the Plugin/Check
     this.callTakeSnapshot =  function (snapshotFilename, responseHandler){
         $.ajax({
             url: this.baseUrl + "plugin/"+ this.pluginId +"/takeSnapshot/"+snapshotFilename,

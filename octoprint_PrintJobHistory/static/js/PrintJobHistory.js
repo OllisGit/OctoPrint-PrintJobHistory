@@ -102,6 +102,7 @@ $(function() {
 
 		this.snapshotFilename = ko.observable();
 		this.slicerSettingsAsText = ko.observable();
+		this.technicalLog = ko.observable();
 
 		this.isMultiToolPrint = ko.observable(false);
 		this.isCostsAvailable = ko.observable(false);
@@ -176,11 +177,10 @@ $(function() {
         }
         if (updateData.filamentModels != null && Object.keys(updateData.filamentModels).length != 0){
             // result from backend
-
             this.allFilamentModels = updateData.filamentModels;
             this.allToolKeys = Object.keys(this.allFilamentModels);
+            this.allToolKeys = this.allToolKeys.sort(); // total must be on the bottom
             this.isMultiToolPrint(Object.keys(this.allFilamentModels).length > 1)
-
             totalFilamentModel = updateData.filamentModels["total"];    // should always be present
             // should never happen, but in the past we have some jobs where "total" is missing
             if (totalFilamentModel != null){
@@ -223,6 +223,7 @@ $(function() {
 
 		this.snapshotFilename(updateData.snapshotFilename);
 		this.slicerSettingsAsText(updateData.slicerSettingsAsText)
+		this.technicalLog(updateData.technicalLog)
         this.isRePrintable(updateData.isRePrintable);
         this.fullFileLocation(updateData.fullFileLocation);
     };
@@ -287,7 +288,8 @@ $(function() {
                 "noteDeltaFormat" : null,
                 "noteHtml" : "",
                 "snapshotFilename" : "empty",
-                "slicerSettingsAsText" : ""
+                "slicerSettingsAsText" : "",
+                "technicalLog" : ""
         }
         var printHistoryJobItems = [];
 
@@ -390,6 +392,8 @@ $(function() {
         self.isSpoolManagerInstalled = ko.observable(false);
         self.isFilamentManagerInstalled = ko.observable(false);
 
+        self.isPreHeatPluginAvailableText = ko.observable("unknown");
+
         self.databaseFileLocation = ko.observable();
         self.snapshotFileLocation = ko.observable();
 
@@ -421,7 +425,6 @@ $(function() {
                 localStorage[storageKey] = newValue;
             });
         }
-
 
         self.showPopUp = function(popupType, popupTitle, message, hide){
             if (hide){
@@ -543,29 +546,35 @@ $(function() {
         }
 
         /////// Report - Template handling
-        self.resetSinglePrintJobReportTemplate = function(){
-
+        self.resetPrintJobReportTemplate = function(reportType){
             var result = confirm("Do you really want reset to the default template report ?");
             if (result == true) {
-                self.apiClient.callResetSinglePrintJobReportTemplate(function(responseData){
+                self.apiClient.callResetPrintJobReportTemplate(reportType, function(responseData){
                     // handle response
                     if (responseData.result == true){
-                        self.pluginSettings.singlePrintJobTemplateName(responseData.singlePrintJobTemplateName);
+                        if (reportType == "multi"){
+                            self.pluginSettings.multiPrintJobTemplateName(responseData.printJobTemplateName);
+                        }else {
+                            self.pluginSettings.singlePrintJobTemplateName(responseData.printJobTemplateName);
+                        }
                     }
                 });
             }
-
         }
 
-        self.downloadSinglePrintJobReportTemplateUrl = function(){
-            return self.apiClient.getSinglePrintJobReportTemplateUrl();
+        self.downloadPrintJobReportTemplateUrl = function(reportType){
+            return self.apiClient.getPrintJobReportTemplateUrl(reportType);
         }
 
         self.singlePrintJobReportTemplateUploadName = ko.observable();
+        self.multiPrintJobReportTemplateUploadName = ko.observable();
         self.singlePrintJobReportTemplateInProgress = ko.observable(false);
+        self.multiPrintJobReportTemplateInProgress = ko.observable(false);
 
         self.singlePrintJobReportTemplateUploadButton = $("#settings-pjh-uploadSingleReportTemplate-upload");
+        self.multiPrintJobReportTemplateUploadButton = $("#settings-pjh-uploadMultiReportTemplate-upload");
         self.singlePrintJobReportTemplateUploadData = undefined;
+        self.multiPrintJobReportTemplateUploadData = undefined;
         self.singlePrintJobReportTemplateUploadButton.fileupload({
             dataType: "json",
             maxNumberOfFiles: 1,
@@ -585,11 +594,40 @@ $(function() {
                 self.singlePrintJobReportTemplateUploadNameUploadData = undefined;
 
                 if (data.result.result == true){
-                    self.pluginSettings.singlePrintJobTemplateName(data.result.singlePrintJobTemplateName);
+                    self.pluginSettings.singlePrintJobTemplateName(data.result.printJobTemplateName);
                 }
             },
             error: function(response, data, errorMessage){
                 self.singlePrintJobReportTemplateInProgress(false);
+                statusCode = response.status;       // e.g. 400
+                statusText = response.statusText;   // e.g. BAD REQUEST
+                responseText = response.responseText; // e.g. Invalid request
+            }
+        });
+        self.multiPrintJobReportTemplateUploadButton.fileupload({
+            dataType: "json",
+            maxNumberOfFiles: 1,
+            autoUpload: false,
+            headers: OctoPrint.getRequestHeaders(),
+            add: function(e, data) {
+                if (data.files.length === 0) {
+                    // no files? ignore
+                    return false;
+                }
+                self.multiPrintJobReportTemplateUploadName(data.files[0].name);
+                self.multiPrintJobReportTemplateUploadData = data;
+            },
+            done: function(e, data) {
+                self.multiPrintJobReportTemplateInProgress(false);
+                self.multiPrintJobReportTemplateUploadName(undefined);
+                self.multiPrintJobReportTemplateUploadNameUploadData = undefined;
+
+                if (data.result.result == true){
+                    self.pluginSettings.multiPrintJobTemplateName(data.result.printJobTemplateName);
+                }
+            },
+            error: function(response, data, errorMessage){
+                self.multiPrintJobReportTemplateInProgress(false);
                 statusCode = response.status;       // e.g. 400
                 statusText = response.statusText;   // e.g. BAD REQUEST
                 responseText = response.responseText; // e.g. Invalid request
@@ -603,12 +641,34 @@ $(function() {
 
             self.singlePrintJobReportTemplateUploadData.submit();
         };
+        self.performMultiPrintJobReportTemplateUploadNameFromUpload = function() {
+            if (self.multiPrintJobReportTemplateUploadData === undefined) return;
+
+            self.multiPrintJobReportTemplateInProgress(true);
+
+            self.multiPrintJobReportTemplateUploadData.submit();
+        };
 
         // create sample report
-        self.reportSamplePrintJobItem = function() {
-            window.open(self.apiClient.getSingleReportUrl("sample"), '_blank').focus();
-        }
+        self.reportSamplePrintJobItem = function(reportType) {
+            if (reportType == "multi"){
+                var tableQuery = self.printJobHistoryTableHelper.getTableQuery();
+                window.open(self.apiClient.callCreateMultiReportUrl("sample"), '_blank').focus();
 
+            } else {
+                window.open(self.apiClient.callCreateSingleReportUrl("sample"), '_blank').focus();
+            }
+        }
+        self.reportMultiPrintJobItem = function() {
+            var tableQuery = null;
+            var selectedTableItems = self.printJobHistoryTableHelper.selectedTableItems();
+            if (selectedTableItems.length > 0){
+                tableQuery = "databaseIds="+ self.selectedDatabaseIdsAsCSV
+            } else {
+                tableQuery = self.printJobHistoryTableHelper.getTableQuery();
+            }
+            return self.apiClient.callCreateMultiReportUrl(tableQuery);
+        }
 
         ///////////////////////////////////////////////////// END: SETTINGS
 
@@ -692,6 +752,11 @@ $(function() {
                     self.isCostEstimationPluginAvailableText("<span style='color:green'>available</span>");
                 } else {
                     self.isCostEstimationPluginAvailableText("<span style='color:red'>not available</span>");
+                }
+                if (data.isPreHeatPluginAvailable == true){
+                    self.isPreHeatPluginAvailableText("<span style='color:green'>available</span>");
+                } else {
+                    self.isPreHeatPluginAvailableText("<span style='color:red'>not available</span>");
                 }
                 self.currencySymbol(data.currencySymbol);
                 self.currencyFormat(data.currencyFormat);
@@ -980,17 +1045,6 @@ $(function() {
         self.isQueryEndEnabled(false);
 
         // - export csv data
-        self.exportUrl = function(exportType) {
-            if (self.printJobHistoryTableHelper.items().length > 0) {
-                var defaultURL =  self.apiClient.getExportUrl(exportType)
-                return defaultURL;
-            } else {
-                return false;
-            }
-        };
-        self.exportedSelectedURL = ko.observable();
-
-        // - delete
         self.exportUrl = function(exportType) {
             if (self.printJobHistoryTableHelper.items().length > 0) {
                 var defaultURL =  self.apiClient.getExportUrl(exportType)
