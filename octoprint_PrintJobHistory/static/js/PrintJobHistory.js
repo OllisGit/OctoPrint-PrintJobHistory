@@ -659,13 +659,17 @@ $(function() {
                 window.open(self.apiClient.callCreateSingleReportUrl("sample"), '_blank').focus();
             }
         }
-        self.reportMultiPrintJobItem = function() {
+        self.reportMultiPrintJobItem = function(reportAll) {
             var tableQuery = null;
-            var selectedTableItems = self.printJobHistoryTableHelper.selectedTableItems();
-            if (selectedTableItems.length > 0){
-                tableQuery = "databaseIds="+ self.selectedDatabaseIdsAsCSV
-            } else {
+            if ("all" == reportAll) {
                 tableQuery = self.printJobHistoryTableHelper.getTableQuery();
+            } else {
+                var selectedTableItems = self.printJobHistoryTableHelper.selectedTableItems();
+                if (selectedTableItems.length > 0){
+                    tableQuery = "databaseIds="+ self.selectedDatabaseIdsAsCSV
+                } else {
+                    tableQuery = self.printJobHistoryTableHelper.getTableQuery();
+                }
             }
             return self.apiClient.callCreateMultiReportUrl(tableQuery);
         }

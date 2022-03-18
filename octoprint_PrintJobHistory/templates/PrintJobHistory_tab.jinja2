@@ -25,8 +25,8 @@
 
 
             <div>
-                <a href="#" target="_blank" data-bind="attr: {href: $root.reportMultiPrintJobItem()}"> <i class="icon-print"></i> Report</a>
-                <span data-bind="visible: printJobHistoryTableHelper.selectedTableItems().length > 0">| <a href="#" data-bind="attr: {href: $root.reportMultiPrintJobItem()}"> only selected (<span data-bind="text: printJobHistoryTableHelper.selectedTableItems().length"></span>)</a> </span>
+                <a href="#" target="_blank" data-bind="attr: {href: $root.reportMultiPrintJobItem('all')}"> <i class="icon-print"></i> Report</a>
+                <span data-bind="visible: printJobHistoryTableHelper.selectedTableItems().length > 0">| <a href="#" target="_blank" data-bind="attr: {href: $root.reportMultiPrintJobItem()}"> only selected (<span data-bind="text: printJobHistoryTableHelper.selectedTableItems().length"></span>)</a> </span>
             </div>
 
 

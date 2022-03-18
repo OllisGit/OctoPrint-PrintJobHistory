@@ -226,6 +226,7 @@ function PrintJobHistoryEditDialog(){
         self.shouldPrintJobTableReload = false;
 //        TODO Wieso this statt self????
         _setSnapshotImageSource(self.apiClient.getSnapshotUrl(printJobItemForEdit.snapshotFilename()));
+        self.captureButtonText.text(reCaptureText);
 
 //        reset message
         self.snapshotSuccessMessageSpan.hide();

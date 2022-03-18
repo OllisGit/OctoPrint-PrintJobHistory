@@ -762,7 +762,7 @@ class PrintJobHistoryAPI(octoprint.plugin.BlueprintPlugin):
 	@octoprint.plugin.BlueprintPlugin.route("/multiPrintJobReport", methods=["GET"])
 	def get_createMultiPrintJobReport(self):
 
-		tableQuery = flask.request.values
+		tableQuery = flask.request.values.to_dict()
 		allPrintJobModels = []
 		if ("sample" in tableQuery):
 			allPrintJobModels = self._createSamplePrintModels()

@@ -453,9 +453,7 @@
                                                 </div>
                                             </div>
                                             <!--  END WEBCAM LOADER   -->
-
-
-                                            <div id="webcam_rotator" data-bind="visible: printJobEditDialog.imageDisplayMode()!='videoStreamLoading' && printJobEditDialog.imageDisplayMode()!='videoStreamError', css: { webcam_rotated: printJobEditDialog.webCamSettings.rotate90(), webcam_unrotated: !printJobEditDialog.webCamSettings.rotate90() }">
+                                            <div id="printjobhistory_webcam_rotator" data-bind="visible: printJobEditDialog.imageDisplayMode()!='videoStreamLoading' && printJobEditDialog.imageDisplayMode()!='videoStreamError', css: { webcam_rotated: printJobEditDialog.webCamSettings.rotate90(), webcam_unrotated: !printJobEditDialog.webCamSettings.rotate90() }">
                                                 <div class="webcam_fixed_ratio" data-bind="css: printJobEditDialog.webcamRatioClass">
                                                     <div class="webcam_fixed_ratio_inner">
                                                     <!--
