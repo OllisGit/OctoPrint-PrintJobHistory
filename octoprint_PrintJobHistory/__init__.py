@@ -983,6 +983,9 @@ class PrintJobHistoryPlugin(
 			# - Costs
 			self._addCostsToPrintModel(self._currentPrintJobModel)
 
+			# send print_job_captured event
+			self._send_print_job_captured_event(self._currentPrintJobModel)
+
 			# store everything in the database
 			self._logger.info("----- Try storing printjob model ----")
 			databaseId = self._databaseManager.insertPrintJob(self._currentPrintJobModel)
@@ -1041,6 +1044,72 @@ class PrintJobHistoryPlugin(
 			pass
 
 		return databaseId
+
+
+	def _send_print_job_captured_event(self, printJobModel):
+		printJobMessage = {}
+
+		# collect general attributes
+		printJobMessage["general"] = {
+			"userName": printJobModel.userName,
+			"fileName": printJobModel.fileName,
+			"filePathName": printJobModel.filePathName,
+			"fileSize": printJobModel.fileSize,
+			"printStartDateTime": int(printJobModel.printStartDateTime.timestamp()),
+			"printEndDateTime": int(printJobModel.printEndDateTime.timestamp()),
+			"duration": round(printJobModel.duration),
+			"printStatusResult": printJobModel.printStatusResult,
+			"printedLayers": printJobModel.printedLayers,
+			"printedHeight": printJobModel.printedHeight,
+			"slicerSettingsAsText": printJobModel.slicerSettingsAsText,
+			"technicalLog": printJobModel.technicalLog,
+		}
+
+		# - Filament
+		for filamentModel in printJobModel.getFilamentModels():
+			printJobMessage["filament_" + filamentModel.toolId] = {
+				"vendor": filamentModel.vendor,
+				"diameter": filamentModel.diameter,
+				"density": filamentModel.density,
+				"material": filamentModel.material,
+				"spoolName": filamentModel.spoolName,
+				"spoolCost": filamentModel.spoolCost,
+				"weight": filamentModel.weight,
+				"usedLength": filamentModel.usedLength,
+				"calculatedLength": filamentModel.calculatedLength,
+				"usedWeight": filamentModel.usedWeight,
+				"usedCost": filamentModel.usedCost,
+				"toolId": filamentModel.toolId,
+			}
+
+		# - Temperature
+		for temperatureModel in printJobModel.getTemperatureModels():
+			printJobMessage["temperature_" + temperatureModel.sensorName] = {
+				"sensorName": temperatureModel.sensorName,
+				"sensorValue": temperatureModel.sensorValue,
+			}
+
+		# - Costs
+		costModel = printJobModel.getCosts()
+		if (costModel != None):
+			printJobMessage["costs"] = {
+				"totalCosts": costModel.totalCosts,
+				"filamentCost": costModel.filamentCost,
+				"electricityCost": costModel.electricityCost,
+				"printerCost": costModel.printerCost,
+				"otherCostLabel": costModel.otherCostLabel,
+				"otherCost": costModel.otherCost,
+				"withDefaultSpoolValues": costModel.withDefaultSpoolValues,
+				"currencySymbol": self._costEstimationPluginImplementation._settings.get(["currency"]),
+				"currencyFormat": self._costEstimationPluginImplementation._settings.get(["currencyFormat"]),
+			}
+
+		# fire event
+		self._event_bus.fire("plugin_printjobhistory_print_job_captured", payload=printJobMessage)
+
+
+	def register_custom_events(*args, **kwargs):
+		return ["print_job_captured"]
 
 
 	def _grabImage(self, payload):
@@ -1530,7 +1599,8 @@ def __plugin_load__():
 		"octoprint.comm.protocol.action": __plugin_implementation__.on_receivedActionHook,
 		"octoprint.access.permissions": __plugin_implementation__.additional_permissions_hook,
 		"octoprint.server.http.bodysize": __plugin_implementation__.bodysize_hook,
-		"octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information
+		"octoprint.plugin.softwareupdate.check_config": __plugin_implementation__.get_update_information,
+		"octoprint.events.register_custom_events": __plugin_implementation__.register_custom_events
 	}
 
 # # filamentAnalyseDict = fileData["analysis"]["filament"]
