@@ -9,6 +9,7 @@ from queue import Queue
 import octoprint.plugin
 from octoprint.events import Events
 
+import base64
 import datetime
 import math
 import flask
@@ -1049,6 +1050,12 @@ class PrintJobHistoryPlugin(
 	def _send_print_job_captured_event(self, printJobModel):
 		printJobMessage = {}
 
+		# fetch snapshot in base64 encoding
+		snapshot_filename = self._cameraManager.buildSnapshotFilename(printJobModel.printStartDateTime)
+		snapshot_filepath = self._cameraManager.buildSnapshotFilenameLocation(snapshot_filename, not self._cameraManager.isSnapshotPresent(snapshot_filename))
+		with open(snapshot_filepath, "rb") as snapshot_file:
+			snapshot_base64 = base64.b64encode(snapshot_file.read()).decode()
+
 		# collect general attributes
 		printJobMessage["general"] = {
 			"userName": printJobModel.userName,
@@ -1063,6 +1070,7 @@ class PrintJobHistoryPlugin(
 			"printedHeight": printJobModel.printedHeight,
 			"slicerSettingsAsText": printJobModel.slicerSettingsAsText,
 			"technicalLog": printJobModel.technicalLog,
+			"snapshot": snapshot_base64,
 		}
 
 		# - Filament
