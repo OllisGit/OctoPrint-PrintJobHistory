@@ -1,5 +1,6 @@
 # coding=utf-8
 from __future__ import absolute_import
+import urllib.parse
 
 import shutil
 import threading
@@ -244,7 +245,10 @@ class CameraManager(object):
 
 		pluginFolder = splitPath[1]
 		thumbnailName = splitPath[3]
-
+		
+		# account for encoded filenames from the metadata
+		thumbnailName = urllib.parse.unquote( thumbnailName )
+		
 		thumbnailLocation = self._pluginDataBaseFolder + "/../" + pluginFolder + "/" + thumbnailName
 
 		if os.path.isfile(thumbnailLocation):
