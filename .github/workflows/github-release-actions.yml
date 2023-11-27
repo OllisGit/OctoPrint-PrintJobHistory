@@ -21,7 +21,7 @@ jobs:
       - run: echo "Plugin Version  $PLUGIN_VERSION ${PLUGIN_VERSION}"
 
       - run: echo "Build ZIP"
-      - run: zip -r master.zip * -i '\octoprint_*' 'translations' 'README.md' 'requirements.txt' 'setup.py'
+      - run: zip -r main.zip * -i '\octoprint_*' 'translations' 'README.md' 'requirements.txt' 'setup.py'
       - name: List files in the repository
         run: |
           ls ${{ github.workspace }}
@@ -59,26 +59,26 @@ jobs:
             - #xxx
 
             ## Counter
-            ![downloaded](https://img.shields.io/github/downloads/OllisGit/${{ steps.branch.outputs.repo_name }}/${{ steps.version.outputs.version }}/total)
+            ![downloaded](https://img.shields.io/github/downloads/dojohnso/${{ steps.branch.outputs.repo_name }}/${{ steps.version.outputs.version }}/total)
 
-            ## Support my Efforts
-            This plugin, as well as my [other plugins](https://github.com/OllisGit/) were developed in my spare time.
-            If you like it, I would be thankful about a cup of coffee :)
+            ## *NOTE: this plugin has been abandoned by the original creator and adopted here by a new maintainer*
 
-            [![More coffee, more code](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=6SW5R6ZUKLB5E&source=url)
+            **This plugin is under new management** and will focus on critical bug fixes to start. Please bear with me as I get acclimated to this new plugin. If you would like to support these new efforts, please consider buying me a coffee or two. Thank you!
+
+            <a href="https://www.buymeacoffee.com/djohnson.tech" target="_blank"><img src="https://djohnson.tech/images/white-button.png" width=300 /></a>
 #          body_path: RELEASE_TEMPLATE.md
 
-      - name: upload master.zip to release
+      - name: upload main.zip to release
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ github.token }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: master.zip
-          asset_name: master.zip
+          asset_path: main.zip
+          asset_name: main.zip
           asset_content_type: application/gzip
 
-      - name: download master.zip
-        run: curl -O -J -L -v https://github.com/OllisGit/${{ steps.branch.outputs.repo_name }}/releases/download/${{ steps.version.outputs.version }}/master.zip
+      - name: download main.zip
+        run: curl -O -J -L -v https://github.com/dojohnso/${{ steps.branch.outputs.repo_name }}/releases/download/${{ steps.version.outputs.version }}/main.zip
 
       - run: echo "🍏 This job's status is ${{ job.status }}."

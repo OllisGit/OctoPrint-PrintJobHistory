@@ -1465,30 +1465,30 @@ class PrintJobHistoryPlugin(
 				# version check: github repository
 				type="github_release",
 
-				user="OllisGit",
+				user="dojohnso",
 				repo="OctoPrint-PrintJobHistory",
 				current=self._plugin_version,
 
 				stable_branch=dict(
 					name="Only Release",
-					branch="master",
-					comittish=["master"]
+					branch="main",
+					comittish=["main"]
 				),
 				prerelease_branches=[
+					# dict(
+					# 	name="Release & Candidate",
+					# 	branch="pre-release",
+					# 	comittish=["pre-release", "main"],
+					# ),
 					dict(
-						name="Release & Candidate",
-						branch="pre-release",
-						comittish=["pre-release", "master"],
-					),
-					dict(
-						name="Release & Candidate & in development",
-						branch="development",
-						comittish=["development", "pre-release", "master"],
+						name="Release & in development",
+						branch="dev",
+						comittish=["dev", "main"],
 					)
 				],
 
 				# update method: pip
-				pip="https://github.com/OllisGit/OctoPrint-PrintJobHistory/releases/download/{target_version}/master.zip"
+				pip="https://github.com/dojohnso/OctoPrint-PrintJobHistory/releases/download/{target_version}/main.zip"
 			)
 		)
 

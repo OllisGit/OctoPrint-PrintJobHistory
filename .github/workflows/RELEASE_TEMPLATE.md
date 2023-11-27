@@ -5,11 +5,10 @@
 - #xxx
 
 ## Counter
-![downloaded](https://img.shields.io/github/downloads/OllisGit/OctoPrint-FilamentManager/xxx/total)
+![downloaded](https://img.shields.io/github/downloads/dojohnso/OctoPrint-FilamentManager/xxx/total)
 
-## Support my Efforts
+## *NOTE: this plugin has been abandoned by the original creator and adopted here by a new maintainer*
 
-This plugin, as well as my [other plugins](https://github.com/OllisGit/) were developed in my spare time.
-If you like it, I would be thankful about a cup of coffee :)
+**This plugin is under new management** and will focus on critical bug fixes to start. Please bear with me as I get acclimated to this new plugin. If you would like to support these new efforts, please consider buying me a coffee or two. Thank you!
 
-[![More coffee, more code](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=6SW5R6ZUKLB5E&source=url)
+<a href="https://www.buymeacoffee.com/djohnson.tech" target="_blank"><img src="https://djohnson.tech/images/white-button.png" width=300 /></a>

@@ -1,7 +1,7 @@
 /*
  * View model for PrintJobHistory
  *
- * Author: OllisGit
+ * Author: dojohnso
  * License: AGPLv3
  */
 $(function() {
